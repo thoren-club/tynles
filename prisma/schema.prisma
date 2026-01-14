@@ -19,6 +19,7 @@ model TelegramUser {
 
   spaceMembers SpaceMember[]
   createdSpaces Space[] @relation("SpaceOwner")
+  userStats UserSpaceStats[]
 
   @@map("users")
 }
@@ -129,11 +130,12 @@ model UserSpaceStats {
 }
 
 model Reward {
-  spaceId     BigInt   @id
-  level       Int      @id
+  spaceId     BigInt
+  level       Int
   text        String   @db.Text
 
   space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
+  @@id([spaceId, level])
   @@map("rewards")
 }
