@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TelegramUser {
+  id         BigInt   @id @default(autoincrement())
+  tgId       BigInt   @unique @map("tg_id")
+  username   String?  @db.VarChar(255)
+  firstName  String?  @map("first_name") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  spaceMembers SpaceMember[]
+  createdSpaces Space[] @relation("SpaceOwner")
+
+  @@map("users")
+}
+
+model Space {
+  id           BigInt   @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  ownerUserId  BigInt   @map("owner_user_id")
+  timezone     String   @default("Europe/Berlin") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  owner       TelegramUser @relation("SpaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  members     SpaceMember[]
+  invites     Invite[]
+  tasks       Task[]
+  goals       Goal[]
+  userStats   UserSpaceStats[]
+  rewards     Reward[]
+
+  @@map("spaces")
+}
+
+enum Role {
+  Admin
+  Editor
+  Viewer
+}
+
+model SpaceMember {
+  spaceId   BigInt   @map("space_id")
+  userId    BigInt   @map("user_id")
+  role      Role
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  space     Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      TelegramUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([spaceId, userId])
+  @@map("space_members")
+}
+
+model Invite {
+  id          BigInt   @id @default(autoincrement())
+  spaceId     BigInt   @map("space_id")
+  role        Role
+  code        String   @unique @db.VarChar(50)
+  expiresAt   DateTime @map("expires_at")
+  createdBy   BigInt   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("invites")
+}
+
+model Task {
+  id                BigInt    @id @default(autoincrement())
+  spaceId           BigInt    @map("space_id")
+  title             String    @db.VarChar(500)
+  difficulty        Int       @default(1)
+  xp                Int       @default(0)
+  recurrenceType    String?   @map("recurrence_type") @db.VarChar(50)
+  recurrencePayload Json?     @map("recurrence_payload")
+  dueAt             DateTime? @map("due_at")
+  reminderSent      Boolean   @default(false) @map("reminder_sent")
+  isPaused          Boolean   @default(false) @map("is_paused")
+  createdBy         BigInt    @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  space             Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+  @@index([spaceId, dueAt])
+  @@index([spaceId, isPaused])
+}
+
+model Goal {
+  id          BigInt   @id @default(autoincrement())
+  spaceId     BigInt   @map("space_id")
+  title       String   @db.VarChar(500)
+  difficulty  Int      @default(1)
+  xp          Int      @default(0)
+  isDone      Boolean  @default(false) @map("is_done")
+  createdBy   BigInt   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+  @@index([spaceId, isDone])
+}
+
+model UserSpaceStats {
+  spaceId     BigInt   @map("space_id")
+  userId      BigInt   @map("user_id")
+  totalXp     Int      @default(0) @map("total_xp")
+  level       Int      @default(1)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user        TelegramUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([spaceId, userId])
+  @@map("user_space_stats")
+  @@index([spaceId, totalXp])
+}
+
+model Reward {
+  spaceId     BigInt   @id
+  level       Int      @id
+  text        String   @db.Text
+
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("rewards")
+}
