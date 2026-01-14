@@ -7,126 +7,92 @@ import { markTaskDone } from '../utils/task-scheduler';
 import { calculateNextDueDate } from '../utils/recurrence';
 import { getTasksMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
+import { t } from '../i18n';
+import { getXpProgress, getProgressBar } from '../utils/xp';
 
 export function setupTaskCommands(bot: Bot<AuthContext>) {
+  // Упрощенное создание задач - только название
   bot.command('task_add', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
     if (!ctx.user || !ctx.currentSpaceId) return;
 
+    const lang = await getUserLanguage(ctx.user.id);
     setWizardState(ctx.user.id, {
       type: 'task',
       step: 0,
       data: { spaceId: ctx.currentSpaceId },
     });
 
-    await ctx.reply('Creating a new task. Please send the task title:');
+    const text = lang === 'ru'
+      ? '✏️ *Создание задачи*\n\nОтправьте название задачи:'
+      : '✏️ *Create Task*\n\nSend the task title:';
+
+    await ctx.reply(text, { parse_mode: 'Markdown' });
   });
 
-  // Wizard message handler - step 0 (title) and step 3 (due date)
+  // Обработчик кнопки task:add
+  bot.callbackQuery('task:add', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    setWizardState(ctx.user.id, {
+      type: 'task',
+      step: 0,
+      data: { spaceId: ctx.currentSpaceId },
+    });
+
+    const text = lang === 'ru'
+      ? '✏️ *Создание задачи*\n\nОтправьте название задачи:'
+      : '✏️ *Create Task*\n\nSend the task title:';
+
+    await ctx.editMessageText(text, { parse_mode: 'Markdown' });
+    await ctx.answerCallbackQuery();
+  });
+
+  // Упрощенный wizard - только название, остальное по умолчанию
   bot.on('message:text', ensureUser, async (ctx) => {
     if (!ctx.user) return;
 
     const wizardState = getWizardState(ctx.user.id);
-    if (!wizardState || wizardState.type !== 'task') return;
+    if (!wizardState || wizardState.type !== 'task' || wizardState.step !== 0) return;
 
-    const text = ctx.message.text;
+    const title = ctx.message.text.trim();
+    if (!title) return;
 
-    if (wizardState.step === 0) {
-      // Title
-      wizardState.data.title = text;
-      wizardState.step = 1;
+    const lang = await getUserLanguage(ctx.user.id);
 
-      const keyboard = new InlineKeyboard()
-        .text('1', 'difficulty_1')
-        .text('2', 'difficulty_2')
-        .text('3', 'difficulty_3')
-        .row()
-        .text('4', 'difficulty_4')
-        .text('5', 'difficulty_5');
+    // Дефолтные значения: сложность 3, без повторяемости, дата "now"
+    const difficulty = 3;
+    const xp = getXpForDifficulty(difficulty);
+    const dueAt = new Date();
 
-      await ctx.reply('Select difficulty (1-5):', { reply_markup: keyboard });
-      setWizardState(ctx.user.id, wizardState);
-      return;
-    }
-
-    if (wizardState.step === 3) {
-      // Due date
-      const textLower = text.toLowerCase().trim();
-      let dueAt: Date | null = null;
-
-      if (textLower !== 'now') {
-        try {
-          dueAt = new Date(ctx.message.text);
-          if (isNaN(dueAt.getTime())) {
-            return ctx.reply('Invalid date format. Please use YYYY-MM-DD HH:MM or "now"');
-          }
-        } catch {
-          return ctx.reply('Invalid date format. Please use YYYY-MM-DD HH:MM or "now"');
-        }
-      } else {
-        dueAt = new Date();
-      }
-
-      wizardState.data.dueAt = dueAt;
-
-      // Create task
+    try {
       const task = await prisma.task.create({
         data: {
           spaceId: wizardState.data.spaceId,
-          title: wizardState.data.title,
-          difficulty: wizardState.data.difficulty,
-          xp: wizardState.data.xp,
-          recurrenceType: wizardState.data.recurrenceType,
-          recurrencePayload: wizardState.data.recurrencePayload || null,
-          dueAt: wizardState.data.dueAt,
+          title,
+          difficulty,
+          xp,
+          recurrenceType: null,
+          dueAt,
           createdBy: ctx.user.id,
         },
       });
 
       clearWizardState(ctx.user.id);
-      await ctx.reply(`Task created! ID: ${task.id}\nTitle: ${task.title}\nXP: ${task.xp}`);
+
+      const successText = lang === 'ru'
+        ? `✅ *Задача создана!*\n\n📋 *${task.title}*\n💎 ${task.xp} XP`
+        : `✅ *Task Created!*\n\n📋 *${task.title}*\n💎 ${task.xp} XP`;
+
+      await ctx.reply(successText, { parse_mode: 'Markdown' });
+    } catch (error) {
+      clearWizardState(ctx.user.id);
+      const errorText = lang === 'ru' ? '❌ Ошибка при создании задачи' : '❌ Error creating task';
+      await ctx.reply(errorText);
     }
-  });
-
-  bot.callbackQuery(/^difficulty_(\d)$/, ensureUser, async (ctx) => {
-    if (!ctx.user) return;
-
-    const wizardState = getWizardState(ctx.user.id);
-    if (!wizardState || wizardState.type !== 'task' || wizardState.step !== 1) {
-      return ctx.answerCallbackQuery('Invalid state');
-    }
-
-    const difficulty = parseInt(ctx.match[1]);
-    wizardState.data.difficulty = difficulty;
-    wizardState.data.xp = getXpForDifficulty(difficulty);
-    wizardState.step = 2;
-
-    const keyboard = new InlineKeyboard()
-      .text('None', 'recur_none')
-      .text('Daily', 'recur_daily')
-      .row()
-      .text('Weekly', 'recur_weekly')
-      .text('Monthly', 'recur_monthly');
-
-    await ctx.editMessageText('Select recurrence type:', { reply_markup: keyboard });
-    await ctx.answerCallbackQuery();
-    setWizardState(ctx.user.id, wizardState);
-  });
-
-  bot.callbackQuery(/^recur_(none|daily|weekly|monthly)$/, ensureUser, async (ctx) => {
-    if (!ctx.user) return;
-
-    const wizardState = getWizardState(ctx.user.id);
-    if (!wizardState || wizardState.type !== 'task' || wizardState.step !== 2) {
-      return ctx.answerCallbackQuery('Invalid state');
-    }
-
-    const recurType = ctx.match[1];
-    wizardState.data.recurrenceType = recurType === 'none' ? null : recurType;
-    wizardState.step = 3;
-
-    await ctx.editMessageText('Please send the due date and time (YYYY-MM-DD HH:MM) or "now" for immediate:');
-    await ctx.answerCallbackQuery();
-    setWizardState(ctx.user.id, wizardState);
   });
 
   bot.command('task_list', ensureUser, requireSpace, async (ctx) => {
@@ -289,14 +255,21 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
 
     const text = `${title}\n\n${tasksList}`;
 
+    // Создаем клавиатуру с кнопками "Done" для каждой задачи + меню внизу
+    const keyboard = new InlineKeyboard();
+    tasks.forEach((t: any) => {
+      keyboard.text('✅ Done', `task:done:${t.id}`).row();
+    });
+    keyboard.text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:tasks');
+
     if (edit) {
       await ctx.editMessageText(text, {
-        reply_markup: getTasksMenu(lang),
+        reply_markup: keyboard,
         parse_mode: 'Markdown'
       });
     } else {
       await ctx.reply(text, {
-        reply_markup: getTasksMenu(lang),
+        reply_markup: keyboard,
         parse_mode: 'Markdown'
       });
     }
@@ -316,5 +289,148 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
   bot.callbackQuery('task:upcoming', ensureUser, requireSpace, async (ctx) => {
     await showTaskList(ctx, 'upcoming', true);
     await ctx.answerCallbackQuery();
+  });
+
+  // Callback для списка задач на удаление
+  bot.callbackQuery('task:delete_list', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const tasks = await prisma.task.findMany({
+      where: { spaceId: ctx.currentSpaceId, isPaused: false },
+      orderBy: { dueAt: 'asc' },
+      take: 10,
+    });
+
+    if (tasks.length === 0) {
+      const text = lang === 'ru'
+        ? '🗑️ *Удаление задач*\n\n✨ Нет задач для удаления.'
+        : '🗑️ *Delete Tasks*\n\n✨ No tasks to delete.';
+      
+      await ctx.editMessageText(text, {
+        reply_markup: getTasksMenu(lang),
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    const tasksList = tasks
+      .map((t: any, idx: number) => {
+        const dueDate = t.dueAt 
+          ? new Date(t.dueAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')
+          : (lang === 'ru' ? 'Без срока' : 'No due date');
+        return `${idx + 1}. *${t.title}* (${dueDate})`;
+      })
+      .join('\n');
+
+    const text = lang === 'ru'
+      ? `🗑️ *Выберите задачу для удаления*\n\n${tasksList}`
+      : `🗑️ *Select task to delete*\n\n${tasksList}`;
+
+    const keyboard = new InlineKeyboard();
+    tasks.forEach((t: any, idx: number) => {
+      keyboard.text(`${idx + 1}. ${t.title.substring(0, 20)}${t.title.length > 20 ? '...' : ''}`, `task:delete_confirm:${t.id}`).row();
+    });
+    keyboard.text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:tasks');
+
+    await ctx.editMessageText(text, {
+      reply_markup: keyboard,
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
+  });
+
+  // Callback для подтверждения удаления задачи
+  bot.callbackQuery(/^task:delete_confirm:(.+)$/, ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const taskId = BigInt(ctx.match[1]);
+    const lang = await getUserLanguage(ctx.user.id);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task || task.spaceId !== ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Task not found' });
+      return;
+    }
+
+    await prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    const text = lang === 'ru'
+      ? `🗑️ *Задача удалена*\n\nЗадача "${task.title}" была успешно удалена.`
+      : `🗑️ *Task Deleted*\n\nTask "${task.title}" has been successfully deleted.`;
+
+    await ctx.editMessageText(text, {
+      reply_markup: getTasksMenu(lang),
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Удалено' : 'Deleted' });
+  });
+
+  // Callback для выполнения задачи через кнопку
+  bot.callbackQuery(/^task:done:(.+)$/, ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const taskId = BigInt(ctx.match[1]);
+    const lang = await getUserLanguage(ctx.user.id);
+
+    try {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { space: true },
+      });
+
+      if (!task || task.spaceId !== ctx.currentSpaceId) {
+        await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Задача не найдена' : 'Task not found' });
+        return;
+      }
+
+      // Выполняем задачу
+      const xpResult = await markTaskDone(taskId, ctx.user.id, bot);
+
+      // Получаем статистику для показа прогресса
+      const stats = await prisma.userSpaceStats.findUnique({
+        where: {
+          spaceId_userId: {
+            spaceId: ctx.currentSpaceId,
+            userId: ctx.user.id,
+          },
+        },
+      });
+
+      const progress = stats ? getXpProgress(stats.totalXp) : { current: 0, next: 100, progress: 0 };
+
+      // Создаем прогресс-бар
+      const progressBar = getProgressBar(progress.progress);
+
+      let successText = lang === 'ru'
+        ? `✅ *Задача выполнена!*\n\n📋 *${task.title}*\n💎 +${task.xp} XP\n\n📊 Прогресс: ${progressBar} ${progress.progress}%\n🎯 До следующего уровня: ${progress.next} XP`
+        : `✅ *Task Completed!*\n\n📋 *${task.title}*\n💎 +${task.xp} XP\n\n📊 Progress: ${progressBar} ${progress.progress}%\n🎯 To next level: ${progress.next} XP`;
+
+      const keyboard = new InlineKeyboard()
+        .text(lang === 'ru' ? '◀️ Назад к задачам' : '◀️ Back to tasks', 'task:list');
+
+      await ctx.editMessageText(successText, {
+        reply_markup: keyboard,
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Выполнено!' : 'Done!' });
+    } catch (error: any) {
+      await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Ошибка' : 'Error' });
+    }
   });
 }

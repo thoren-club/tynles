@@ -18,6 +18,7 @@ export function getSpacesMenu(lang: Language): InlineKeyboard {
     .text(lang === 'ru' ? '📋 Список' : '📋 List', 'space:list').row()
     .text(lang === 'ru' ? 'ℹ️ Инфо' : 'ℹ️ Info', 'space:info')
     .text(lang === 'ru' ? '🔄 Переключить' : '🔄 Switch', 'space:switch').row()
+    .text(lang === 'ru' ? '🗑️ Удалить' : '🗑️ Delete', 'space:delete_confirm').row()
     .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:main');
 }
 
@@ -27,6 +28,7 @@ export function getTasksMenu(lang: Language): InlineKeyboard {
     .text(lang === 'ru' ? '📋 Список' : '📋 List', 'task:list').row()
     .text(lang === 'ru' ? '📅 Сегодня' : '📅 Today', 'task:today')
     .text(lang === 'ru' ? '⏭️ Предстоящие' : '⏭️ Upcoming', 'task:upcoming').row()
+    .text(lang === 'ru' ? '🗑️ Удалить' : '🗑️ Delete', 'task:delete_list').row()
     .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:main');
 }
 
@@ -34,6 +36,7 @@ export function getGoalsMenu(lang: Language): InlineKeyboard {
   return new InlineKeyboard()
     .text(lang === 'ru' ? '➕ Добавить' : '➕ Add', 'goal:add')
     .text(lang === 'ru' ? '📋 Список' : '📋 List', 'goal:list').row()
+    .text(lang === 'ru' ? '🗑️ Удалить' : '🗑️ Delete', 'goal:delete_list').row()
     .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:main');
 }
 

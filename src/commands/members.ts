@@ -1,12 +1,13 @@
 import { Context } from 'grammy';
 import { prisma } from '../db';
 import { AuthContext, ensureUser, requireSpace, requireRole } from '../middleware/auth';
-import { Bot } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 import { Role } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { setCurrentSpace } from '../utils/session';
 import { getMembersMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
+import { t } from '../i18n';
 
 export function setupMemberCommands(bot: Bot<AuthContext>) {
   bot.command('invite_create', ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
@@ -249,5 +250,73 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
       parse_mode: 'Markdown'
     });
     await ctx.answerCallbackQuery();
+  });
+
+  // Callback для приглашения пользователей
+  bot.callbackQuery('members:invite', ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const text = lang === 'ru'
+      ? '👥 *Создание приглашения*\n\nВыберите роль для приглашения:'
+      : '👥 *Create Invite*\n\nSelect role for the invite:';
+
+    const keyboard = new InlineKeyboard()
+      .text('👑 Admin', 'invite:create:Admin')
+      .text('✏️ Editor', 'invite:create:Editor')
+      .text('👁️ Viewer', 'invite:create:Viewer').row()
+      .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'members:list');
+
+    await ctx.editMessageText(text, {
+      reply_markup: keyboard,
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
+  });
+
+  // Callback для создания приглашения с выбранной ролью
+  bot.callbackQuery(/^invite:create:(Admin|Editor|Viewer)$/, ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const role = ctx.match[1] as Role;
+    const lang = await getUserLanguage(ctx.user.id);
+
+    const code = randomBytes(8).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours
+
+    await prisma.invite.create({
+      data: {
+        spaceId: ctx.currentSpaceId,
+        role,
+        code,
+        expiresAt,
+        createdBy: ctx.user.id,
+      },
+    });
+
+    const space = await prisma.space.findUnique({
+      where: { id: ctx.currentSpaceId },
+    });
+
+    const roleEmoji = role === 'Admin' ? '👑' : role === 'Editor' ? '✏️' : '👁️';
+    const text = lang === 'ru'
+      ? `✅ *Приглашение создано!*\n\n📋 *Код:* \`${code}\`\n${roleEmoji} *Роль:* ${role}\n⏰ *Действительно до:* ${expiresAt.toLocaleString('ru-RU')}\n\n💬 *Отправьте этот код пользователю или используйте команду:*\n/invite_use ${code}`
+      : `✅ *Invite Created!*\n\n📋 *Code:* \`${code}\`\n${roleEmoji} *Role:* ${role}\n⏰ *Expires:* ${expiresAt.toLocaleString()}\n\n💬 *Send this code to the user or use command:*\n/invite_use ${code}`;
+
+    const keyboard = new InlineKeyboard()
+      .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'members:list');
+
+    await ctx.editMessageText(text, {
+      reply_markup: keyboard,
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Создано' : 'Created' });
   });
 }

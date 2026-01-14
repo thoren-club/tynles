@@ -55,3 +55,8 @@ export function getXpProgress(totalXp: number): { current: number; next: number;
     progress: Math.round(progress),
   };
 }
+
+export function getProgressBar(progress: number, length: number = 10): string {
+  const filled = Math.round((progress / 100) * length);
+  return '▓'.repeat(filled) + '░'.repeat(length - filled);
+}

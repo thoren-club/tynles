@@ -20,13 +20,10 @@ const bot = new Bot<AuthContext>(config.botToken);
 // Start command (register first)
 bot.command('start', ensureUser, async (ctx) => {
   try {
-    logger.info('Start command called');
     if (!ctx.user) {
-      logger.warn('User not found in start command');
       return ctx.reply('User not found');
     }
     
-    logger.info('Getting user language');
     const lang = await getUserLanguage(ctx.user.id);
     const firstName = ctx.from?.first_name || '';
     

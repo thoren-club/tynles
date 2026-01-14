@@ -1,7 +1,7 @@
 import { prisma } from '../db';
 import { AuthContext, ensureUser, requireSpace } from '../middleware/auth';
 import { Bot, InlineKeyboard } from 'grammy';
-import { getXpProgress } from '../utils/xp';
+import { getXpProgress, getProgressBar } from '../utils/xp';
 import { t } from '../i18n';
 import { getUserLanguage, setUserLanguage } from '../utils/language';
 import { Language } from '../i18n';

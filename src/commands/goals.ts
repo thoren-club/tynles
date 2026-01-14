@@ -210,4 +210,91 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
     });
     await ctx.answerCallbackQuery();
   });
+
+  // Callback для списка целей на удаление
+  bot.callbackQuery('goal:delete_list', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const goals = await prisma.goal.findMany({
+      where: {
+        spaceId: ctx.currentSpaceId,
+        isDone: false,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    if (goals.length === 0) {
+      const text = lang === 'ru'
+        ? '🗑️ *Удаление целей*\n\n✨ Нет целей для удаления.'
+        : '🗑️ *Delete Goals*\n\n✨ No goals to delete.';
+      
+      await ctx.editMessageText(text, {
+        reply_markup: getGoalsMenu(lang),
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    const goalsList = goals
+      .map((g: any, idx: number) => {
+        return `${idx + 1}. *${g.title}*`;
+      })
+      .join('\n');
+
+    const text = lang === 'ru'
+      ? `🗑️ *Выберите цель для удаления*\n\n${goalsList}`
+      : `🗑️ *Select goal to delete*\n\n${goalsList}`;
+
+    const keyboard = new InlineKeyboard();
+    goals.forEach((g: any, idx: number) => {
+      keyboard.text(`${idx + 1}. ${g.title.substring(0, 25)}${g.title.length > 25 ? '...' : ''}`, `goal:delete_confirm:${g.id}`).row();
+    });
+    keyboard.text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:goals');
+
+    await ctx.editMessageText(text, {
+      reply_markup: keyboard,
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
+  });
+
+  // Callback для подтверждения удаления цели
+  bot.callbackQuery(/^goal:delete_confirm:(.+)$/, ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const goalId = BigInt(ctx.match[1]);
+    const lang = await getUserLanguage(ctx.user.id);
+
+    const goal = await prisma.goal.findUnique({
+      where: { id: goalId },
+    });
+
+    if (!goal || goal.spaceId !== ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Goal not found' });
+      return;
+    }
+
+    await prisma.goal.delete({
+      where: { id: goalId },
+    });
+
+    const text = lang === 'ru'
+      ? `🗑️ *Цель удалена*\n\nЦель "${goal.title}" была успешно удалена.`
+      : `🗑️ *Goal Deleted*\n\nGoal "${goal.title}" has been successfully deleted.`;
+
+    await ctx.editMessageText(text, {
+      reply_markup: getGoalsMenu(lang),
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Удалено' : 'Deleted' });
+  });
 }

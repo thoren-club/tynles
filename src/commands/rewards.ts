@@ -1,8 +1,9 @@
 import { prisma } from '../db';
 import { AuthContext, ensureUser, requireSpace, requireRole } from '../middleware/auth';
-import { Bot } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 import { getSettingsMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
+import { getWizardState, setWizardState, clearWizardState } from '../utils/wizard';
 
 export function setupRewardCommands(bot: Bot<AuthContext>) {
   bot.command('reward_set', ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
