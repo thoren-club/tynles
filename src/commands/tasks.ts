@@ -5,6 +5,8 @@ import { RecurrenceType, getXpForDifficulty } from '../types';
 import { getWizardState, setWizardState, clearWizardState } from '../utils/wizard';
 import { markTaskDone } from '../utils/task-scheduler';
 import { calculateNextDueDate } from '../utils/recurrence';
+import { getTasksMenu } from '../menu';
+import { getUserLanguage } from '../utils/language';
 
 export function setupTaskCommands(bot: Bot<AuthContext>) {
   bot.command('task_add', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
@@ -228,5 +230,91 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
     });
 
     await ctx.reply('Task deleted.');
+  });
+
+  // Helper function для показа списка задач
+  const showTaskList = async (ctx: any, filter: string, edit: boolean = false) => {
+    if (!ctx.user || !ctx.currentSpaceId) return;
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const where: any = { spaceId: ctx.currentSpaceId, isPaused: false };
+
+    if (filter === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      where.dueAt = { gte: today, lt: tomorrow };
+    } else if (filter === 'upcoming') {
+      where.dueAt = { gte: new Date() };
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      orderBy: { dueAt: 'asc' },
+      take: 20,
+    });
+
+    if (tasks.length === 0) {
+      const text = lang === 'ru'
+        ? `📋 *Задачи (${filter === 'today' ? 'Сегодня' : filter === 'upcoming' ? 'Предстоящие' : 'Все'})*\n\n✨ Пока нет задач! Создайте первую задачу.`
+        : `📋 *Tasks (${filter})*\n\n✨ No tasks yet! Create your first task.`;
+      
+      if (edit) {
+        await ctx.editMessageText(text, {
+          reply_markup: getTasksMenu(lang),
+          parse_mode: 'Markdown'
+        });
+      } else {
+        await ctx.reply(text, {
+          reply_markup: getTasksMenu(lang),
+          parse_mode: 'Markdown'
+        });
+      }
+      return;
+    }
+
+    const tasksList = tasks
+      .map((t: any, idx: number) => {
+        const dueDate = t.dueAt 
+          ? new Date(t.dueAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')
+          : (lang === 'ru' ? 'Без срока' : 'No due date');
+        return `\`${idx + 1}\` • *${t.title}*\n   💎 ${t.xp} XP | 📅 ${dueDate}`;
+      })
+      .join('\n\n');
+
+    const title = lang === 'ru'
+      ? filter === 'today' ? '📅 Сегодня' : filter === 'upcoming' ? '⏭️ Предстоящие' : '📋 Все задачи'
+      : `📋 Tasks (${filter})`;
+
+    const text = `${title}\n\n${tasksList}`;
+
+    if (edit) {
+      await ctx.editMessageText(text, {
+        reply_markup: getTasksMenu(lang),
+        parse_mode: 'Markdown'
+      });
+    } else {
+      await ctx.reply(text, {
+        reply_markup: getTasksMenu(lang),
+        parse_mode: 'Markdown'
+      });
+    }
+  };
+
+  // Callback handlers для меню
+  bot.callbackQuery('task:list', ensureUser, requireSpace, async (ctx) => {
+    await showTaskList(ctx, 'all', true);
+    await ctx.answerCallbackQuery();
+  });
+
+  bot.callbackQuery('task:today', ensureUser, requireSpace, async (ctx) => {
+    await showTaskList(ctx, 'today', true);
+    await ctx.answerCallbackQuery();
+  });
+
+  bot.callbackQuery('task:upcoming', ensureUser, requireSpace, async (ctx) => {
+    await showTaskList(ctx, 'upcoming', true);
+    await ctx.answerCallbackQuery();
   });
 }

@@ -1,6 +1,8 @@
 import { prisma } from '../db';
 import { AuthContext, ensureUser, requireSpace, requireRole } from '../middleware/auth';
 import { Bot } from 'grammy';
+import { getSettingsMenu } from '../menu';
+import { getUserLanguage } from '../utils/language';
 
 export function setupRewardCommands(bot: Bot<AuthContext>) {
   bot.command('reward_set', ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
@@ -79,5 +81,48 @@ export function setupRewardCommands(bot: Bot<AuthContext>) {
     });
 
     await ctx.reply(`Reward for level ${level} deleted.`);
+  });
+
+  // Callback handler для меню
+  bot.callbackQuery('settings:rewards', ensureUser, requireSpace, async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const rewards = await prisma.reward.findMany({
+      where: { spaceId: ctx.currentSpaceId },
+      orderBy: { level: 'asc' },
+    });
+
+    if (rewards.length === 0) {
+      const text = lang === 'ru'
+        ? '🎁 *Награды*\n\n✨ Награды ещё не настроены! Администратор может добавить награды за достижение уровней.'
+        : '🎁 *Rewards*\n\n✨ No rewards set yet! Admin can add rewards for reaching levels.';
+      
+      await ctx.editMessageText(text, {
+        reply_markup: getSettingsMenu(lang),
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    const rewardsList = rewards
+      .map((r: any) => {
+        return `⭐ *Level ${r.level}*\n   ${r.text}`;
+      })
+      .join('\n\n');
+
+    const text = lang === 'ru'
+      ? `🎁 *Награды за уровни*\n\n${rewardsList}`
+      : `🎁 *Level Rewards*\n\n${rewardsList}`;
+
+    await ctx.editMessageText(text, {
+      reply_markup: getSettingsMenu(lang),
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
   });
 }

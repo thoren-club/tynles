@@ -15,6 +15,7 @@ model TelegramUser {
   tgId       BigInt   @unique @map("tg_id")
   username   String?  @db.VarChar(255)
   firstName  String?  @map("first_name") @db.VarChar(255)
+  language   String   @default("en") @db.VarChar(10)
   createdAt  DateTime @default(now()) @map("created_at")
 
   spaceMembers SpaceMember[]

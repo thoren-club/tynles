@@ -4,6 +4,8 @@ import { AuthContext, ensureUser, requireSpace, requireRole } from '../middlewar
 import { getXpForDifficulty } from '../types';
 import { getWizardState, setWizardState, clearWizardState } from '../utils/wizard';
 import { addXp } from '../utils/xp';
+import { getGoalsMenu } from '../menu';
+import { getUserLanguage } from '../utils/language';
 
 export function setupGoalCommands(bot: Bot<AuthContext>) {
   bot.command('goal_add', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
@@ -160,5 +162,52 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
     });
 
     await ctx.reply('Goal deleted.');
+  });
+
+  // Callback handler для меню
+  bot.callbackQuery('goal:list', ensureUser, requireSpace, async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const goals = await prisma.goal.findMany({
+      where: {
+        spaceId: ctx.currentSpaceId,
+        isDone: false,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    if (goals.length === 0) {
+      const text = lang === 'ru'
+        ? '🎯 *Цели*\n\n✨ Пока нет целей! Создайте первую цель и начните свой путь к успеху!'
+        : '🎯 *Goals*\n\n✨ No goals yet! Create your first goal and start your journey to success!';
+      
+      await ctx.editMessageText(text, {
+        reply_markup: getGoalsMenu(lang),
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    const goalsList = goals
+      .map((g: any, idx: number) => {
+        return `\`${idx + 1}\` • *${g.title}*\n   💎 ${g.xp} XP`;
+      })
+      .join('\n\n');
+
+    const text = lang === 'ru'
+      ? `🎯 *Ваши цели*\n\n${goalsList}`
+      : `🎯 *Your Goals*\n\n${goalsList}`;
+
+    await ctx.editMessageText(text, {
+      reply_markup: getGoalsMenu(lang),
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
   });
 }

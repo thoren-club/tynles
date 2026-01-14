@@ -9,6 +9,7 @@ export interface AuthContext extends Context {
     tgId: bigint;
     username?: string | null;
     firstName?: string | null;
+    language?: string;
   };
   currentSpaceId?: bigint;
   userRole?: Role;

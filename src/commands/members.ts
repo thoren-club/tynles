@@ -5,6 +5,8 @@ import { Bot } from 'grammy';
 import { Role } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { setCurrentSpace } from '../utils/session';
+import { getMembersMenu } from '../menu';
+import { getUserLanguage } from '../utils/language';
 
 export function setupMemberCommands(bot: Bot<AuthContext>) {
   bot.command('invite_create', ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
@@ -213,5 +215,39 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
     });
 
     await ctx.reply(`User ${username} has been removed from the space.`);
+  });
+
+  // Callback handler для меню
+  bot.callbackQuery('members:list', ensureUser, requireSpace, async (ctx) => {
+    if (!ctx.user || !ctx.currentSpaceId) {
+      await ctx.answerCallbackQuery({ text: 'Error' });
+      return;
+    }
+
+    const lang = await getUserLanguage(ctx.user.id);
+    const members = await prisma.spaceMember.findMany({
+      where: { spaceId: ctx.currentSpaceId },
+      include: { user: true },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    const membersList = members
+      .map((m: any) => {
+        const roleEmoji = m.role === 'Admin' ? '👑' : m.role === 'Editor' ? '✏️' : '👁️';
+        const name = m.user.firstName || m.user.username || (lang === 'ru' ? 'Неизвестно' : 'Unknown');
+        const username = m.user.username ? `@${m.user.username}` : '';
+        return `${roleEmoji} *${name}* ${username}\n   ${m.role}`;
+      })
+      .join('\n\n');
+
+    const text = lang === 'ru'
+      ? `👥 *Участники пространства*\n\n${membersList}\n\n_Всего: ${members.length}_`
+      : `👥 *Space Members*\n\n${membersList}\n\n_Total: ${members.length}_`;
+
+    await ctx.editMessageText(text, {
+      reply_markup: getMembersMenu(lang),
+      parse_mode: 'Markdown'
+    });
+    await ctx.answerCallbackQuery();
   });
 }
