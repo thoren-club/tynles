@@ -17,16 +17,7 @@ import { t } from './i18n';
 
 const bot = new Bot<AuthContext>(config.botToken);
 
-// Setup commands
-setupSpaceCommands(bot);
-setupMemberCommands(bot);
-setupTaskCommands(bot);
-setupGoalCommands(bot);
-setupLevelCommands(bot);
-setupRewardCommands(bot);
-setupMenuCommands(bot);
-
-// Start command
+// Start command (register first)
 bot.command('start', ensureUser, async (ctx) => {
   try {
     if (!ctx.user) {
@@ -66,7 +57,7 @@ bot.command('start', ensureUser, async (ctx) => {
   }
 });
 
-// Help command
+// Help command (register early)
 bot.command('help', ensureUser, async (ctx) => {
   try {
     if (!ctx.user) {
@@ -128,6 +119,15 @@ bot.command('help', ensureUser, async (ctx) => {
     await ctx.reply('An error occurred. Please try again later.');
   }
 });
+
+// Setup commands (register after start and help)
+setupSpaceCommands(bot);
+setupMemberCommands(bot);
+setupTaskCommands(bot);
+setupGoalCommands(bot);
+setupLevelCommands(bot);
+setupRewardCommands(bot);
+setupMenuCommands(bot);
 
 // Error handling
 bot.catch((err) => {
