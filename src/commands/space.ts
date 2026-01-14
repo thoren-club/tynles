@@ -191,7 +191,8 @@ Members: ${space.members.length}
       return;
     }
 
-    const lang = await getUserLanguage(ctx.user.id);
+    const userId = ctx.user.id;
+    const lang = await getUserLanguage(userId);
     const space = await prisma.space.findUnique({
       where: { id: ctx.currentSpaceId },
       include: {
@@ -205,12 +206,12 @@ Members: ${space.members.length}
       return;
     }
 
-    const member = space.members.find((m) => m.userId === ctx.user.id);
+    const member = space.members.find((m) => m.userId === userId);
     const stats = await prisma.userSpaceStats.findUnique({
       where: {
         spaceId_userId: {
           spaceId: ctx.currentSpaceId,
-          userId: ctx.user.id,
+          userId: userId,
         },
       },
     });
