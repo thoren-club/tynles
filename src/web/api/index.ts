@@ -10,8 +10,8 @@ import { authRouter } from './routes/auth';
 export function setupApiRoutes() {
   const router = Router();
 
-  // Auth routes (no auth required)
-  router.use('/auth', authRouter);
+  // Auth routes (require authentication)
+  router.use('/auth', authMiddleware, authRouter);
 
   // Protected routes
   router.use(authMiddleware);

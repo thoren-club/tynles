@@ -1,20 +1,20 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { prisma } from '../../../db';
 import { getUserLanguage } from '../../../utils/language';
 import { setCurrentSpace, getCurrentSpace } from '../../../utils/session';
+import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 // Get current user info
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as any;
-    if (!authReq.user) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const user = await prisma.telegramUser.findUnique({
-      where: { id: authReq.user.id },
+      where: { id: req.user.id },
     });
 
     if (!user) {
@@ -34,20 +34,19 @@ router.get('/me', async (req: Request, res: Response) => {
 });
 
 // Get user's spaces
-router.get('/spaces', async (req: Request, res: Response) => {
+router.get('/spaces', async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as any;
-    if (!authReq.user) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const members = await prisma.spaceMember.findMany({
-      where: { userId: authReq.user.id },
+      where: { userId: req.user.id },
       include: { space: true },
       orderBy: { joinedAt: 'asc' },
     });
 
-    const currentSpaceId = getCurrentSpace(authReq.user.id);
+    const currentSpaceId = getCurrentSpace(req.user.id);
 
     res.json({
       spaces: members.map((m) => ({
@@ -63,10 +62,9 @@ router.get('/spaces', async (req: Request, res: Response) => {
 });
 
 // Set current space
-router.post('/spaces/:spaceId/switch', async (req: Request, res: Response) => {
+router.post('/spaces/:spaceId/switch', async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as any;
-    if (!authReq.user) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
@@ -77,7 +75,7 @@ router.post('/spaces/:spaceId/switch', async (req: Request, res: Response) => {
       where: {
         spaceId_userId: {
           spaceId,
-          userId: authReq.user.id,
+          userId: req.user.id,
         },
       },
     });
@@ -86,7 +84,7 @@ router.post('/spaces/:spaceId/switch', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Not a member of this space' });
     }
 
-    setCurrentSpace(authReq.user.id, spaceId);
+    setCurrentSpace(req.user.id, spaceId);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to switch space' });
