@@ -76,8 +76,6 @@ function App() {
           initData: tgWebApp.initData,
           initDataLength: tgWebApp.initData?.length,
           initDataUnsafe: tgWebApp.initDataUnsafe,
-          version: tgWebApp.version,
-          platform: tgWebApp.platform,
         });
 
         // Check URL parameters (Telegram sometimes passes data via URL)
