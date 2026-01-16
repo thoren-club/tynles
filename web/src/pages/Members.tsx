@@ -15,6 +15,7 @@ import {
   ActionIcon,
   Tooltip,
   CopyButton,
+  ThemeIcon,
 } from '@mantine/core';
 import { IconPlus, IconUsers, IconCopy, IconCheck, IconShield, IconEdit, IconEye } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';

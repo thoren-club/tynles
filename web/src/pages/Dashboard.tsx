@@ -1,6 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Container, Title, Text, Card, Grid, Stack, Badge, Loader, Center } from '@mantine/core';
-import { IconTrophy, IconTarget, IconCheck, IconTrendingUp } from '@tabler/icons-react';
+import { 
+  Container, 
+  Title, 
+  Text, 
+  Card, 
+  Grid, 
+  Stack, 
+  Badge, 
+  Loader, 
+  Center,
+  ThemeIcon,
+  Progress,
+  Group,
+  Button,
+} from '@mantine/core';
+import { IconTrophy, IconTarget, IconCheck, IconTrendingUp, IconFolderPlus } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
+import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 
 export default function Dashboard() {
@@ -22,6 +38,11 @@ export default function Dashboard() {
       setStats(statsData);
     } catch (error) {
       console.error('Failed to load data:', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load dashboard data',
+        color: 'red',
+      });
     } finally {
       setLoading(false);
     }
@@ -40,101 +61,116 @@ export default function Dashboard() {
   if (!space) {
     return (
       <Container size="md" py="xl">
-        <Stack gap="md">
-          <Title order={1}>Welcome!</Title>
-          <Text>Create your first space to get started.</Text>
-        </Stack>
+        <Card shadow="sm" padding="xl" radius="md" withBorder>
+          <Stack gap="lg" align="center">
+            <ThemeIcon size={80} radius="md" variant="light" color="blue">
+              <IconFolderPlus size={40} />
+            </ThemeIcon>
+            <div style={{ textAlign: 'center' }}>
+              <Title order={1} mb="xs">Welcome!</Title>
+              <Text c="dimmed" size="lg" mb="xl">
+                Create your first space to get started with task management
+              </Text>
+            </div>
+            <Button
+              component={Link}
+              to="/spaces"
+              size="lg"
+              leftSection={<IconFolderPlus size={20} />}
+            >
+              Create Your First Space
+            </Button>
+          </Stack>
+        </Card>
       </Container>
     );
   }
 
+  const nextLevelXp = stats?.nextLevelXp || 100;
+  const currentLevelXp = stats?.currentLevelXp || 0;
+  const xpProgress = ((currentLevelXp / nextLevelXp) * 100) || 0;
+
   return (
     <Container size="md" py="xl">
-      <Stack gap="lg">
+      <Stack gap="xl">
         <div>
-          <Title order={1}>{space.name}</Title>
-          <Badge mt="xs" variant="light">
-            {space.role}
-          </Badge>
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Title order={1}>{space.name}</Title>
+              <Badge mt="xs" variant="light" size="lg">
+                {space.role}
+              </Badge>
+            </div>
+          </Group>
         </div>
 
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Stack gap="xs">
-                <IconTrophy size={32} stroke={1.5} />
-                <Text size="lg" fw={700}>
-                  Level {stats?.level || 0}
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Stack gap="md">
+            <Group justify="space-between" align="center">
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>
+                  Level {stats?.level || 1}
                 </Text>
-                <Text size="sm" c="dimmed">
-                  Current Level
-                </Text>
-              </Stack>
-            </Card>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Stack gap="xs">
-                <IconTrendingUp size={32} stroke={1.5} />
-                <Text size="lg" fw={700}>
+                <Text size="xl" fw={700}>
                   {stats?.totalXp || 0} XP
                 </Text>
+              </div>
+              <ThemeIcon size={64} radius="md" variant="light" color="blue">
+                <IconTrophy size={32} />
+              </ThemeIcon>
+            </Group>
+            <div>
+              <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed">
-                  Total Experience
+                  Progress to Level {(stats?.level || 1) + 1}
                 </Text>
-              </Stack>
+                <Text size="sm" fw={500}>
+                  {currentLevelXp} / {nextLevelXp} XP
+                </Text>
+              </Group>
+              <Progress value={xpProgress} size="lg" radius="md" />
+            </div>
+          </Stack>
+        </Card>
+
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder component={Link} to="/tasks" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+              <Group gap="md">
+                <ThemeIcon size={48} radius="md" variant="light" color="green">
+                  <IconCheck size={24} />
+                </ThemeIcon>
+                <div style={{ flex: 1 }}>
+                  <Text size="xl" fw={700}>
+                    {stats?.completedTasks || 0}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Completed Tasks
+                  </Text>
+                </div>
+              </Group>
             </Card>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Stack gap="xs">
-                <IconCheck size={32} stroke={1.5} />
-                <Text size="lg" fw={700}>
-                  {stats?.completedTasks || 0}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Completed Tasks
-                </Text>
-              </Stack>
-            </Card>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Stack gap="xs">
-                <IconTarget size={32} stroke={1.5} />
-                <Text size="lg" fw={700}>
-                  {stats?.completedGoals || 0}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Completed Goals
-                </Text>
-              </Stack>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder component={Link} to="/goals" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+              <Group gap="md">
+                <ThemeIcon size={48} radius="md" variant="light" color="orange">
+                  <IconTarget size={24} />
+                </ThemeIcon>
+                <div style={{ flex: 1 }}>
+                  <Text size="xl" fw={700}>
+                    {stats?.completedGoals || 0}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Completed Goals
+                  </Text>
+                </div>
+              </Group>
             </Card>
           </Grid.Col>
         </Grid>
       </Stack>
     </Container>
-  );
-}
-          <div className="stat-value">{stats?.level || 1}</div>
-          <div className="stat-label">Level</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats?.totalXp || 0}</div>
-          <div className="stat-label">XP</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{space.stats.tasks}</div>
-          <div className="stat-label">Tasks</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{space.stats.goals}</div>
-          <div className="stat-label">Goals</div>
-        </div>
-      </div>
-    </div>
   );
 }
