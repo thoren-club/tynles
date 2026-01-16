@@ -14,26 +14,47 @@ export interface AuthRequest extends Request {
 }
 
 // Verify Telegram WebApp initData
-function verifyTelegramWebAppData(initData: string, botToken: string): boolean {
+function verifyTelegramWebAppData(initData: string, botToken: string, logger?: any): boolean {
   try {
-    const urlParams = new URLSearchParams(initData);
-    const hash = urlParams.get('hash');
+    // Parse initData manually to properly handle URL-encoded values
+    // Split by & and then by = to get key-value pairs
+    const params: Array<[string, string]> = [];
+    let hash: string | null = null;
+    
+    // Split by & to get individual parameters
+    const pairs = initData.split('&');
+    for (const pair of pairs) {
+      const equalIndex = pair.indexOf('=');
+      if (equalIndex === -1) continue;
+      
+      const key = pair.substring(0, equalIndex);
+      const value = pair.substring(equalIndex + 1);
+      
+      if (key === 'hash') {
+        hash = value;
+      } else {
+        // Store the encoded value - we'll decode it when building data-check-string
+        params.push([key, value]);
+      }
+    }
+    
     if (!hash) {
+      logger?.warn('No hash found in initData');
       return false;
     }
-    urlParams.delete('hash');
 
-    // Sort and create data check string
-    // Important: values should be URL-decoded before creating the check string
-    const dataCheckString = Array.from(urlParams.entries())
+    // Sort by key and create data check string
+    // Important: URL-decode each VALUE before creating the check string
+    const dataCheckString = params
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => {
-        // URL-decode the value if needed
+      .map(([key, encodedValue]) => {
+        // URL-decode the value
         try {
-          const decoded = decodeURIComponent(value);
-          return `${key}=${decoded}`;
+          const decodedValue = decodeURIComponent(encodedValue);
+          return `${key}=${decodedValue}`;
         } catch {
-          return `${key}=${value}`;
+          // If decoding fails, use original (shouldn't happen with valid Telegram data)
+          return `${key}=${encodedValue}`;
         }
       })
       .join('\n');
@@ -52,31 +73,68 @@ function verifyTelegramWebAppData(initData: string, botToken: string): boolean {
 
     // Compare hashes (use timing-safe comparison)
     if (calculatedHash !== hash) {
+      logger?.warn({
+        receivedHash: hash.substring(0, 20) + '...',
+        calculatedHash: calculatedHash.substring(0, 20) + '...',
+        dataCheckStringPreview: dataCheckString.substring(0, 200),
+        hashMatch: false,
+      }, 'Hash mismatch in initData verification');
       return false;
     }
 
     // Check auth_date to prevent replay attacks (should be within last hour)
-    const authDate = urlParams.get('auth_date');
-    if (authDate) {
-      const authTimestamp = parseInt(authDate, 10);
-      const now = Math.floor(Date.now() / 1000);
-      const maxAge = 3600; // 1 hour
-      if (now - authTimestamp > maxAge) {
-        return false; // Too old
+    const authDateParam = params.find(([key]) => key === 'auth_date');
+    if (authDateParam) {
+      try {
+        const authDateValue = decodeURIComponent(authDateParam[1]);
+        const authTimestamp = parseInt(authDateValue, 10);
+        const now = Math.floor(Date.now() / 1000);
+        const maxAge = 3600; // 1 hour
+        if (now - authTimestamp > maxAge) {
+          logger?.warn({
+            authTimestamp,
+            now,
+            age: now - authTimestamp,
+          }, 'initData too old');
+          return false; // Too old
+        }
+      } catch (e) {
+        logger?.warn({ error: e }, 'Failed to parse auth_date');
       }
     }
 
     return true;
   } catch (error) {
-    // Silently fail - error will be logged by caller
+    logger?.error({ error }, 'Error in verifyTelegramWebAppData');
     return false;
   }
 }
 
 // Parse initData and extract user info
 function parseInitData(initData: string) {
-  const urlParams = new URLSearchParams(initData);
-  const userStr = urlParams.get('user');
+  // Parse manually to handle URL-encoded values
+  const pairs = initData.split('&');
+  let userStr: string | null = null;
+  
+  for (const pair of pairs) {
+    const equalIndex = pair.indexOf('=');
+    if (equalIndex === -1) continue;
+    
+    const key = pair.substring(0, equalIndex);
+    const value = pair.substring(equalIndex + 1);
+    
+    if (key === 'user') {
+      try {
+        userStr = decodeURIComponent(value);
+        break;
+      } catch {
+        // If decoding fails, try using as-is
+        userStr = value;
+        break;
+      }
+    }
+  }
+  
   if (!userStr) return null;
 
   try {
@@ -120,38 +178,29 @@ export async function authMiddleware(
       return res.status(401).json({ error: 'Missing Telegram init data' });
     }
 
-    // Decode URL-encoded initData if it comes from query parameter
-    // Note: initData from query might be double-encoded
-    let decodedInitData = initData;
-    if (initData.includes('%')) {
-      try {
-        decodedInitData = decodeURIComponent(initData);
-        // Sometimes it's double-encoded
-        if (decodedInitData.includes('%')) {
-          decodedInitData = decodeURIComponent(decodedInitData);
-        }
-      } catch (e) {
-        logger.warn({ error: e }, 'Failed to decode initData, using original');
-        decodedInitData = initData;
-      }
-    }
+    // initData from query parameter is already decoded by Express
+    // initData from header should be used as-is (it's already in correct format)
+    // Don't decode here - let the verification function handle it
+    // The verification function expects the raw initData string
+    const rawInitData = initData;
 
     // Verify the data
     logger.info({
-      initDataLength: decodedInitData.length,
-      hasHash: decodedInitData.includes('hash='),
-      hasUser: decodedInitData.includes('user='),
+      initDataLength: rawInitData.length,
+      hasHash: rawInitData.includes('hash='),
+      hasUser: rawInitData.includes('user='),
       source: req.headers['x-telegram-init-data'] ? 'header' : 'query',
+      initDataPreview: rawInitData.substring(0, 100),
     }, 'Verifying Telegram initData');
     
-    const isValid = verifyTelegramWebAppData(decodedInitData, config.botToken);
+    const isValid = verifyTelegramWebAppData(rawInitData, config.botToken, logger);
     if (!isValid) {
       logger.warn({
-        initDataLength: decodedInitData.length,
-        initDataPreview: decodedInitData.substring(0, 150),
-        hasHash: decodedInitData.includes('hash='),
-        hasUser: decodedInitData.includes('user='),
-        hasAuthDate: decodedInitData.includes('auth_date='),
+        initDataLength: rawInitData.length,
+        initDataPreview: rawInitData.substring(0, 200),
+        hasHash: rawInitData.includes('hash='),
+        hasUser: rawInitData.includes('user='),
+        hasAuthDate: rawInitData.includes('auth_date='),
         source: req.headers['x-telegram-init-data'] ? 'header' : 'query',
       }, 'Invalid Telegram init data - verification failed');
       return res.status(401).json({ error: 'Invalid Telegram init data' });
@@ -163,7 +212,7 @@ export async function authMiddleware(
     initData = decodedInitData;
 
     // Parse user data
-    const userData = parseInitData(initData);
+    const userData = parseInitData(rawInitData);
     if (!userData) {
       return res.status(401).json({ error: 'Invalid user data' });
     }
