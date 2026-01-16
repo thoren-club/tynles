@@ -1,6 +1,66 @@
-const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
+const API_BASE = (import.meta.env?.PROD ? '/api' : 'http://localhost:3000/api') as string;
 
 let authHeader: string | null = null;
+
+// Типы для API ответов
+// Экспортируем типы для использования в компонентах
+export interface SpacesResponse {
+  spaces: Array<{
+    id: string;
+    name: string;
+    role: string;
+    isCurrent: boolean;
+  }>;
+}
+
+export interface TasksResponse {
+  tasks: Array<{
+    id: string;
+    title: string;
+    difficulty: number;
+    xp: number;
+    dueAt: string | null;
+    isPaused: boolean;
+    createdAt: string;
+  }>;
+}
+
+export interface GoalsResponse {
+  goals: Array<{
+    id: string;
+    title: string;
+    difficulty: number;
+    xp: number;
+    isDone: boolean;
+    createdAt: string;
+  }>;
+}
+
+export interface MembersResponse {
+  members: Array<{
+    id: string;
+    username: string | null;
+    firstName: string | null;
+    role: string;
+    joinedAt: string;
+  }>;
+}
+
+export interface InviteResponse {
+  code: string;
+  role: string;
+  expiresAt: string;
+}
+
+export interface LeaderboardResponse {
+  leaderboard: Array<{
+    userId: string;
+    username: string | null;
+    firstName: string | null;
+    level: number;
+    totalXp: number;
+  }>;
+}
 
 export const api = {
   setAuthHeader(initData: string) {
@@ -35,8 +95,8 @@ export const api = {
     return this.request('/auth/me');
   },
 
-  async getSpaces() {
-    return this.request('/auth/spaces');
+  async getSpaces(): Promise<SpacesResponse> {
+    return this.request<SpacesResponse>('/auth/spaces');
   },
 
   async switchSpace(spaceId: string) {
@@ -56,8 +116,8 @@ export const api = {
   },
 
   // Tasks
-  async getTasks() {
-    return this.request('/tasks');
+  async getTasks(): Promise<TasksResponse> {
+    return this.request<TasksResponse>('/tasks');
   },
 
   async createTask(data: { title: string; difficulty?: number; xp?: number; dueAt?: string }) {
@@ -72,8 +132,8 @@ export const api = {
   },
 
   // Goals
-  async getGoals() {
-    return this.request('/goals');
+  async getGoals(): Promise<GoalsResponse> {
+    return this.request<GoalsResponse>('/goals');
   },
 
   async createGoal(data: { title: string; difficulty?: number; xp?: number }) {
@@ -92,17 +152,17 @@ export const api = {
     return this.request('/stats/me');
   },
 
-  async getLeaderboard() {
-    return this.request('/stats/leaderboard');
+  async getLeaderboard(): Promise<LeaderboardResponse> {
+    return this.request<LeaderboardResponse>('/stats/leaderboard');
   },
 
   // Members
-  async getMembers() {
-    return this.request('/members');
+  async getMembers(): Promise<MembersResponse> {
+    return this.request<MembersResponse>('/members');
   },
 
-  async createInvite(role: 'Admin' | 'Editor' | 'Viewer') {
-    return this.request('/members/invites', {
+  async createInvite(role: 'Admin' | 'Editor' | 'Viewer'): Promise<InviteResponse> {
+    return this.request<InviteResponse>('/members/invites', {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
