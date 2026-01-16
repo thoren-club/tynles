@@ -83,22 +83,6 @@ export default function Members() {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      notifications.show({
-        title: 'Copied!',
-        message: 'Invite code copied to clipboard',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to copy to clipboard',
-        color: 'red',
-      });
-    }
-  };
 
   if (loading) {
     return (

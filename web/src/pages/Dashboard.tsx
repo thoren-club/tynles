@@ -14,7 +14,7 @@ import {
   Group,
   Button,
 } from '@mantine/core';
-import { IconTrophy, IconTarget, IconCheck, IconTrendingUp, IconFolderPlus } from '@tabler/icons-react';
+import { IconTrophy, IconTarget, IconCheck, IconFolderPlus } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';

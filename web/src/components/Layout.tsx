@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { AppShell, NavLink, Stack, Group, Text } from '@mantine/core';
+import { AppShell, NavLink, Stack, Text } from '@mantine/core';
 import { IconHome, IconFolder, IconCheck, IconTarget, IconChartBar, IconUsers, IconSettings } from '@tabler/icons-react';
 
 interface LayoutProps {

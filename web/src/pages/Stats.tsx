@@ -11,10 +11,9 @@ import {
   Center,
   Group,
   Progress,
-  RingProgress,
   ThemeIcon,
 } from '@mantine/core';
-import { IconTrophy, IconTrendingUp, IconTarget, IconCheck, IconStar } from '@tabler/icons-react';
+import { IconTrophy, IconTrendingUp, IconStar } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 
