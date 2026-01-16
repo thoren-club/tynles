@@ -124,14 +124,41 @@ fi
 # Шаг 6: Получение SSL сертификата
 info "Получение SSL сертификата..."
 warn "Убедитесь, что DNS настроен и домен указывает на этот сервер!"
-read -p "Продолжить получение SSL? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    certbot --nginx -d $DOMAIN -d $WWW_DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --redirect
-    info "SSL сертификат получен!"
+
+# Проверка DNS перед получением SSL
+info "Проверка DNS..."
+DNS_IP=$(dig +short $DOMAIN | tail -1)
+SERVER_IP=$(curl -s ifconfig.me || curl -s icanhazip.com)
+
+if [ "$DNS_IP" = "$SERVER_IP" ] || [ "$DNS_IP" = "89.104.70.86" ]; then
+    info "DNS настроен правильно: $DOMAIN -> $DNS_IP"
+    read -p "Продолжить получение SSL? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if certbot --nginx -d $DOMAIN -d $WWW_DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --redirect; then
+            info "SSL сертификат получен!"
+        else
+            error "Не удалось получить SSL сертификат"
+            warn "Возможные причины:"
+            echo "  - DNS еще не распространился (подождите 10-30 минут)"
+            echo "  - Домен не указывает на этот сервер"
+            echo "  - Порт 80 закрыт в firewall"
+            echo ""
+            warn "Выполните позже вручную:"
+            echo "  certbot --nginx -d $DOMAIN -d $WWW_DOMAIN"
+        fi
+    else
+        warn "Пропущено получение SSL"
+    fi
 else
-    warn "Пропущено получение SSL. Выполните вручную:"
+    warn "DNS еще не настроен или не указывает на этот сервер"
+    warn "Текущий IP домена: $DNS_IP"
+    warn "IP сервера: $SERVER_IP"
+    echo ""
+    warn "Дождитесь привязки DNS, затем выполните:"
     echo "  certbot --nginx -d $DOMAIN -d $WWW_DOMAIN"
+    echo ""
+    info "Проверить состояние можно командой: ./check-setup.sh"
 fi
 
 # Шаг 7: Обновление .env
