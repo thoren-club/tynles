@@ -159,6 +159,16 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction
 ) {
+  logger.info({
+    method: req.method,
+    path: req.path,
+    hasHeader: !!req.headers['x-telegram-init-data'],
+    hasQueryAuth: !!req.query._auth,
+    hasQueryTgData: !!req.query.tgWebAppData,
+    queryKeys: Object.keys(req.query),
+    headerKeys: Object.keys(req.headers).filter(k => k.toLowerCase().includes('telegram') || k.toLowerCase().includes('auth')),
+  }, 'Auth middleware called');
+  
   try {
     // Try to get initData from header first (for API calls), then from query (for direct web access)
     let initData = (req.headers['x-telegram-init-data'] as string) || 

@@ -1,5 +1,7 @@
 const API_BASE = (import.meta.env?.PROD ? '/api' : 'http://localhost:3000/api') as string;
 
+console.log('API_BASE configured as:', API_BASE, 'PROD:', import.meta.env?.PROD);
+
 let authHeader: string | null = null;
 
 // Типы для API ответов
@@ -78,18 +80,38 @@ export const api = {
       url = `${url}?_auth=${encodeURIComponent(authHeader)}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        // Always send in header - this is the preferred method
-        ...(authHeader && { 'x-telegram-init-data': authHeader }),
-        ...options.headers,
-      },
+    console.log('API request:', {
+      url,
+      method: options.method || 'GET',
+      hasAuthHeader: !!authHeader,
+      authHeaderLength: authHeader?.length,
+    });
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          // Always send in header - this is the preferred method
+          ...(authHeader && { 'x-telegram-init-data': authHeader }),
+          ...options.headers,
+        },
+      });
+    } catch (networkError: any) {
+      console.error('Network error:', networkError);
+      throw new Error(`Network error: ${networkError.message || 'Failed to connect to server'}`);
+    }
+
+    console.log('API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('API error:', error);
       throw new Error(error.error || `HTTP ${response.status}`);
     }
 

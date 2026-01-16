@@ -10,8 +10,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins (Telegram can open from any domain)
+  credentials: true,
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // For form data
+
+// Request logging middleware
+app.use((req, res, next) => {
+  logger.info({
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    hasAuthHeader: !!req.headers['x-telegram-init-data'],
+  }, 'Incoming request');
+  next();
+});
 
 // API routes
 app.use('/api', setupApiRoutes());
