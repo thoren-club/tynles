@@ -1,0 +1,81 @@
+.stats {
+  padding: 16px;
+}
+
+.stats h1 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+
+.my-stats-section,
+.leaderboard-section {
+  margin-bottom: 32px;
+}
+
+.my-stats-section h2,
+.leaderboard-section h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--tg-theme-button-color, #3390ec);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-item {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rank {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--tg-theme-button-color, #3390ec);
+  min-width: 40px;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.user-stats {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+}

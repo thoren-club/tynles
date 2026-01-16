@@ -1,0 +1,25 @@
+import { Router } from 'express';
+import { authMiddleware } from './middleware/auth';
+import { spacesRouter } from './routes/spaces';
+import { tasksRouter } from './routes/tasks';
+import { goalsRouter } from './routes/goals';
+import { membersRouter } from './routes/members';
+import { statsRouter } from './routes/stats';
+import { authRouter } from './routes/auth';
+
+export function setupApiRoutes() {
+  const router = Router();
+
+  // Auth routes (no auth required)
+  router.use('/auth', authRouter);
+
+  // Protected routes
+  router.use(authMiddleware);
+  router.use('/spaces', spacesRouter);
+  router.use('/tasks', tasksRouter);
+  router.use('/goals', goalsRouter);
+  router.use('/members', membersRouter);
+  router.use('/stats', statsRouter);
+
+  return router;
+}

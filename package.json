@@ -5,24 +5,38 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:web": "tsx watch src/web/index.ts",
     "build": "tsc",
+    "build:web": "tsc && npm run build:frontend",
+    "build:frontend": "cd web && npm install && npm run build",
     "start": "node dist/index.js",
+    "start:web": "node dist/web/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:push": "prisma db push"
   },
-  "keywords": ["telegram", "bot", "tasks", "goals", "gamification"],
+  "keywords": [
+    "telegram",
+    "bot",
+    "tasks",
+    "goals",
+    "gamification"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.19.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "express": "^4.22.1",
     "grammy": "^1.24.0",
     "pino": "^9.5.0",
     "pino-pretty": "^11.2.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
     "@types/node": "^20.14.0",
     "prisma": "^5.19.0",
     "tsx": "^4.16.2",

@@ -7,6 +7,7 @@ import { setCurrentSpace, getCurrentSpace } from '../utils/session';
 import { getSpacesMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
 import { t } from '../i18n';
+import { escapeMarkdown } from '../utils/markdown';
 
 export function setupSpaceCommands(bot: Bot<AuthContext>) {
   bot.command('space_create', ensureUser, async (ctx) => {
@@ -171,7 +172,9 @@ Members: ${space.members.length}
       const spacesList = members
         .map((m, idx) => {
           const emoji = m.role === 'Admin' ? '👑' : m.role === 'Editor' ? '✏️' : '👁️';
-          return `${emoji} *${m.space.name}*\n   ID: \`${m.space.id}\` | ${m.role}`;
+          // Экранируем специальные символы Markdown в имени пространства
+          const spaceName = escapeMarkdown(m.space.name);
+          return `${emoji} *${spaceName}*\n   ID: \`${m.space.id}\` | ${m.role}`;
         })
         .join('\n\n');
 
@@ -266,9 +269,11 @@ Members: ${space.members.length}
       }
 
       setCurrentSpace(ctx.user.id, spaceId);
+      // Экранируем специальные символы Markdown
+      const spaceName = escapeMarkdown(member.space.name);
       const text = lang === 'ru'
-        ? `🚀 *Переключено!*\n\nВы переключились на пространство: *${member.space.name}*`
-        : `🚀 *Switched!*\n\nYou switched to space: *${member.space.name}*`;
+        ? `🚀 *Переключено!*\n\nВы переключились на пространство: *${spaceName}*`
+        : `🚀 *Switched!*\n\nYou switched to space: *${spaceName}*`;
 
       await ctx.editMessageText(text, {
         reply_markup: getSpacesMenu(lang),
@@ -313,9 +318,12 @@ Members: ${space.members.length}
 
     const roleEmoji = member?.role === 'Admin' ? '👑' : member?.role === 'Editor' ? '✏️' : '👁️';
     
+    // Экранируем специальные символы Markdown
+    const spaceName = escapeMarkdown(space.name);
+    
     const text = lang === 'ru'
       ? `📊 *Информация о пространстве*\n\n` +
-        `🏷️ *${space.name}*\n\n` +
+        `🏷️ *${spaceName}*\n\n` +
         `📝 ID: \`${space.id}\`\n` +
         `🌍 Часовой пояс: ${space.timezone}\n` +
         `${roleEmoji} Ваша роль: *${member?.role || 'Unknown'}*\n` +
@@ -326,7 +334,7 @@ Members: ${space.members.length}
         `🎯 Целей: ${space._count.goals}\n` +
         `👥 Участников: ${space.members.length}`
       : `📊 *Space Information*\n\n` +
-        `🏷️ *${space.name}*\n\n` +
+        `🏷️ *${spaceName}*\n\n` +
         `📝 ID: \`${space.id}\`\n` +
         `🌍 Timezone: ${space.timezone}\n` +
         `${roleEmoji} Your role: *${member?.role || 'Unknown'}*\n` +
@@ -370,9 +378,11 @@ Members: ${space.members.length}
     });
 
     const lang = await getUserLanguage(ctx.user.id);
+    // Экранируем специальные символы Markdown
+    const spaceName = escapeMarkdown(space.name);
     const text = lang === 'ru'
-      ? `🗑️ *Пространство удалено*\n\nПространство "${space.name}" было успешно удалено со всеми связанными данными.`
-      : `🗑️ *Space Deleted*\n\nSpace "${space.name}" has been successfully deleted along with all related data.`;
+      ? `🗑️ *Пространство удалено*\n\nПространство "${spaceName}" было успешно удалено со всеми связанными данными.`
+      : `🗑️ *Space Deleted*\n\nSpace "${spaceName}" has been successfully deleted along with all related data.`;
 
     await ctx.reply(text, { parse_mode: 'Markdown' });
   });
@@ -400,9 +410,11 @@ Members: ${space.members.length}
       return;
     }
 
+    // Экранируем специальные символы Markdown
+    const spaceName = escapeMarkdown(space.name);
     const confirmText = lang === 'ru'
-      ? `⚠️ *Подтверждение удаления*\n\nВы уверены, что хотите удалить пространство "${space.name}"?\n\n❗ *Внимание:* Это действие необратимо! Будут удалены все задачи, цели, участники и статистика.`
-      : `⚠️ *Delete Confirmation*\n\nAre you sure you want to delete space "${space.name}"?\n\n❗ *Warning:* This action is irreversible! All tasks, goals, members and statistics will be deleted.`;
+      ? `⚠️ *Подтверждение удаления*\n\nВы уверены, что хотите удалить пространство "${spaceName}"?\n\n❗ *Внимание:* Это действие необратимо! Будут удалены все задачи, цели, участники и статистика.`
+      : `⚠️ *Delete Confirmation*\n\nAre you sure you want to delete space "${spaceName}"?\n\n❗ *Warning:* This action is irreversible! All tasks, goals, members and statistics will be deleted.`;
 
     const confirmKeyboard = new InlineKeyboard()
       .text(lang === 'ru' ? '✅ Да, удалить' : '✅ Yes, delete', `space:delete_yes:${ctx.currentSpaceId}`)
@@ -445,9 +457,11 @@ Members: ${space.members.length}
       where: { id: spaceId },
     });
 
+    // Экранируем специальные символы Markdown
+    const spaceName = escapeMarkdown(space.name);
     const text = lang === 'ru'
-      ? `🗑️ *Пространство удалено*\n\nПространство "${space.name}" было успешно удалено со всеми связанными данными.`
-      : `🗑️ *Space Deleted*\n\nSpace "${space.name}" has been successfully deleted along with all related data.`;
+      ? `🗑️ *Пространство удалено*\n\nПространство "${spaceName}" было успешно удалено со всеми связанными данными.`
+      : `🗑️ *Space Deleted*\n\nSpace "${spaceName}" has been successfully deleted along with all related data.`;
 
     await ctx.editMessageText(text, { parse_mode: 'Markdown' });
     await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Удалено' : 'Deleted' });

@@ -9,6 +9,7 @@ import { getTasksMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
 import { t } from '../i18n';
 import { getXpProgress, getProgressBar } from '../utils/xp';
+import { escapeMarkdown } from '../utils/markdown';
 
 export function setupTaskCommands(bot: Bot<AuthContext>) {
   // Упрощенное создание задач - только название
@@ -83,9 +84,10 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
 
       clearWizardState(ctx.user.id);
 
+      const escapedTitle = escapeMarkdown(task.title);
       const successText = lang === 'ru'
-        ? `✅ *Задача создана!*\n\n📋 *${task.title}*\n💎 ${task.xp} XP`
-        : `✅ *Task Created!*\n\n📋 *${task.title}*\n💎 ${task.xp} XP`;
+        ? `✅ *Задача создана!*\n\n📋 *${escapedTitle}*\n💎 ${task.xp} XP`
+        : `✅ *Task Created!*\n\n📋 *${escapedTitle}*\n💎 ${task.xp} XP`;
 
       await ctx.reply(successText, { parse_mode: 'Markdown' });
     } catch (error) {
@@ -333,7 +335,8 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
 
     const keyboard = new InlineKeyboard();
     tasks.forEach((t: any, idx: number) => {
-      keyboard.text(`${idx + 1}. ${t.title.substring(0, 20)}${t.title.length > 20 ? '...' : ''}`, `task:delete_confirm:${t.id}`).row();
+      const title = escapeMarkdown(t.title);
+      keyboard.text(`${idx + 1}. ${title.substring(0, 20)}${title.length > 20 ? '...' : ''}`, `task:delete_confirm:${t.id}`).row();
     });
     keyboard.text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:tasks');
 
@@ -367,9 +370,10 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
       where: { id: taskId },
     });
 
+    const title = escapeMarkdown(task.title);
     const text = lang === 'ru'
-      ? `🗑️ *Задача удалена*\n\nЗадача "${task.title}" была успешно удалена.`
-      : `🗑️ *Task Deleted*\n\nTask "${task.title}" has been successfully deleted.`;
+      ? `🗑️ *Задача удалена*\n\nЗадача "${title}" была успешно удалена.`
+      : `🗑️ *Task Deleted*\n\nTask "${title}" has been successfully deleted.`;
 
     await ctx.editMessageText(text, {
       reply_markup: getTasksMenu(lang),
@@ -416,10 +420,11 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
 
       // Создаем прогресс-бар
       const progressBar = getProgressBar(progress.progress);
+      const title = escapeMarkdown(task.title);
 
       let successText = lang === 'ru'
-        ? `✅ *Задача выполнена!*\n\n📋 *${task.title}*\n💎 +${task.xp} XP\n\n📊 Прогресс: ${progressBar} ${progress.progress}%\n🎯 До следующего уровня: ${progress.next} XP`
-        : `✅ *Task Completed!*\n\n📋 *${task.title}*\n💎 +${task.xp} XP\n\n📊 Progress: ${progressBar} ${progress.progress}%\n🎯 To next level: ${progress.next} XP`;
+        ? `✅ *Задача выполнена!*\n\n📋 *${title}*\n💎 +${task.xp} XP\n\n📊 Прогресс: ${progressBar} ${progress.progress}%\n🎯 До следующего уровня: ${progress.next} XP`
+        : `✅ *Task Completed!*\n\n📋 *${title}*\n💎 +${task.xp} XP\n\n📊 Progress: ${progressBar} ${progress.progress}%\n🎯 To next level: ${progress.next} XP`;
 
       const keyboard = new InlineKeyboard()
         .text(lang === 'ru' ? '◀️ Назад к задачам' : '◀️ Back to tasks', 'task:list');

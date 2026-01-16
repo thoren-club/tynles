@@ -1,0 +1,81 @@
+.members {
+  padding: 16px;
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.members-header h1 {
+  font-size: 24px;
+}
+
+.invite-form {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite-code {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.invite-code-label {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+  margin-bottom: 8px;
+}
+
+.invite-code-value {
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.btn-copy {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-card {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.member-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.member-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.member-role {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+  padding: 4px 8px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 4px;
+}

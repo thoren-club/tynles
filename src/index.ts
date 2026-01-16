@@ -14,6 +14,7 @@ import { sendReminders } from './utils/task-scheduler';
 import { getMainMenu } from './menu';
 import { getUserLanguage } from './utils/language';
 import { t } from './i18n';
+import { InlineKeyboard } from 'grammy';
 
 const bot = new Bot<AuthContext>(config.botToken);
 
@@ -47,8 +48,17 @@ bot.command('start', ensureUser, async (ctx) => {
         `🏆 Leaderboard\n\n` +
         `Use the menu to navigate:`;
 
+    // Create keyboard with Mini App button
+    const keyboard = getMainMenu(lang);
+    
+    // Add Mini App button
+    keyboard.web_app(
+      lang === 'ru' ? '🚀 Открыть приложение' : '🚀 Open App',
+      config.webAppUrl
+    ).row();
+
     await ctx.reply(welcomeText, {
-      reply_markup: getMainMenu(lang),
+      reply_markup: keyboard,
       parse_mode: 'Markdown',
     });
   } catch (error) {
@@ -142,6 +152,13 @@ setInterval(async () => {
     logger.error(error, 'Scheduler error');
   }
 }, 60000); // 1 minute
+
+// Start web server (if not in bot-only mode)
+if (process.env.BOT_ONLY !== 'true') {
+  import('./web/index').catch((error) => {
+    logger.error(error, 'Failed to start web server');
+  });
+}
 
 // Start bot
 async function main() {

@@ -1,0 +1,87 @@
+.spaces {
+  padding: 16px;
+}
+
+.spaces-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.spaces-header h1 {
+  font-size: 24px;
+}
+
+.btn-primary {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.create-space-form {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.spaces-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.space-card {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.space-card:active {
+  transform: scale(0.98);
+}
+
+.space-card.active {
+  border: 2px solid var(--tg-theme-button-color, #3390ec);
+}
+
+.space-name {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.space-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.space-role {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.current-badge {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}

@@ -48,20 +48,31 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
     const code = args?.[0];
 
     if (!code || !ctx.user) {
-      return ctx.reply('Usage: /invite_use <code>');
+      const lang = await getUserLanguage(ctx.user?.id || BigInt(0));
+      const text = lang === 'ru'
+        ? 'Использование: /invite_use <код>'
+        : 'Usage: /invite_use <code>';
+      return ctx.reply(text);
     }
 
+    const lang = await getUserLanguage(ctx.user.id);
     const invite = await prisma.invite.findUnique({
       where: { code },
       include: { space: true },
     });
 
     if (!invite) {
-      return ctx.reply('Invalid invite code.');
+      const text = lang === 'ru'
+        ? '❌ Неверный код приглашения.'
+        : '❌ Invalid invite code.';
+      return ctx.reply(text);
     }
 
     if (invite.expiresAt < new Date()) {
-      return ctx.reply('This invite code has expired.');
+      const text = lang === 'ru'
+        ? '⏰ Этот код приглашения истёк.'
+        : '⏰ This invite code has expired.';
+      return ctx.reply(text);
     }
 
     const existingMember = await prisma.spaceMember.findUnique({
@@ -74,7 +85,10 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
     });
 
     if (existingMember) {
-      return ctx.reply('You are already a member of this space.');
+      const text = lang === 'ru'
+        ? 'ℹ️ Вы уже являетесь участником этого пространства.'
+        : 'ℹ️ You are already a member of this space.';
+      return ctx.reply(text);
     }
 
     await prisma.spaceMember.create({
@@ -102,8 +116,14 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
     });
 
     setCurrentSpace(ctx.user.id, invite.spaceId);
+    ctx.currentSpaceId = invite.spaceId;
 
-    await ctx.reply(`You joined space: ${invite.space.name} (Role: ${invite.role})`);
+    const roleEmoji = invite.role === 'Admin' ? '👑' : invite.role === 'Editor' ? '✏️' : '👁️';
+    const text = lang === 'ru'
+      ? `✅ *Вы присоединились к пространству!*\n\n🏷️ *${invite.space.name}*\n${roleEmoji} *Роль:* ${invite.role}`
+      : `✅ *You joined the space!*\n\n🏷️ *${invite.space.name}*\n${roleEmoji} *Role:* ${invite.role}`;
+
+    await ctx.reply(text, { parse_mode: 'Markdown' });
   });
 
   bot.command('members', ensureUser, requireSpace, async (ctx) => {
@@ -279,44 +299,59 @@ export function setupMemberCommands(bot: Bot<AuthContext>) {
 
   // Callback для создания приглашения с выбранной ролью
   bot.callbackQuery(/^invite:create:(Admin|Editor|Viewer)$/, ensureUser, requireSpace, requireRole('Admin'), async (ctx) => {
-    if (!ctx.user || !ctx.currentSpaceId) {
-      await ctx.answerCallbackQuery({ text: 'Error' });
-      return;
+    try {
+      if (!ctx.user || !ctx.currentSpaceId) {
+        const lang = await getUserLanguage(ctx.user?.id || BigInt(0));
+        const errorText = lang === 'ru' ? 'Ошибка: пространство не найдено' : 'Error: space not found';
+        await ctx.answerCallbackQuery({ text: errorText });
+        return;
+      }
+
+      const role = ctx.match[1] as Role;
+      const lang = await getUserLanguage(ctx.user.id);
+
+      const code = randomBytes(8).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours
+
+      await prisma.invite.create({
+        data: {
+          spaceId: ctx.currentSpaceId,
+          role,
+          code,
+          expiresAt,
+          createdBy: ctx.user.id,
+        },
+      });
+
+      const space = await prisma.space.findUnique({
+        where: { id: ctx.currentSpaceId },
+      });
+
+      if (!space) {
+        const errorText = lang === 'ru' ? 'Ошибка: пространство не найдено' : 'Error: space not found';
+        await ctx.answerCallbackQuery({ text: errorText });
+        return;
+      }
+
+      const roleEmoji = role === 'Admin' ? '👑' : role === 'Editor' ? '✏️' : '👁️';
+      const text = lang === 'ru'
+        ? `✅ *Приглашение создано!*\n\n📋 *Код:* \`${code}\`\n${roleEmoji} *Роль:* ${role}\n⏰ *Действительно до:* ${expiresAt.toLocaleString('ru-RU')}\n\n💬 *Отправьте этот код пользователю или используйте команду:*\n/invite_use ${code}`
+        : `✅ *Invite Created!*\n\n📋 *Code:* \`${code}\`\n${roleEmoji} *Role:* ${role}\n⏰ *Expires:* ${expiresAt.toLocaleString()}\n\n💬 *Send this code to the user or use command:*\n/invite_use ${code}`;
+
+      const keyboard = new InlineKeyboard()
+        .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'members:list');
+
+      await ctx.editMessageText(text, {
+        reply_markup: keyboard,
+        parse_mode: 'Markdown'
+      });
+      await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Создано' : 'Created' });
+    } catch (error) {
+      const lang = await getUserLanguage(ctx.user?.id || BigInt(0));
+      const errorText = lang === 'ru' ? 'Ошибка при создании приглашения' : 'Error creating invite';
+      await ctx.answerCallbackQuery({ text: errorText });
+      console.error('Error creating invite:', error);
     }
-
-    const role = ctx.match[1] as Role;
-    const lang = await getUserLanguage(ctx.user.id);
-
-    const code = randomBytes(8).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours
-
-    await prisma.invite.create({
-      data: {
-        spaceId: ctx.currentSpaceId,
-        role,
-        code,
-        expiresAt,
-        createdBy: ctx.user.id,
-      },
-    });
-
-    const space = await prisma.space.findUnique({
-      where: { id: ctx.currentSpaceId },
-    });
-
-    const roleEmoji = role === 'Admin' ? '👑' : role === 'Editor' ? '✏️' : '👁️';
-    const text = lang === 'ru'
-      ? `✅ *Приглашение создано!*\n\n📋 *Код:* \`${code}\`\n${roleEmoji} *Роль:* ${role}\n⏰ *Действительно до:* ${expiresAt.toLocaleString('ru-RU')}\n\n💬 *Отправьте этот код пользователю или используйте команду:*\n/invite_use ${code}`
-      : `✅ *Invite Created!*\n\n📋 *Code:* \`${code}\`\n${roleEmoji} *Role:* ${role}\n⏰ *Expires:* ${expiresAt.toLocaleString()}\n\n💬 *Send this code to the user or use command:*\n/invite_use ${code}`;
-
-    const keyboard = new InlineKeyboard()
-      .text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'members:list');
-
-    await ctx.editMessageText(text, {
-      reply_markup: keyboard,
-      parse_mode: 'Markdown'
-    });
-    await ctx.answerCallbackQuery({ text: lang === 'ru' ? 'Создано' : 'Created' });
   });
 }

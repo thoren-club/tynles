@@ -6,6 +6,7 @@ import { getWizardState, setWizardState, clearWizardState } from '../utils/wizar
 import { addXp } from '../utils/xp';
 import { getGoalsMenu } from '../menu';
 import { getUserLanguage } from '../utils/language';
+import { escapeMarkdown } from '../utils/markdown';
 
 export function setupGoalCommands(bot: Bot<AuthContext>) {
   bot.command('goal_add', ensureUser, requireSpace, requireRole('Editor'), async (ctx) => {
@@ -196,7 +197,8 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
 
     const goalsList = goals
       .map((g: any, idx: number) => {
-        return `\`${idx + 1}\` • *${g.title}*\n   💎 ${g.xp} XP`;
+        const title = escapeMarkdown(g.title);
+        return `\`${idx + 1}\` • *${title}*\n   💎 ${g.xp} XP`;
       })
       .join('\n\n');
 
@@ -243,7 +245,8 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
 
     const goalsList = goals
       .map((g: any, idx: number) => {
-        return `${idx + 1}. *${g.title}*`;
+        const title = escapeMarkdown(g.title);
+        return `${idx + 1}. *${title}*`;
       })
       .join('\n');
 
@@ -253,7 +256,8 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
 
     const keyboard = new InlineKeyboard();
     goals.forEach((g: any, idx: number) => {
-      keyboard.text(`${idx + 1}. ${g.title.substring(0, 25)}${g.title.length > 25 ? '...' : ''}`, `goal:delete_confirm:${g.id}`).row();
+      const title = escapeMarkdown(g.title);
+      keyboard.text(`${idx + 1}. ${title.substring(0, 25)}${title.length > 25 ? '...' : ''}`, `goal:delete_confirm:${g.id}`).row();
     });
     keyboard.text(lang === 'ru' ? '◀️ Назад' : '◀️ Back', 'menu:goals');
 
@@ -287,9 +291,10 @@ export function setupGoalCommands(bot: Bot<AuthContext>) {
       where: { id: goalId },
     });
 
+    const title = escapeMarkdown(goal.title);
     const text = lang === 'ru'
-      ? `🗑️ *Цель удалена*\n\nЦель "${goal.title}" была успешно удалена.`
-      : `🗑️ *Goal Deleted*\n\nGoal "${goal.title}" has been successfully deleted.`;
+      ? `🗑️ *Цель удалена*\n\nЦель "${title}" была успешно удалена.`
+      : `🗑️ *Goal Deleted*\n\nGoal "${title}" has been successfully deleted.`;
 
     await ctx.editMessageText(text, {
       reply_markup: getGoalsMenu(lang),

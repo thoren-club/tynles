@@ -1,0 +1,72 @@
+.tasks {
+  padding: 16px;
+}
+
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.tasks-header h1 {
+  font-size: 24px;
+}
+
+.create-task-form {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.task-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.btn-delete {
+  background: #ff4444;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--tg-theme-hint-color, #999999);
+}
