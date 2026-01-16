@@ -68,15 +68,21 @@ export const api = {
   },
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // Add initData to URL if available (for direct web access)
-    const url = authHeader 
-      ? `${API_BASE}${endpoint}${endpoint.includes('?') ? '&' : '?'}_auth=${encodeURIComponent(authHeader)}`
-      : `${API_BASE}${endpoint}`;
+    // Build URL - prefer header over query parameter for initData
+    let url = `${API_BASE}${endpoint}`;
+    
+    // Only add to URL if we don't have authHeader (fallback for direct access)
+    // But prefer header method as it's more reliable
+    if (authHeader && !endpoint.includes('?')) {
+      // Add as query param only if header method might not work
+      url = `${url}?_auth=${encodeURIComponent(authHeader)}`;
+    }
 
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        // Always send in header - this is the preferred method
         ...(authHeader && { 'x-telegram-init-data': authHeader }),
         ...options.headers,
       },

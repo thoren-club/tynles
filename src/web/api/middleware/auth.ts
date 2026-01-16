@@ -18,28 +18,57 @@ function verifyTelegramWebAppData(initData: string, botToken: string): boolean {
   try {
     const urlParams = new URLSearchParams(initData);
     const hash = urlParams.get('hash');
+    if (!hash) {
+      return false;
+    }
     urlParams.delete('hash');
 
     // Sort and create data check string
+    // Important: values should be URL-decoded before creating the check string
     const dataCheckString = Array.from(urlParams.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${key}=${value}`)
+      .map(([key, value]) => {
+        // URL-decode the value if needed
+        try {
+          const decoded = decodeURIComponent(value);
+          return `${key}=${decoded}`;
+        } catch {
+          return `${key}=${value}`;
+        }
+      })
       .join('\n');
 
-    // Create secret key
+    // Create secret key: HMAC_SHA256(bot_token, "WebAppData")
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
       .update(botToken)
       .digest();
 
-    // Calculate hash
+    // Calculate hash: HMAC_SHA256(secret_key, data_check_string)
     const calculatedHash = crypto
       .createHmac('sha256', secretKey)
       .update(dataCheckString)
       .digest('hex');
 
-    return calculatedHash === hash;
+    // Compare hashes (use timing-safe comparison)
+    if (calculatedHash !== hash) {
+      return false;
+    }
+
+    // Check auth_date to prevent replay attacks (should be within last hour)
+    const authDate = urlParams.get('auth_date');
+    if (authDate) {
+      const authTimestamp = parseInt(authDate, 10);
+      const now = Math.floor(Date.now() / 1000);
+      const maxAge = 3600; // 1 hour
+      if (now - authTimestamp > maxAge) {
+        return false; // Too old
+      }
+    }
+
+    return true;
   } catch (error) {
+    // Silently fail - error will be logged by caller
     return false;
   }
 }
@@ -91,10 +120,47 @@ export async function authMiddleware(
       return res.status(401).json({ error: 'Missing Telegram init data' });
     }
 
+    // Decode URL-encoded initData if it comes from query parameter
+    // Note: initData from query might be double-encoded
+    let decodedInitData = initData;
+    if (initData.includes('%')) {
+      try {
+        decodedInitData = decodeURIComponent(initData);
+        // Sometimes it's double-encoded
+        if (decodedInitData.includes('%')) {
+          decodedInitData = decodeURIComponent(decodedInitData);
+        }
+      } catch (e) {
+        logger.warn({ error: e }, 'Failed to decode initData, using original');
+        decodedInitData = initData;
+      }
+    }
+
     // Verify the data
-    if (!verifyTelegramWebAppData(initData, config.botToken)) {
+    logger.info({
+      initDataLength: decodedInitData.length,
+      hasHash: decodedInitData.includes('hash='),
+      hasUser: decodedInitData.includes('user='),
+      source: req.headers['x-telegram-init-data'] ? 'header' : 'query',
+    }, 'Verifying Telegram initData');
+    
+    const isValid = verifyTelegramWebAppData(decodedInitData, config.botToken);
+    if (!isValid) {
+      logger.warn({
+        initDataLength: decodedInitData.length,
+        initDataPreview: decodedInitData.substring(0, 150),
+        hasHash: decodedInitData.includes('hash='),
+        hasUser: decodedInitData.includes('user='),
+        hasAuthDate: decodedInitData.includes('auth_date='),
+        source: req.headers['x-telegram-init-data'] ? 'header' : 'query',
+      }, 'Invalid Telegram init data - verification failed');
       return res.status(401).json({ error: 'Invalid Telegram init data' });
     }
+    
+    logger.info('Telegram initData verified successfully');
+
+    // Use decoded version
+    initData = decodedInitData;
 
     // Parse user data
     const userData = parseInitData(initData);

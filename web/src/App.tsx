@@ -111,6 +111,8 @@ function App() {
         console.log('Final initData:', !!initData, 'Length:', initData?.length);
 
         if (!initData || initData === '') {
+          // Show alert in Telegram for debugging
+          tgWebApp.showAlert('Ошибка: initData пустой. Проверьте настройки в BotFather.');
           console.error('No Telegram init data available');
           console.error('This usually means:');
           console.error('1. Mini App not opened from Telegram');
@@ -120,6 +122,10 @@ function App() {
           setLoading(false);
           return;
         }
+
+        // Debug: Show initData info in Telegram (first 50 chars)
+        const initDataPreview = initData.substring(0, 50) + (initData.length > 50 ? '...' : '');
+        console.log('initData preview:', initDataPreview);
 
         // Set auth header for all requests
         api.setAuthHeader(initData);
@@ -131,6 +137,10 @@ function App() {
             setIsAuthenticated(true);
           }
         } catch (authError: any) {
+          // Show detailed error in Telegram
+          const errorMsg = authError.message || 'Authentication failed';
+          tgWebApp.showAlert(`Ошибка аутентификации: ${errorMsg}\n\ninitData длина: ${initData.length}`);
+          console.error('Auth verification error:', authError);
           console.error('Auth verification error:', authError);
           // Try to get more info about the error
           if (authError.message) {
