@@ -6,15 +6,13 @@ import {
   Text,
   Stack,
   Group,
-  Badge,
   Loader,
   Center,
   Button,
   TextInput,
   Divider,
-  Select,
 } from '@mantine/core';
-import { IconUser, IconLanguage, IconBell, IconShield, IconUsers } from '@tabler/icons-react';
+import { IconUser, IconLanguage, IconShield, IconUsers } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 
@@ -56,7 +54,7 @@ export default function Settings() {
 
     setJoining(true);
     try {
-      const result = await api.useInviteCode(inviteCode.trim().toUpperCase());
+      const result = await api.useInviteCode(inviteCode.trim().toUpperCase()) as { space: { name: string; role: string } };
       setInviteCode('');
       notifications.show({
         title: 'Success! 🎉',

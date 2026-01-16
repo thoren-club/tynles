@@ -15,7 +15,7 @@ import {
   Center,
   Tooltip,
 } from '@mantine/core';
-import { IconPlus, IconTrash, IconCheck, IconTarget, IconCheckCircle } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconCheck, IconTarget, IconCircleCheck } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
@@ -78,7 +78,7 @@ export default function Goals() {
 
   const handleToggleGoal = async (goalId: string) => {
     try {
-      const result = await api.toggleGoal(goalId);
+      const result = await api.toggleGoal(goalId) as { isDone: boolean; xp: number };
       loadGoals();
       if (result.isDone) {
         notifications.show({
@@ -240,7 +240,7 @@ export default function Goals() {
                         onClick={() => handleToggleGoal(goal.id)}
                         size="lg"
                       >
-                        {goal.isDone ? <IconCheck size={20} /> : <IconCheckCircle size={20} />}
+                        {goal.isDone ? <IconCheck size={20} /> : <IconCircleCheck size={20} />}
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Delete goal">

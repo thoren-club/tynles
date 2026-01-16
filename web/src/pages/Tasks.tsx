@@ -15,7 +15,7 @@ import {
   Center,
   Tooltip,
 } from '@mantine/core';
-import { IconPlus, IconTrash, IconCheck, IconCheckCircle } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconCheck, IconCircleCheck } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
@@ -78,7 +78,7 @@ export default function Tasks() {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
-      const result = await api.completeTask(taskId);
+      const result = await api.completeTask(taskId) as { xpEarned: number; newLevel: number | null };
       loadTasks();
       notifications.show({
         title: 'Task Completed! 🎉',
@@ -214,7 +214,7 @@ export default function Tasks() {
                         onClick={() => handleCompleteTask(task.id)}
                         size="lg"
                       >
-                        <IconCheckCircle size={20} />
+                        <IconCircleCheck size={20} />
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Delete task">
