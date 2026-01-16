@@ -52,7 +52,7 @@ bot.command('start', ensureUser, async (ctx) => {
     const keyboard = getMainMenu(lang);
     
     // Add Mini App button
-    keyboard.web_app(
+    keyboard.webApp(
       lang === 'ru' ? '🚀 Открыть приложение' : '🚀 Open App',
       config.webAppUrl
     ).row();
