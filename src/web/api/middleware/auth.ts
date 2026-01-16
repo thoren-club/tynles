@@ -218,10 +218,7 @@ export async function authMiddleware(
     
     logger.info('Telegram initData verified successfully');
 
-    // Use decoded version
-    initData = decodedInitData;
-
-    // Parse user data
+    // Parse user data (use rawInitData which is already in correct format)
     const userData = parseInitData(rawInitData);
     if (!userData) {
       return res.status(401).json({ error: 'Invalid user data' });
