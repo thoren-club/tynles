@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { config } from '../config';
 import { logger } from '../logger';
 import { setupApiRoutes } from './api';
@@ -15,19 +16,36 @@ app.use(express.json());
 // API routes
 app.use('/api', setupApiRoutes());
 
-// Serve static files from web/dist in production
-if (process.env.NODE_ENV === 'production') {
-  const webDistPath = path.join(__dirname, '../../web/dist');
+// Serve static files from web/dist
+const webDistPath = path.join(__dirname, '../../web/dist');
+
+// Проверяем, существует ли папка web/dist
+if (fs.existsSync(webDistPath)) {
+  logger.info(`Serving static files from ${webDistPath}`);
   app.use(express.static(webDistPath));
   
   // Serve index.html for all routes (SPA routing)
-  app.get('*', (req, res) => {
+  // Но только для не-API маршрутов
+  app.get('*', (req, res, next) => {
+    // Пропускаем API маршруты
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
     res.sendFile(path.join(webDistPath, 'index.html'));
   });
 } else {
-  // In development, serve from web/dist or redirect to dev server
-  app.get('*', (req, res) => {
-    res.json({ message: 'Web server running. Frontend should be served separately in development.' });
+  logger.warn(`Static files directory not found: ${webDistPath}`);
+  logger.warn('Frontend is not built. Run: cd web && npm run build');
+  
+  // Fallback для не-API маршрутов
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.status(404).json({ 
+      error: 'Frontend not built',
+      message: 'Please build frontend: cd web && npm run build'
+    });
   });
 }
 
