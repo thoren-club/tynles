@@ -74,10 +74,20 @@ export async function authMiddleware(
 ) {
   try {
     // Try to get initData from header first (for API calls), then from query (for direct web access)
-    const initData = (req.headers['x-telegram-init-data'] as string) || 
-                     (req.query._auth as string);
+    let initData = (req.headers['x-telegram-init-data'] as string) || 
+                   (req.query._auth as string) ||
+                   (req.query.tgWebAppData as string);
 
-    if (!initData) {
+    // Also check in request body (some clients send it there)
+    if (!initData && req.body && typeof req.body === 'object') {
+      initData = req.body.initData || req.body.tgWebAppData;
+    }
+
+    if (!initData || initData === '') {
+      logger.warn('Missing Telegram init data', {
+        headers: Object.keys(req.headers),
+        query: Object.keys(req.query),
+      });
       return res.status(401).json({ error: 'Missing Telegram init data' });
     }
 

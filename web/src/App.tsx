@@ -50,18 +50,75 @@ function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Get initData from Telegram WebApp
-        // Telegram provides initData as a string in window.Telegram.WebApp.initData
+        // Wait for Telegram WebApp to load
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (!window.Telegram?.WebApp && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+
         const tgWebApp = window.Telegram?.WebApp;
         if (!tgWebApp) {
-          console.error('Telegram WebApp not available');
+          console.error('Telegram WebApp not available after waiting');
+          console.log('window.Telegram:', window.Telegram);
           setLoading(false);
           return;
         }
 
-        const initData = tgWebApp.initData;
-        if (!initData) {
-          console.error('No Telegram init data');
+        // Initialize Telegram WebApp
+        tgWebApp.ready();
+        tgWebApp.expand();
+
+        // Debug: Log all available data
+        console.log('Telegram WebApp object:', {
+          initData: tgWebApp.initData,
+          initDataLength: tgWebApp.initData?.length,
+          initDataUnsafe: tgWebApp.initDataUnsafe,
+          version: tgWebApp.version,
+          platform: tgWebApp.platform,
+        });
+
+        // Check URL parameters (Telegram sometimes passes data via URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log('URL parameters:', Array.from(urlParams.entries()));
+        console.log('Full URL:', window.location.href);
+
+        // Get initData - try multiple sources
+        let initData = tgWebApp.initData;
+        
+        // Wait for initData to be populated (Telegram sometimes needs a moment)
+        let waitAttempts = 0;
+        while ((!initData || initData === '') && waitAttempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          initData = tgWebApp.initData;
+          waitAttempts++;
+        }
+
+        // Try to get from URL if still empty
+        if (!initData || initData === '') {
+          // Telegram sometimes passes initData in URL hash or query
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const tgData = urlParams.get('tgWebAppData') || 
+                        hashParams.get('tgWebAppData') ||
+                        urlParams.get('_auth');
+          
+          if (tgData) {
+            initData = decodeURIComponent(tgData);
+            console.log('Using initData from URL');
+          }
+        }
+
+        console.log('Final initData:', !!initData, 'Length:', initData?.length);
+
+        if (!initData || initData === '') {
+          console.error('No Telegram init data available');
+          console.error('This usually means:');
+          console.error('1. Mini App not opened from Telegram');
+          console.error('2. URL in BotFather is incorrect');
+          console.error('3. Mini App opened in external browser instead of Telegram');
+          console.log('Available WebApp properties:', Object.keys(tgWebApp));
           setLoading(false);
           return;
         }
@@ -70,9 +127,17 @@ function App() {
         api.setAuthHeader(initData);
 
         // Verify authentication
-        const user = await api.getUser();
-        if (user) {
-          setIsAuthenticated(true);
+        try {
+          const user = await api.getUser();
+          if (user) {
+            setIsAuthenticated(true);
+          }
+        } catch (authError: any) {
+          console.error('Auth verification error:', authError);
+          // Try to get more info about the error
+          if (authError.message) {
+            console.error('Error message:', authError.message);
+          }
         }
       } catch (error) {
         console.error('Auth error:', error);
