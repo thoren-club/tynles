@@ -84,10 +84,10 @@ export async function authMiddleware(
     }
 
     if (!initData || initData === '') {
-      logger.warn('Missing Telegram init data', {
+      logger.warn({
         headers: Object.keys(req.headers),
         query: Object.keys(req.query),
-      });
+      }, 'Missing Telegram init data');
       return res.status(401).json({ error: 'Missing Telegram init data' });
     }
 
