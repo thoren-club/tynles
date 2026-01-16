@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import './Layout.css';
+import { AppShell, NavLink, Stack } from '@mantine/core';
+import { IconHome, IconFolder, IconCheck, IconTarget, IconChartBar } from '@tabler/icons-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,31 +10,39 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
+  const navItems = [
+    { path: '/', label: 'Home', icon: IconHome },
+    { path: '/spaces', label: 'Spaces', icon: IconFolder },
+    { path: '/tasks', label: 'Tasks', icon: IconCheck },
+    { path: '/goals', label: 'Goals', icon: IconTarget },
+    { path: '/stats', label: 'Stats', icon: IconChartBar },
+  ];
+
   return (
-    <div className="layout">
-      <main className="main-content">{children}</main>
-      <nav className="bottom-nav">
-        <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-          <span className="nav-icon">🏠</span>
-          <span className="nav-label">Home</span>
-        </Link>
-        <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
-          <span className="nav-icon">📁</span>
-          <span className="nav-label">Spaces</span>
-        </Link>
-        <Link to="/tasks" className={location.pathname === '/tasks' ? 'active' : ''}>
-          <span className="nav-icon">✅</span>
-          <span className="nav-label">Tasks</span>
-        </Link>
-        <Link to="/goals" className={location.pathname === '/goals' ? 'active' : ''}>
-          <span className="nav-icon">🎯</span>
-          <span className="nav-label">Goals</span>
-        </Link>
-        <Link to="/stats" className={location.pathname === '/stats' ? 'active' : ''}>
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">Stats</span>
-        </Link>
-      </nav>
-    </div>
+    <AppShell
+      navbar={{
+        width: 80,
+        breakpoint: 'sm',
+      }}
+      padding="md"
+    >
+      <AppShell.Navbar p="md">
+        <Stack gap="xs">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              component={Link}
+              to={item.path}
+              label={item.label}
+              leftSection={<item.icon size={20} />}
+              active={location.pathname === item.path}
+              variant="light"
+            />
+          ))}
+        </Stack>
+      </AppShell.Navbar>
+
+      <AppShell.Main>{children}</AppShell.Main>
+    </AppShell>
   );
 }
