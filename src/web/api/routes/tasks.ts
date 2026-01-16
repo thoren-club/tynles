@@ -70,6 +70,74 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// Complete task
+router.post('/:taskId/complete', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId || !authReq.user) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    const taskId = BigInt(req.params.taskId);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task || task.spaceId !== authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Update user stats with XP
+    const stats = await prisma.userSpaceStats.upsert({
+      where: {
+        spaceId_userId: {
+          spaceId: authReq.currentSpaceId,
+          userId: authReq.user.id,
+        },
+      },
+      update: {
+        totalXp: {
+          increment: task.xp,
+        },
+      },
+      create: {
+        spaceId: authReq.currentSpaceId,
+        userId: authReq.user.id,
+        totalXp: task.xp,
+        level: 1,
+      },
+    });
+
+    // Calculate new level (simple formula: level = floor(totalXp / 100) + 1)
+    const newLevel = Math.floor(stats.totalXp / 100) + 1;
+    if (newLevel > stats.level) {
+      await prisma.userSpaceStats.update({
+        where: {
+          spaceId_userId: {
+            spaceId: authReq.currentSpaceId,
+            userId: authReq.user.id,
+          },
+        },
+        data: { level: newLevel },
+      });
+    }
+
+    // Delete the task (or mark as completed if we add that field later)
+    await prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    res.json({ 
+      success: true,
+      xpEarned: task.xp,
+      newLevel: newLevel > stats.level ? newLevel : null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to complete task' });
+  }
+});
+
 // Delete task
 router.delete('/:taskId', async (req: Request, res: Response) => {
   try {

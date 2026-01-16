@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppShell, NavLink, Stack, Group, Text } from '@mantine/core';
-import { IconHome, IconFolder, IconCheck, IconTarget, IconChartBar, IconUsers } from '@tabler/icons-react';
+import { IconHome, IconFolder, IconCheck, IconTarget, IconChartBar, IconUsers, IconSettings } from '@tabler/icons-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +17,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/goals', label: 'Goals', icon: IconTarget },
     { path: '/stats', label: 'Stats', icon: IconChartBar },
     { path: '/members', label: 'Members', icon: IconUsers },
+    { path: '/settings', label: 'Settings', icon: IconSettings },
   ];
 
   return (

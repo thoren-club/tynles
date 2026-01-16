@@ -7,6 +7,7 @@ import Tasks from './pages/Tasks';
 import Goals from './pages/Goals';
 import Stats from './pages/Stats';
 import Members from './pages/Members';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
 
 declare global {
@@ -225,6 +226,7 @@ function App() {
           <Route path="/goals" element={<Goals />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/members" element={<Members />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

@@ -68,6 +68,80 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// Toggle goal completion
+router.post('/:goalId/toggle', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId || !authReq.user) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    const goalId = BigInt(req.params.goalId);
+
+    const goal = await prisma.goal.findUnique({
+      where: { id: goalId },
+    });
+
+    if (!goal || goal.spaceId !== authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'Goal not found' });
+    }
+
+    const newIsDone = !goal.isDone;
+
+    // If marking as done, add XP
+    if (newIsDone && !goal.isDone) {
+      const stats = await prisma.userSpaceStats.upsert({
+        where: {
+          spaceId_userId: {
+            spaceId: authReq.currentSpaceId,
+            userId: authReq.user.id,
+          },
+        },
+        update: {
+          totalXp: {
+            increment: goal.xp,
+          },
+        },
+        create: {
+          spaceId: authReq.currentSpaceId,
+          userId: authReq.user.id,
+          totalXp: goal.xp,
+          level: 1,
+        },
+      });
+
+      // Calculate new level
+      const newLevel = Math.floor(stats.totalXp / 100) + 1;
+      if (newLevel > stats.level) {
+        await prisma.userSpaceStats.update({
+          where: {
+            spaceId_userId: {
+              spaceId: authReq.currentSpaceId,
+              userId: authReq.user.id,
+            },
+          },
+          data: { level: newLevel },
+        });
+      }
+    }
+
+    const updatedGoal = await prisma.goal.update({
+      where: { id: goalId },
+      data: { isDone: newIsDone },
+    });
+
+    res.json({
+      id: updatedGoal.id.toString(),
+      title: updatedGoal.title,
+      difficulty: updatedGoal.difficulty,
+      xp: updatedGoal.xp,
+      isDone: updatedGoal.isDone,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle goal' });
+  }
+});
+
 // Delete goal
 router.delete('/:goalId', async (req: Request, res: Response) => {
   try {

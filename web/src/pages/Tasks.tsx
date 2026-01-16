@@ -13,8 +13,9 @@ import {
   ActionIcon,
   Loader,
   Center,
+  Tooltip,
 } from '@mantine/core';
-import { IconPlus, IconTrash, IconCheck } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconCheck, IconCheckCircle } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
@@ -70,6 +71,25 @@ export default function Tasks() {
       notifications.show({
         title: 'Error',
         message: 'Failed to create task',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const result = await api.completeTask(taskId);
+      loadTasks();
+      notifications.show({
+        title: 'Task Completed! 🎉',
+        message: `You earned ${result.xpEarned} XP${result.newLevel ? ` and reached level ${result.newLevel}!` : '!'}`,
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to complete task',
         color: 'red',
       });
     }
@@ -173,7 +193,7 @@ export default function Tasks() {
             tasks.map((task) => (
               <Card key={task.id} shadow="sm" padding="lg" radius="md" withBorder>
                 <Group justify="space-between">
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <Text fw={500} size="lg">
                       {task.title}
                     </Text>
@@ -186,13 +206,28 @@ export default function Tasks() {
                       </Badge>
                     </Group>
                   </div>
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    onClick={() => handleDeleteTask(task.id)}
-                  >
-                    <IconTrash size={18} />
-                  </ActionIcon>
+                  <Group gap="xs">
+                    <Tooltip label="Complete task">
+                      <ActionIcon
+                        color="green"
+                        variant="light"
+                        onClick={() => handleCompleteTask(task.id)}
+                        size="lg"
+                      >
+                        <IconCheckCircle size={20} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Delete task">
+                      <ActionIcon
+                        color="red"
+                        variant="light"
+                        onClick={() => handleDeleteTask(task.id)}
+                        size="lg"
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
                 </Group>
               </Card>
             ))

@@ -13,8 +13,9 @@ import {
   ActionIcon,
   Loader,
   Center,
+  Tooltip,
 } from '@mantine/core';
-import { IconPlus, IconTrash, IconCheck, IconTarget } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconCheck, IconTarget, IconCheckCircle } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
@@ -70,6 +71,33 @@ export default function Goals() {
       notifications.show({
         title: 'Error',
         message: 'Failed to create goal',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleToggleGoal = async (goalId: string) => {
+    try {
+      const result = await api.toggleGoal(goalId);
+      loadGoals();
+      if (result.isDone) {
+        notifications.show({
+          title: 'Goal Completed! 🎉',
+          message: `You earned ${result.xp} XP!`,
+          color: 'green',
+        });
+      } else {
+        notifications.show({
+          title: 'Goal Unmarked',
+          message: 'Goal marked as incomplete',
+          color: 'blue',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to toggle goal:', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to toggle goal',
         color: 'red',
       });
     }
@@ -171,12 +199,22 @@ export default function Goals() {
             </Card>
           ) : (
             goals.map((goal) => (
-              <Card key={goal.id} shadow="sm" padding="lg" radius="md" withBorder>
+              <Card 
+                key={goal.id} 
+                shadow="sm" 
+                padding="lg" 
+                radius="md" 
+                withBorder
+                style={{
+                  opacity: goal.isDone ? 0.7 : 1,
+                  textDecoration: goal.isDone ? 'line-through' : 'none',
+                }}
+              >
                 <Group justify="space-between">
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <Group gap="xs" mb="xs">
                       <IconTarget size={20} />
-                      <Text fw={500} size="lg">
+                      <Text fw={500} size="lg" c={goal.isDone ? 'dimmed' : undefined}>
                         {goal.title}
                       </Text>
                       {goal.isDone && (
@@ -194,13 +232,28 @@ export default function Goals() {
                       </Badge>
                     </Group>
                   </div>
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    onClick={() => handleDeleteGoal(goal.id)}
-                  >
-                    <IconTrash size={18} />
-                  </ActionIcon>
+                  <Group gap="xs">
+                    <Tooltip label={goal.isDone ? 'Mark as incomplete' : 'Mark as complete'}>
+                      <ActionIcon
+                        color={goal.isDone ? 'gray' : 'green'}
+                        variant="light"
+                        onClick={() => handleToggleGoal(goal.id)}
+                        size="lg"
+                      >
+                        {goal.isDone ? <IconCheck size={20} /> : <IconCheckCircle size={20} />}
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Delete goal">
+                      <ActionIcon
+                        color="red"
+                        variant="light"
+                        onClick={() => handleDeleteGoal(goal.id)}
+                        size="lg"
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
                 </Group>
               </Card>
             ))

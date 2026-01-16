@@ -61,6 +61,84 @@ router.get('/spaces', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Use invite code
+router.post('/invites/use', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: 'Invite code is required' });
+    }
+
+    const invite = await prisma.invite.findUnique({
+      where: { code },
+      include: { space: true },
+    });
+
+    if (!invite) {
+      return res.status(404).json({ error: 'Invalid invite code' });
+    }
+
+    if (invite.expiresAt < new Date()) {
+      return res.status(400).json({ error: 'This invite code has expired' });
+    }
+
+    const existingMember = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: invite.spaceId,
+          userId: req.user.id,
+        },
+      },
+    });
+
+    if (existingMember) {
+      return res.status(400).json({ error: 'You are already a member of this space' });
+    }
+
+    await prisma.spaceMember.create({
+      data: {
+        spaceId: invite.spaceId,
+        userId: req.user.id,
+        role: invite.role,
+      },
+    });
+
+    await prisma.userSpaceStats.upsert({
+      where: {
+        spaceId_userId: {
+          spaceId: invite.spaceId,
+          userId: req.user.id,
+        },
+      },
+      create: {
+        spaceId: invite.spaceId,
+        userId: req.user.id,
+        totalXp: 0,
+        level: 1,
+      },
+      update: {},
+    });
+
+    // Set as current space
+    setCurrentSpace(req.user.id, invite.spaceId);
+
+    res.json({
+      success: true,
+      space: {
+        id: invite.space.id.toString(),
+        name: invite.space.name,
+        role: invite.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to use invite code' });
+  }
+});
+
 // Set current space
 router.post('/spaces/:spaceId/switch', async (req: AuthRequest, res: Response) => {
   try {

@@ -131,6 +131,13 @@ export const api = {
     return this.request(`/auth/spaces/${spaceId}/switch`, { method: 'POST' });
   },
 
+  async useInviteCode(code: string) {
+    return this.request('/auth/invites/use', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
   // Spaces
   async getCurrentSpace() {
     return this.request('/spaces/current');
@@ -155,6 +162,10 @@ export const api = {
     });
   },
 
+  async completeTask(taskId: string) {
+    return this.request(`/tasks/${taskId}/complete`, { method: 'POST' });
+  },
+
   async deleteTask(taskId: string) {
     return this.request(`/tasks/${taskId}`, { method: 'DELETE' });
   },
@@ -169,6 +180,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  async toggleGoal(goalId: string) {
+    return this.request(`/goals/${goalId}/toggle`, { method: 'POST' });
   },
 
   async deleteGoal(goalId: string) {
