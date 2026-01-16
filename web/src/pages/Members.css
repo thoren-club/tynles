@@ -79,3 +79,14 @@
   background: var(--tg-theme-bg-color, #ffffff);
   border-radius: 4px;
 }
+
+.btn-primary {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+}

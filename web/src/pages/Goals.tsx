@@ -1,24 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-  Container,
-  Title,
-  Button,
-  Card,
-  Text,
-  TextInput,
-  NumberInput,
-  Stack,
-  Group,
-  Badge,
-  ActionIcon,
-  Loader,
-  Center,
-  Tooltip,
-} from '@mantine/core';
-import { IconPlus, IconTrash, IconCheck, IconTarget, IconCircleCheck } from '@tabler/icons-react';
-import { modals } from '@mantine/modals';
-import { notifications } from '@mantine/notifications';
 import { api } from '../api';
+import './Goals.css';
 
 export default function Goals() {
   const [goals, setGoals] = useState<any[]>([]);
@@ -36,43 +18,23 @@ export default function Goals() {
       setGoals(data.goals);
     } catch (error) {
       console.error('Failed to load goals:', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to load goals',
-        color: 'red',
-      });
+      alert('Failed to load goals');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateGoal = async () => {
-    if (!newGoal.title.trim()) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Goal title is required',
-        color: 'orange',
-      });
-      return;
-    }
+    if (!newGoal.title.trim()) return;
 
     try {
       await api.createGoal(newGoal);
       setNewGoal({ title: '', difficulty: 1, xp: 0 });
       setShowCreate(false);
       loadGoals();
-      notifications.show({
-        title: 'Success',
-        message: 'Goal created successfully',
-        color: 'green',
-      });
     } catch (error) {
       console.error('Failed to create goal:', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to create goal',
-        color: 'red',
-      });
+      alert('Failed to create goal');
     }
   };
 
@@ -81,185 +43,107 @@ export default function Goals() {
       const result = await api.toggleGoal(goalId) as { isDone: boolean; xp: number };
       loadGoals();
       if (result.isDone) {
-        notifications.show({
-          title: 'Goal Completed! 🎉',
-          message: `You earned ${result.xp} XP!`,
-          color: 'green',
-        });
-      } else {
-        notifications.show({
-          title: 'Goal Unmarked',
-          message: 'Goal marked as incomplete',
-          color: 'blue',
-        });
+        alert(`Goal completed! You earned ${result.xp} XP!`);
       }
     } catch (error) {
       console.error('Failed to toggle goal:', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to toggle goal',
-        color: 'red',
-      });
+      alert('Failed to toggle goal');
     }
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    modals.openConfirmModal({
-      title: 'Delete Goal',
-      children: <Text size="sm">Are you sure you want to delete this goal?</Text>,
-      labels: { confirm: 'Delete', cancel: 'Cancel' },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        try {
-          await api.deleteGoal(goalId);
-          loadGoals();
-          notifications.show({
-            title: 'Success',
-            message: 'Goal deleted successfully',
-            color: 'green',
-          });
-        } catch (error) {
-          console.error('Failed to delete goal:', error);
-          notifications.show({
-            title: 'Error',
-            message: 'Failed to delete goal',
-            color: 'red',
-          });
-        }
-      },
-    });
+    if (!confirm('Delete this goal?')) return;
+
+    try {
+      await api.deleteGoal(goalId);
+      loadGoals();
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+    }
   };
 
   if (loading) {
-    return (
-      <Container size="md" py="xl">
-        <Center>
-          <Loader size="lg" />
-        </Center>
-      </Container>
-    );
+    return <div className="goals">Loading...</div>;
   }
 
   return (
-    <Container size="md" py="xl">
-      <Stack gap="lg">
-        <Group justify="space-between">
-          <Title order={1}>Goals</Title>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setShowCreate(!showCreate)}
-            variant={showCreate ? 'outline' : 'filled'}
-          >
-            {showCreate ? 'Cancel' : 'Add Goal'}
-          </Button>
-        </Group>
+    <div className="goals">
+      <div className="goals-header">
+        <h1>Goals</h1>
+        <button className="btn-primary" onClick={() => setShowCreate(!showCreate)}>
+          {showCreate ? 'Cancel' : '+ Add'}
+        </button>
+      </div>
 
-        {showCreate && (
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Stack gap="md">
-              <TextInput
-                placeholder="Goal title"
-                value={newGoal.title}
-                onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                label="Title"
-                required
-              />
-              <Group grow>
-                <NumberInput
-                  placeholder="Difficulty"
-                  value={newGoal.difficulty}
-                  onChange={(value) => setNewGoal({ ...newGoal, difficulty: Number(value) || 1 })}
-                  label="Difficulty"
-                  min={1}
-                  max={5}
-                />
-                <NumberInput
-                  placeholder="XP"
-                  value={newGoal.xp}
-                  onChange={(value) => setNewGoal({ ...newGoal, xp: Number(value) || 0 })}
-                  label="XP"
-                  min={0}
-                />
-              </Group>
-              <Button onClick={handleCreateGoal} leftSection={<IconCheck size={16} />}>
-                Create Goal
-              </Button>
-            </Stack>
-          </Card>
+      {showCreate && (
+        <div className="create-goal-form">
+          <input
+            type="text"
+            placeholder="Goal title"
+            value={newGoal.title}
+            onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+            className="input"
+          />
+          <div className="form-row">
+            <input
+              type="number"
+              placeholder="Difficulty"
+              value={newGoal.difficulty}
+              onChange={(e) => setNewGoal({ ...newGoal, difficulty: parseInt(e.target.value) || 1 })}
+              className="input"
+              style={{ width: '100px' }}
+            />
+            <input
+              type="number"
+              placeholder="XP"
+              value={newGoal.xp}
+              onChange={(e) => setNewGoal({ ...newGoal, xp: parseInt(e.target.value) || 0 })}
+              className="input"
+              style={{ width: '100px' }}
+            />
+          </div>
+          <button className="btn-primary" onClick={handleCreateGoal}>
+            Create
+          </button>
+        </div>
+      )}
+
+      <div className="goals-list">
+        {goals.length === 0 ? (
+          <div className="empty-state">No goals yet</div>
+        ) : (
+          goals.map((goal) => (
+            <div 
+              key={goal.id} 
+              className={`goal-card ${goal.isDone ? 'done' : ''}`}
+            >
+              <div className="goal-content">
+                <div className="goal-title">{goal.title}</div>
+                <div className="goal-meta">
+                  <span>Difficulty: {goal.difficulty}</span>
+                  <span>XP: {goal.xp}</span>
+                  {goal.isDone && <span className="done-badge">Done</span>}
+                </div>
+              </div>
+              <div className="goal-actions">
+                <button
+                  className={`btn-toggle ${goal.isDone ? 'done' : ''}`}
+                  onClick={() => handleToggleGoal(goal.id)}
+                  title={goal.isDone ? 'Mark as incomplete' : 'Mark as complete'}
+                >
+                  {goal.isDone ? '✓' : '○'}
+                </button>
+                <button
+                  className="btn-delete"
+                  onClick={() => handleDeleteGoal(goal.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
         )}
-
-        <Stack gap="md">
-          {goals.length === 0 ? (
-            <Card shadow="sm" padding="xl" radius="md" withBorder>
-              <Center>
-                <Text c="dimmed" size="lg">
-                  No goals yet. Create your first goal!
-                </Text>
-              </Center>
-            </Card>
-          ) : (
-            goals.map((goal) => (
-              <Card 
-                key={goal.id} 
-                shadow="sm" 
-                padding="lg" 
-                radius="md" 
-                withBorder
-                style={{
-                  opacity: goal.isDone ? 0.7 : 1,
-                  textDecoration: goal.isDone ? 'line-through' : 'none',
-                }}
-              >
-                <Group justify="space-between">
-                  <div style={{ flex: 1 }}>
-                    <Group gap="xs" mb="xs">
-                      <IconTarget size={20} />
-                      <Text fw={500} size="lg" c={goal.isDone ? 'dimmed' : undefined}>
-                        {goal.title}
-                      </Text>
-                      {goal.isDone && (
-                        <Badge color="green" variant="light">
-                          Done
-                        </Badge>
-                      )}
-                    </Group>
-                    <Group gap="xs">
-                      <Badge variant="light" color="blue">
-                        Difficulty: {goal.difficulty}
-                      </Badge>
-                      <Badge variant="light" color="green">
-                        {goal.xp} XP
-                      </Badge>
-                    </Group>
-                  </div>
-                  <Group gap="xs">
-                    <Tooltip label={goal.isDone ? 'Mark as incomplete' : 'Mark as complete'}>
-                      <ActionIcon
-                        color={goal.isDone ? 'gray' : 'green'}
-                        variant="light"
-                        onClick={() => handleToggleGoal(goal.id)}
-                        size="lg"
-                      >
-                        {goal.isDone ? <IconCheck size={20} /> : <IconCircleCheck size={20} />}
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Delete goal">
-                      <ActionIcon
-                        color="red"
-                        variant="light"
-                        onClick={() => handleDeleteGoal(goal.id)}
-                        size="lg"
-                      >
-                        <IconTrash size={18} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Group>
-              </Card>
-            ))
-          )}
-        </Stack>
-      </Stack>
-    </Container>
+      </div>
+    </div>
   );
 }

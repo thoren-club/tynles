@@ -20,6 +20,17 @@
   gap: 8px;
 }
 
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
 .goals-list {
   display: flex;
   flex-direction: column;
@@ -53,6 +64,35 @@
   color: var(--tg-theme-hint-color, #999999);
 }
 
+.goal-card.done {
+  opacity: 0.6;
+}
+
+.goal-card.done .goal-title {
+  text-decoration: line-through;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-toggle {
+  background: #4caf50;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-toggle.done {
+  background: #999;
+}
+
 .done-badge {
   background: #4caf50;
   color: white;
@@ -60,4 +100,25 @@
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
+}
+
+.btn-delete {
+  background: #ff4444;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
 }

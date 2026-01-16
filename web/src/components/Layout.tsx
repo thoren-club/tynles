@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { AppShell, NavLink, Stack, Text } from '@mantine/core';
-import { IconHome, IconFolder, IconCheck, IconTarget, IconChartBar, IconUsers, IconSettings } from '@tabler/icons-react';
+import './Layout.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,41 +9,39 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
-  const navItems = [
-    { path: '/', label: 'Home', icon: IconHome },
-    { path: '/spaces', label: 'Spaces', icon: IconFolder },
-    { path: '/tasks', label: 'Tasks', icon: IconCheck },
-    { path: '/goals', label: 'Goals', icon: IconTarget },
-    { path: '/stats', label: 'Stats', icon: IconChartBar },
-    { path: '/members', label: 'Members', icon: IconUsers },
-    { path: '/settings', label: 'Settings', icon: IconSettings },
-  ];
-
   return (
-    <AppShell
-      navbar={{
-        width: { base: 70, sm: 200 },
-        breakpoint: 'sm',
-      }}
-      padding="md"
-    >
-      <AppShell.Navbar p="md">
-        <Stack gap="xs">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              component={Link}
-              to={item.path}
-              label={<Text size="sm">{item.label}</Text>}
-              leftSection={<item.icon size={20} />}
-              active={location.pathname === item.path}
-              variant="light"
-            />
-          ))}
-        </Stack>
-      </AppShell.Navbar>
-
-      <AppShell.Main>{children}</AppShell.Main>
-    </AppShell>
+    <div className="layout">
+      <main className="main-content">{children}</main>
+      <nav className="bottom-nav">
+        <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+          <span className="nav-icon">🏠</span>
+          <span className="nav-label">Home</span>
+        </Link>
+        <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
+          <span className="nav-icon">📁</span>
+          <span className="nav-label">Spaces</span>
+        </Link>
+        <Link to="/tasks" className={location.pathname === '/tasks' ? 'active' : ''}>
+          <span className="nav-icon">✅</span>
+          <span className="nav-label">Tasks</span>
+        </Link>
+        <Link to="/goals" className={location.pathname === '/goals' ? 'active' : ''}>
+          <span className="nav-icon">🎯</span>
+          <span className="nav-label">Goals</span>
+        </Link>
+        <Link to="/stats" className={location.pathname === '/stats' ? 'active' : ''}>
+          <span className="nav-icon">📊</span>
+          <span className="nav-label">Stats</span>
+        </Link>
+        <Link to="/members" className={location.pathname === '/members' ? 'active' : ''}>
+          <span className="nav-icon">👥</span>
+          <span className="nav-label">Members</span>
+        </Link>
+        <Link to="/settings" className={location.pathname === '/settings' ? 'active' : ''}>
+          <span className="nav-icon">⚙️</span>
+          <span className="nav-label">Settings</span>
+        </Link>
+      </nav>
+    </div>
   );
 }

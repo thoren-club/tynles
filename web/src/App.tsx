@@ -166,29 +166,11 @@ function App() {
     return (
       <div style={{ 
         display: 'flex', 
-        flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '100vh',
-        gap: '1rem'
+        height: '100vh'
       }}>
-        <div className="loader" style={{
-          width: '48px',
-          height: '48px',
-          border: '4px solid #f3f3f3',
-          borderTop: '4px solid #3498db',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }}></div>
-        <div style={{ color: 'var(--mantine-color-text)', fontSize: '1rem' }}>
-          Loading...
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -197,21 +179,19 @@ function App() {
     return (
       <div style={{ 
         display: 'flex', 
-        flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
         padding: '2rem',
-        textAlign: 'center',
-        gap: '1rem'
+        textAlign: 'center'
       }}>
-        <div style={{ fontSize: '3rem' }}>🔒</div>
-        <h2 style={{ margin: 0, color: 'var(--mantine-color-text)' }}>
-          Authentication Required
-        </h2>
-        <p style={{ color: 'var(--mantine-color-dimmed)', maxWidth: '400px' }}>
-          Please open this app from Telegram to continue. This app can only be accessed through the Telegram Mini App.
-        </p>
+        <div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+          <h2>Authentication Required</h2>
+          <p style={{ color: '#666', maxWidth: '400px' }}>
+            Please open this app from Telegram to continue.
+          </p>
+        </div>
       </div>
     );
   }
