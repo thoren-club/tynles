@@ -1,5 +1,7 @@
 .spaces {
   padding: 16px;
+  min-height: 100vh;
+  padding-bottom: 80px;
 }
 
 .spaces-header {
@@ -11,15 +13,30 @@
 
 .spaces-header h1 {
   font-size: 24px;
+  margin: 0;
+  color: var(--tg-theme-text-color, #000000);
 }
 
 .btn-primary {
   background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
-  padding: 8px 16px;
+  color: white;
+  padding: 10px 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.limit-reached {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  padding: 10px 16px;
 }
 
 .create-space-form {
@@ -60,10 +77,22 @@
   border: 2px solid var(--tg-theme-button-color, #3390ec);
 }
 
+.space-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.space-main {
+  flex: 1;
+}
+
 .space-name {
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 8px;
+  color: var(--tg-theme-text-color, #000000);
 }
 
 .space-info {
@@ -79,9 +108,305 @@
 
 .current-badge {
   background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
+  color: white;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
+}
+
+.space-settings-icon {
+  color: var(--tg-theme-text-color, #000000);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.space-settings-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--tg-theme-hint-color, #999999);
+  font-size: 16px;
+}
+
+/* Шторка настроек пространства */
+.space-settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.space-settings-sheet {
+  width: 100%;
+  max-height: 90vh;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 20px 20px 0 0;
+  animation: slideUp 0.3s ease;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.space-settings {
+  padding: 20px;
+}
+
+.space-settings-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding-top: 8px;
+}
+
+.swipe-indicator {
+  width: 40px;
+  height: 4px;
+  background: var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 2px;
+}
+
+.space-settings-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.member-name {
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000000);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-user-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.member-role {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-select {
+  padding: 4px 8px;
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+  cursor: pointer;
+}
+
+.edit-role-button {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.edit-role-button:hover {
+  opacity: 0.9;
+}
+
+.invite-code-container {
+  padding: 16px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.invite-code {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--tg-theme-button-color, #3390ec);
+  letter-spacing: 2px;
+}
+
+.invite-code-placeholder {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.empty-list {
+  text-align: center;
+  padding: 20px;
+  color: var(--tg-theme-hint-color, #999999);
+  font-size: 14px;
+}
+
+/* Награды уровней */
+.rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reward-item {
+  padding: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reward-level {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.reward-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.reward-text {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  flex: 1;
+  font-style: italic;
+}
+
+.reward-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.reward-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.reward-input:focus {
+  outline: none;
+  border-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.edit-reward-button,
+.save-button,
+.cancel-button {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.edit-reward-button {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+}
+
+.edit-reward-button:hover {
+  opacity: 0.9;
+}
+
+.save-button {
+  background: #4caf50;
+  color: white;
+}
+
+.save-button:hover {
+  opacity: 0.9;
+}
+
+.cancel-button {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.cancel-button:hover {
+  opacity: 0.7;
 }

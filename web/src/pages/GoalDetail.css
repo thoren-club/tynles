@@ -1,0 +1,119 @@
+.goal-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.goal-detail-sheet {
+  width: 100%;
+  max-height: 90vh;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 20px 20px 0 0;
+  animation: slideUp 0.3s ease;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.goal-detail {
+  padding: 20px;
+}
+
+.goal-detail-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding-top: 8px;
+}
+
+.swipe-indicator {
+  width: 40px;
+  height: 4px;
+  background: var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 2px;
+}
+
+.goal-field {
+  margin-bottom: 24px;
+}
+
+.goal-label {
+  display: block;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  margin-bottom: 8px;
+}
+
+.goal-value {
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000000);
+  padding: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+}
+
+.goal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.complete-button,
+.delete-button {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.complete-button {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+}
+
+.complete-button:hover {
+  opacity: 0.9;
+}
+
+.delete-button {
+  background: #ff4444;
+  color: white;
+}
+
+.delete-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,156 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { api } from '../api';
+import './GoalDetail.css';
+
+export default function GoalDetail() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [goal, setGoal] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      loadGoal();
+    }
+  }, [id]);
+
+  const loadGoal = async () => {
+    try {
+      const goals = await api.getGoals();
+      const foundGoal = goals.goals.find((g: any) => g.id === id);
+      if (foundGoal) {
+        setGoal(foundGoal);
+      }
+    } catch (error) {
+      console.error('Failed to load goal:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Удалить цель?')) return;
+    
+    setIsDeleting(true);
+    try {
+      await api.deleteGoal(id!);
+      navigate('/deals');
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+      alert('Не удалось удалить цель');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await api.toggleGoal(id!);
+      loadGoal();
+    } catch (error) {
+      console.error('Failed to toggle goal:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
+        <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="goal-detail">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!goal) {
+    return (
+      <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
+        <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="goal-detail">Цель не найдена</div>
+        </div>
+      </div>
+    );
+  }
+
+  const importanceOptions = [
+    'Не обязательно',
+    'Можно не торопиться',
+    'Нужно торопиться',
+    'Подпекает',
+  ];
+
+  const importance = importanceOptions[goal.difficulty - 1] || importanceOptions[0];
+
+  return (
+    <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
+      <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="goal-detail">
+          {/* Хедер с возможностью свайпа */}
+          <div className="goal-detail-header">
+            <div className="swipe-indicator" />
+          </div>
+
+          {/* Название */}
+          <div className="goal-field">
+            <label className="goal-label">Название</label>
+            <div className="goal-value">{goal.title}</div>
+          </div>
+
+          {/* Описание */}
+          <div className="goal-field">
+            <label className="goal-label">Описание</label>
+            <div className="goal-value">
+              {goal.description || 'Описание отсутствует'}
+            </div>
+          </div>
+
+          {/* Дедлайн */}
+          <div className="goal-field">
+            <label className="goal-label">Дедлайн</label>
+            <div className="goal-value">
+              {goal.deadline 
+                ? new Date(goal.deadline).toLocaleDateString('ru-RU')
+                : 'Не установлен'
+              }
+            </div>
+          </div>
+
+          {/* Важность */}
+          <div className="goal-field">
+            <label className="goal-label">Важность</label>
+            <div className="goal-value">{importance}</div>
+          </div>
+
+          {/* Тип цели */}
+          <div className="goal-field">
+            <label className="goal-label">Тип цели</label>
+            <div className="goal-value">
+              {goal.type === 'year' ? 'На год' : 
+               goal.type === 'month' ? 'На месяц' : 
+               'Бессрочная'}
+            </div>
+          </div>
+
+          {/* Действия */}
+          <div className="goal-actions">
+            <button 
+              className="complete-button"
+              onClick={handleComplete}
+            >
+              {goal.isDone ? 'Отменить выполнение' : 'Подтвердить выполнение'}
+            </button>
+            <button 
+              className="delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Удаление...' : 'Удалить цель'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

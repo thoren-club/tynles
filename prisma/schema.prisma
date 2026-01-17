@@ -21,6 +21,7 @@ model TelegramUser {
   spaceMembers SpaceMember[]
   createdSpaces Space[] @relation("SpaceOwner")
   userStats UserSpaceStats[]
+  stories   Story[]
 
   @@map("users")
 }
@@ -39,6 +40,7 @@ model Space {
   goals       Goal[]
   userStats   UserSpaceStats[]
   rewards     Reward[]
+  stories     Story[]
 
   @@map("spaces")
 }
@@ -139,4 +141,26 @@ model Reward {
 
   @@id([spaceId, level])
   @@map("rewards")
+}
+
+enum StoryType {
+  Weekly
+  Admin
+}
+
+model Story {
+  id            BigInt   @id @default(autoincrement())
+  spaceId       BigInt   @map("space_id")
+  userId        BigInt   @map("user_id")
+  type          StoryType
+  data          Json     // Статистика: tasksCompleted, levelsGained, leaderboardChange
+  weekStartDate DateTime @map("week_start_date") // Начало недели для которой статистика
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  space         Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user          TelegramUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("stories")
+  @@index([spaceId, userId, weekStartDate])
+  @@index([spaceId, userId, createdAt])
 }

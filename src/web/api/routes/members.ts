@@ -84,4 +84,61 @@ router.post('/invites', async (req: Request, res: Response) => {
   }
 });
 
+// Update member role (Admin only)
+router.put('/:userId/role', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    // Check if user is Admin
+    const currentMember = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: authReq.currentSpaceId,
+          userId: authReq.user!.id,
+        },
+      },
+    });
+
+    if (!currentMember || currentMember.role !== 'Admin') {
+      return res.status(403).json({ error: 'Admin role required' });
+    }
+
+    const userId = BigInt(req.params.userId);
+    const { role } = req.body;
+
+    if (!['Admin', 'Editor', 'Viewer'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // Cannot change own role
+    if (userId === authReq.user!.id) {
+      return res.status(400).json({ error: 'Cannot change own role' });
+    }
+
+    const updatedMember = await prisma.spaceMember.update({
+      where: {
+        spaceId_userId: {
+          spaceId: authReq.currentSpaceId,
+          userId,
+        },
+      },
+      include: { user: true },
+      data: { role },
+    });
+
+    res.json({
+      id: updatedMember.user.id.toString(),
+      username: updatedMember.user.username,
+      firstName: updatedMember.user.firstName,
+      role: updatedMember.role,
+      joinedAt: updatedMember.joinedAt.toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update member role' });
+  }
+});
+
 export { router as membersRouter };

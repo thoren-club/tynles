@@ -3,6 +3,7 @@ import { prisma } from '../../../db';
 import { getUserLanguage } from '../../../utils/language';
 import { setCurrentSpace, getCurrentSpace } from '../../../utils/session';
 import { AuthRequest } from '../middleware/auth';
+import { getUserRole, UserRole } from '../../../utils/user-role';
 
 const router = Router();
 
@@ -21,12 +22,16 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Определяем роль пользователя
+    const role = getUserRole(user.tgId);
+
     res.json({
       id: user.id.toString(),
       tgId: user.tgId.toString(),
       username: user.username,
       firstName: user.firstName,
       language: user.language,
+      role: role,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get user info' });
@@ -166,6 +171,41 @@ router.post('/spaces/:spaceId/switch', async (req: AuthRequest, res: Response) =
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to switch space' });
+  }
+});
+
+// Update user name
+router.put('/me', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { firstName } = req.body;
+
+    if (!firstName || typeof firstName !== 'string') {
+      return res.status(400).json({ error: 'FirstName is required' });
+    }
+
+    const updatedUser = await prisma.telegramUser.update({
+      where: { id: authReq.user.id },
+      data: { firstName: firstName.trim() },
+    });
+
+    // Определяем роль пользователя
+    const role = getUserRole(updatedUser.tgId);
+
+    res.json({
+      id: updatedUser.id.toString(),
+      tgId: updatedUser.tgId.toString(),
+      username: updatedUser.username,
+      firstName: updatedUser.firstName,
+      language: updatedUser.language,
+      role: role,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update user name' });
   }
 });
 

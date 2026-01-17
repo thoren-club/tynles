@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
+import { addXp } from '../../../utils/xp';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const { title, difficulty, xp } = req.body;
+    const { title, difficulty, xp, description, deadline, type } = req.body;
 
     if (!title || typeof title !== 'string') {
       return res.status(400).json({ error: 'Title is required' });
@@ -49,7 +50,7 @@ router.post('/', async (req: Request, res: Response) => {
     const goal = await prisma.goal.create({
       data: {
         spaceId: authReq.currentSpaceId,
-        title,
+        title: title || 'Цель',
         difficulty: difficulty || 1,
         xp: xp || 0,
         createdBy: authReq.user!.id,
@@ -90,39 +91,8 @@ router.post('/:goalId/toggle', async (req: Request, res: Response) => {
 
     // If marking as done, add XP
     if (newIsDone && !goal.isDone) {
-      const stats = await prisma.userSpaceStats.upsert({
-        where: {
-          spaceId_userId: {
-            spaceId: authReq.currentSpaceId,
-            userId: authReq.user.id,
-          },
-        },
-        update: {
-          totalXp: {
-            increment: goal.xp,
-          },
-        },
-        create: {
-          spaceId: authReq.currentSpaceId,
-          userId: authReq.user.id,
-          totalXp: goal.xp,
-          level: 1,
-        },
-      });
-
-      // Calculate new level
-      const newLevel = Math.floor(stats.totalXp / 100) + 1;
-      if (newLevel > stats.level) {
-        await prisma.userSpaceStats.update({
-          where: {
-            spaceId_userId: {
-              spaceId: authReq.currentSpaceId,
-              userId: authReq.user.id,
-            },
-          },
-          data: { level: newLevel },
-        });
-      }
+      // Update user stats with XP using the utility function
+      await addXp(authReq.currentSpaceId, authReq.user.id, goal.xp);
     }
 
     const updatedGoal = await prisma.goal.update({

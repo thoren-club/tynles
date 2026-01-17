@@ -1,0 +1,103 @@
+.leaderboard {
+  padding: 16px;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.leaderboard-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.leaderboard-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.tab-button {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999999);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab-button.active {
+  color: var(--tg-theme-button-color, #3390ec);
+  border-bottom-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.tab-button:hover {
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.league-info,
+.space-info {
+  padding: 12px 16px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.info-text {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  text-align: center;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+}
+
+.rank {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-button-color, #3390ec);
+  min-width: 40px;
+  text-align: center;
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.user-stats {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--tg-theme-hint-color, #999999);
+  font-size: 16px;
+}

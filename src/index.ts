@@ -11,6 +11,8 @@ import { setupLevelCommands } from './commands/levels';
 import { setupRewardCommands } from './commands/rewards';
 import { setupMenuCommands } from './commands/menu';
 import { sendReminders } from './utils/task-scheduler';
+import { generateWeeklyStories } from './utils/story-generator';
+import { processExpiredRecurringTasks } from './utils/task-expiration';
 import { getMainMenu } from './menu';
 import { getUserLanguage } from './utils/language';
 import { t } from './i18n';
@@ -152,6 +154,52 @@ setInterval(async () => {
     logger.error(error, 'Scheduler error');
   }
 }, 60000); // 1 minute
+
+// Weekly stories generator - run every hour and check if it's start of week
+let lastStoryGenerationDay: number | null = null;
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const hour = now.getHours();
+
+    // Generate stories on Monday morning (1:00 AM) or Sunday night (23:00)
+    // Also check that we haven't generated stories for this week yet
+    const shouldGenerate = 
+      (dayOfWeek === 1 && hour === 1) || // Monday 1 AM
+      (dayOfWeek === 0 && hour === 23); // Sunday 11 PM
+
+    if (shouldGenerate && lastStoryGenerationDay !== dayOfWeek) {
+      logger.info('Starting weekly stories generation...');
+      await generateWeeklyStories();
+      lastStoryGenerationDay = dayOfWeek;
+      logger.info('Weekly stories generation completed');
+    }
+  } catch (error) {
+    logger.error(error, 'Weekly stories generation error');
+  }
+}, 3600000); // Check every hour
+
+// Task expiration checker - check for expired recurring tasks every hour
+// Process at midnight (00:00) to check tasks that expired during the day
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    // Проверяем сгоревшие задачи каждый час в начале часа (00 минут)
+    if (minute === 0) {
+      logger.info('Checking for expired recurring tasks...');
+      const result = await processExpiredRecurringTasks();
+      if (result.expired > 0) {
+        logger.info(`Processed ${result.expired} expired tasks, updated ${result.processed} tasks`);
+      }
+    }
+  } catch (error) {
+    logger.error(error, 'Task expiration check error');
+  }
+}, 60000); // Check every minute (to catch the start of the hour)
 
 // Start web server (if not in bot-only mode)
 if (process.env.BOT_ONLY !== 'true') {

@@ -6,6 +6,7 @@ import { goalsRouter } from './routes/goals';
 import { membersRouter } from './routes/members';
 import { statsRouter } from './routes/stats';
 import { authRouter } from './routes/auth';
+import { storiesRouter } from './routes/stories';
 
 export function setupApiRoutes() {
   const router = Router();
@@ -20,6 +21,7 @@ export function setupApiRoutes() {
   router.use('/goals', goalsRouter);
   router.use('/members', membersRouter);
   router.use('/stats', statsRouter);
+  router.use('/stories', storiesRouter);
 
   return router;
 }

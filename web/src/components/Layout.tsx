@@ -6,42 +6,43 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+// Страницы, где нижний навбар скрыт
+const HIDE_NAVBAR_PATHS = [
+  '/profile',
+  '/settings',
+  '/level-progression',
+  '/goal',
+  '/all-goals',
+  '/space-settings',
+];
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
 
   return (
     <div className="layout">
-      <main className="main-content">{children}</main>
-      <nav className="bottom-nav">
-        <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-          <span className="nav-icon">🏠</span>
-          <span className="nav-label">Home</span>
-        </Link>
-        <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
-          <span className="nav-icon">📁</span>
-          <span className="nav-label">Spaces</span>
-        </Link>
-        <Link to="/tasks" className={location.pathname === '/tasks' ? 'active' : ''}>
-          <span className="nav-icon">✅</span>
-          <span className="nav-label">Tasks</span>
-        </Link>
-        <Link to="/goals" className={location.pathname === '/goals' ? 'active' : ''}>
-          <span className="nav-icon">🎯</span>
-          <span className="nav-label">Goals</span>
-        </Link>
-        <Link to="/stats" className={location.pathname === '/stats' ? 'active' : ''}>
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">Stats</span>
-        </Link>
-        <Link to="/members" className={location.pathname === '/members' ? 'active' : ''}>
-          <span className="nav-icon">👥</span>
-          <span className="nav-label">Members</span>
-        </Link>
-        <Link to="/settings" className={location.pathname === '/settings' ? 'active' : ''}>
-          <span className="nav-icon">⚙️</span>
-          <span className="nav-label">Settings</span>
-        </Link>
-      </nav>
+      <main className={`main-content ${shouldHideNavbar ? 'no-navbar' : ''}`}>{children}</main>
+      {!shouldHideNavbar && (
+        <nav className="bottom-nav">
+          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+            <span className="nav-icon">📊</span>
+            <span className="nav-label">Dashboard</span>
+          </Link>
+          <Link to="/deals" className={location.pathname === '/deals' ? 'active' : ''}>
+            <span className="nav-icon">📋</span>
+            <span className="nav-label">Дела</span>
+          </Link>
+          <Link to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>
+            <span className="nav-icon">🏆</span>
+            <span className="nav-label">Лидерборд</span>
+          </Link>
+          <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
+            <span className="nav-icon">📁</span>
+            <span className="nav-label">Spaces</span>
+          </Link>
+        </nav>
+      )}
     </div>
   );
 }

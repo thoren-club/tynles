@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './api';
 import Dashboard from './pages/Dashboard';
 import Spaces from './pages/Spaces';
-import Tasks from './pages/Tasks';
-import Goals from './pages/Goals';
-import Stats from './pages/Stats';
-import Members from './pages/Members';
+import Deals from './pages/Deals';
+import Leaderboard from './pages/Leaderboard';
+import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import LevelProgression from './pages/LevelProgression';
+import GoalDetail from './pages/GoalDetail';
+import AllGoals from './pages/AllGoals';
 import Layout from './components/Layout';
 
 declare global {
@@ -201,12 +203,14 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/spaces" element={<Spaces />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/members" element={<Members />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/level-progression" element={<LevelProgression />} />
+          <Route path="/goal/:id" element={<GoalDetail />} />
+          <Route path="/all-goals" element={<AllGoals />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

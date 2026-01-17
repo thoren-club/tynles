@@ -1,6 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
+import { 
+  League, 
+  getLeagueName, 
+  getUserCurrentLeague, 
+  getUserLeaguePosition,
+  LEAGUE_PERIOD_DAYS 
+} from '../../../utils/leagues';
 
 const router = Router();
 
@@ -49,17 +56,32 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
       where: { spaceId: authReq.currentSpaceId },
       include: { user: true },
       orderBy: { totalXp: 'desc' },
-      take: 10,
+      take: 50, // Берем больше для лиг (нужно до 50 позиций)
     });
 
+    // Добавляем информацию о лигах для каждого пользователя
+    const leaderboardWithLeagues = await Promise.all(
+      stats.map(async (s, index) => {
+        // TODO: После миграции получать из s.currentLeague
+        const currentLeague = await getUserCurrentLeague(authReq.currentSpaceId!, s.userId);
+        const leaguePosition = await getUserLeaguePosition(authReq.currentSpaceId!, s.userId, currentLeague);
+
+        return {
+          userId: s.userId.toString(),
+          username: s.user.username,
+          firstName: s.user.firstName,
+          level: s.level,
+          totalXp: s.totalXp,
+          league: currentLeague,
+          leagueName: getLeagueName(currentLeague),
+          leaguePosition: leaguePosition || index + 1,
+        };
+      })
+    );
+
     res.json({
-      leaderboard: stats.map((s) => ({
-        userId: s.userId.toString(),
-        username: s.user.username,
-        firstName: s.user.firstName,
-        level: s.level,
-        totalXp: s.totalXp,
-      })),
+      leaderboard: leaderboardWithLeagues,
+      periodDays: LEAGUE_PERIOD_DAYS,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get leaderboard' });

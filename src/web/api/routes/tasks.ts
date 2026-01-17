@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
+import { calculateTaskXp, calculateLevel } from '../../../types';
+import { addXp } from '../../../utils/xp';
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.get('/', async (req: Request, res: Response) => {
         xp: task.xp,
         dueAt: task.dueAt?.toISOString() || null,
         isPaused: task.isPaused,
+        recurrenceType: task.recurrenceType || null,
+        recurrencePayload: task.recurrencePayload as any || null,
         createdAt: task.createdAt.toISOString(),
       })),
     });
@@ -41,19 +45,40 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const { title, difficulty, xp, dueAt } = req.body;
+    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek } = req.body;
 
     if (!title || typeof title !== 'string') {
       return res.status(400).json({ error: 'Title is required' });
     }
 
+    // Обработка повторяющейся задачи
+    let recurrenceType: string | null = null;
+    let recurrencePayload = null;
+    
+    if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
+      // Определяем тип повторения: ежедневная (7 дней) или еженедельная (меньше 7)
+      if (daysOfWeek.length === 7) {
+        recurrenceType = 'daily';
+      } else {
+        recurrenceType = 'weekly';
+      }
+      recurrencePayload = { daysOfWeek: daysOfWeek };
+    }
+
+    // Рассчитываем XP автоматически, если не передано
+    const taskDifficulty = difficulty || 1;
+    const taskRecurrenceType = recurrenceType || 'none';
+    const calculatedXp = xp !== undefined ? xp : calculateTaskXp(taskDifficulty, taskRecurrenceType);
+
     const task = await prisma.task.create({
       data: {
         spaceId: authReq.currentSpaceId,
-        title,
-        difficulty: difficulty || 1,
-        xp: xp || 0,
+        title: title || 'Задача',
+        difficulty: taskDifficulty,
+        xp: calculatedXp,
         dueAt: dueAt ? new Date(dueAt) : null,
+        recurrenceType,
+        recurrencePayload,
         createdBy: authReq.user!.id,
       },
     });
@@ -88,40 +113,8 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    // Update user stats with XP
-    const stats = await prisma.userSpaceStats.upsert({
-      where: {
-        spaceId_userId: {
-          spaceId: authReq.currentSpaceId,
-          userId: authReq.user.id,
-        },
-      },
-      update: {
-        totalXp: {
-          increment: task.xp,
-        },
-      },
-      create: {
-        spaceId: authReq.currentSpaceId,
-        userId: authReq.user.id,
-        totalXp: task.xp,
-        level: 1,
-      },
-    });
-
-    // Calculate new level (simple formula: level = floor(totalXp / 100) + 1)
-    const newLevel = Math.floor(stats.totalXp / 100) + 1;
-    if (newLevel > stats.level) {
-      await prisma.userSpaceStats.update({
-        where: {
-          spaceId_userId: {
-            spaceId: authReq.currentSpaceId,
-            userId: authReq.user.id,
-          },
-        },
-        data: { level: newLevel },
-      });
-    }
+    // Update user stats with XP using the utility function
+    const result = await addXp(authReq.currentSpaceId, authReq.user.id, task.xp);
 
     // Delete the task (or mark as completed if we add that field later)
     await prisma.task.delete({
@@ -131,7 +124,7 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
     res.json({ 
       success: true,
       xpEarned: task.xp,
-      newLevel: newLevel > stats.level ? newLevel : null,
+      newLevel: result.levelUp ? result.newLevel : null,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to complete task' });

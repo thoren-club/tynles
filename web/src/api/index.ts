@@ -23,6 +23,8 @@ export interface TasksResponse {
     xp: number;
     dueAt: string | null;
     isPaused: boolean;
+    recurrenceType: string | null;
+    recurrencePayload: { daysOfWeek?: number[] } | null;
     createdAt: string;
   }>;
 }
@@ -61,7 +63,25 @@ export interface LeaderboardResponse {
     firstName: string | null;
     level: number;
     totalXp: number;
+    league?: number;
+    leagueName?: string;
+    leaguePosition?: number;
   }>;
+  periodDays?: number;
+}
+
+export interface SpaceLeaderboardResponse {
+  leaderboard: Array<{
+    userId: string;
+    username: string | null;
+    firstName: string | null;
+    level: number;
+    totalXp: number;
+    tasksCompleted30Days: number;
+    position: number;
+  }>;
+  periodDays: number;
+  note?: string;
 }
 
 export const api = {
@@ -123,6 +143,13 @@ export const api = {
     return this.request('/auth/me');
   },
 
+  async updateUserName(firstName: string) {
+    return this.request('/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify({ firstName }),
+    });
+  },
+
   async getSpaces(): Promise<SpacesResponse> {
     return this.request<SpacesResponse>('/auth/spaces');
   },
@@ -155,7 +182,15 @@ export const api = {
     return this.request<TasksResponse>('/tasks');
   },
 
-  async createTask(data: { title: string; difficulty?: number; xp?: number; dueAt?: string }) {
+  async createTask(data: { 
+    title: string; 
+    difficulty?: number; 
+    xp?: number; 
+    dueAt?: string;
+    description?: string;
+    isRecurring?: boolean;
+    daysOfWeek?: number[];
+  }) {
     return this.request('/tasks', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -175,7 +210,14 @@ export const api = {
     return this.request<GoalsResponse>('/goals');
   },
 
-  async createGoal(data: { title: string; difficulty?: number; xp?: number }) {
+  async createGoal(data: { 
+    title: string; 
+    difficulty?: number; 
+    xp?: number;
+    description?: string;
+    deadline?: string;
+    type?: 'year' | 'month' | 'unlimited';
+  }) {
     return this.request('/goals', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -199,6 +241,11 @@ export const api = {
     return this.request<LeaderboardResponse>('/stats/leaderboard');
   },
 
+  // Space leaderboard (based on completed tasks in last 30 days)
+  async getSpaceLeaderboard(): Promise<SpaceLeaderboardResponse> {
+    return this.request<SpaceLeaderboardResponse>('/spaces/current/leaderboard');
+  },
+
   // Members
   async getMembers(): Promise<MembersResponse> {
     return this.request<MembersResponse>('/members');
@@ -209,5 +256,39 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
+  },
+
+  async updateMemberRole(userId: string, role: 'Admin' | 'Editor' | 'Viewer') {
+    return this.request(`/members/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  // Level Rewards
+  async getLevelRewards() {
+    return this.request<{ rewards: Array<{ level: number; text: string }> }>('/spaces/current/rewards');
+  },
+
+  async updateLevelReward(level: number, text: string) {
+    return this.request(`/spaces/current/rewards/${level}`, {
+      method: 'PUT',
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  // Stories
+  async getStories() {
+    return this.request<{ stories: Array<{
+      id: string;
+      type: 'Weekly' | 'Admin';
+      data: {
+        tasksCompleted?: number;
+        levelsGained?: number;
+        leaderboardChange?: number; // может быть отрицательным
+      };
+      weekStartDate: string;
+      createdAt: string;
+    }> }>('/stories');
   },
 };
