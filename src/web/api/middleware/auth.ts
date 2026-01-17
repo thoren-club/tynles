@@ -146,6 +146,7 @@ function parseInitData(initData: string) {
       lastName: user.last_name,
       username: user.username,
       languageCode: user.language_code,
+      photoUrl: user.photo_url || null, // photo_url может быть доступен в зависимости от настроек приватности
     };
   } catch {
     return null;

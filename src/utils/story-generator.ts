@@ -42,7 +42,7 @@ async function getUserLeaderboardPosition(
 /**
  * Генерирует недельную историю для пользователя в пространстве
  */
-async function generateStoryForUser(
+export async function generateStoryForUser(
   spaceId: bigint,
   userId: bigint,
   weekStart: Date
