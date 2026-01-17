@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronRight, IconSettings, IconBell, IconX } from '@tabler/icons-react';
 import { api } from '../api';
+import { isTaskAvailable } from '../utils/taskAvailability';
 import './Dashboard.css';
 
 interface Story {
@@ -191,8 +192,21 @@ export default function Dashboard() {
   const totalToday = dailyRecurringTasks.length;
   const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
   
-  // Актуальные задачи - все невыполненные задачи (одноразовые + ежедневные)
-  const uncompletedTasks = dailyTasks.filter((task: any) => !task.isCompleted);
+  // Актуальные задачи - все невыполненные И доступные задачи (одноразовые + ежедневные)
+  // Для повторяющихся задач показываем только те, которые доступны для выполнения
+  const uncompletedTasks = dailyTasks.filter((task: any) => {
+    // Пропускаем выполненные задачи
+    if (task.isCompleted) return false;
+    
+    // Для повторяющихся задач проверяем доступность
+    const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+    if (isRecurring) {
+      return isTaskAvailable(task);
+    }
+    
+    // Одноразовые задачи показываем всегда (если не выполнены)
+    return true;
+  });
 
   // Мотивационные фразы
   const motivationalPhrases = [
@@ -239,8 +253,22 @@ export default function Dashboard() {
             className="avatar-container"
             onClick={() => navigate('/profile')}
           >
-            <div className="avatar">
-              {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+            {user?.photoUrl ? (
+              <img 
+                src={user.photoUrl} 
+                alt={user.firstName || user.username || 'User'} 
+                className="avatar avatar-image"
+                onError={(e) => {
+                  // Fallback на placeholder если фото не загрузилось
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const placeholder = target.nextElementSibling as HTMLElement;
+                  if (placeholder) placeholder.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className="avatar" style={{ display: user?.photoUrl ? 'none' : 'flex' }}>
+              {user?.firstName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           </div>
           <IconSettings 

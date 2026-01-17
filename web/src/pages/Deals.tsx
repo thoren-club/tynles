@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
+import { isTaskAvailable } from '../utils/taskAvailability';
 import './Deals.css';
 
 export default function Deals() {
@@ -413,6 +414,23 @@ export default function Deals() {
 
   const displayedGoals = goals.slice(0, 6);
   const hasMoreGoals = goals.length > 6;
+  
+  // Фильтруем задачи: показываем только доступные для выполнения
+  // Одноразовые - всегда показываем (если не выполнены)
+  // Повторяющиеся - показываем только если доступны (dueAt наступил и текущий день входит в daysOfWeek)
+  const availableTasks = tasks.filter((task: any) => {
+    // Пропускаем выполненные задачи (они не показываются)
+    if (task.isCompleted) return false;
+    
+    // Для повторяющихся задач проверяем доступность
+    const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+    if (isRecurring) {
+      return isTaskAvailable(task);
+    }
+    
+    // Одноразовые задачи показываем всегда (если не выполнены)
+    return true;
+  });
 
   if (loading) {
     return <div className="deals">Loading...</div>;
@@ -502,11 +520,11 @@ export default function Deals() {
       <div className="tasks-section">
         <h2 className="section-title">Задачи</h2>
         
-        {tasks.length === 0 ? (
+        {availableTasks.length === 0 ? (
           <div className="empty-state">Задач пока нет</div>
         ) : (
           <div className="tasks-list">
-            {tasks.map((task) => {
+            {availableTasks.map((task) => {
               const taskType = getTaskType(task);
               const taskTypeText = getTaskTypeText(task);
               const taskTypeIcon = getTaskTypeIcon(task);

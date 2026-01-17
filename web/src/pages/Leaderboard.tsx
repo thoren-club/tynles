@@ -162,6 +162,36 @@ export default function Leaderboard() {
     
     const days = periodInfo.daysRemaining;
     if (days <= 0) return 'Раунд завершен';
+    
+    // Форматируем дни, часы, минуты для более точного отображения
+    const now = new Date();
+    const endDate = periodInfo.endDate ? new Date(periodInfo.endDate) : null;
+    
+    if (endDate) {
+      const diffMs = endDate.getTime() - now.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      if (diffDays <= 0 && diffHours <= 0) {
+        return 'Раунд завершен';
+      }
+      
+      if (diffDays === 0) {
+        return `Осталось ${diffHours} ${diffHours === 1 ? 'час' : diffHours < 5 ? 'часа' : 'часов'}`;
+      }
+      
+      if (diffDays === 1) {
+        return `Остался 1 день`;
+      }
+      
+      if (diffDays < 5) {
+        return `Осталось ${diffDays} дня`;
+      }
+      
+      return `Осталось ${diffDays} дней`;
+    }
+    
+    // Fallback на старую логику
     if (days === 1) return 'Остался 1 день';
     if (days < 5) return `Осталось ${days} дня`;
     return `Осталось ${days} дней`;
@@ -254,9 +284,16 @@ export default function Leaderboard() {
         ) : (
           <>
             {leaderboard.map((entry, index) => {
-              const position = entry.position || (activeTab === 'global' && globalPagination 
-                ? (globalPagination.page - 1) * globalPagination.limit + index + 1
-                : index + 1);
+              // Рассчитываем позицию: для глобального используем leaguePosition из ответа или рассчитываем
+              let position: number;
+              if (activeTab === 'global' && globalPagination) {
+                // Используем leaguePosition из ответа, если есть, иначе рассчитываем
+                position = entry.leaguePosition || entry.position || 
+                  ((globalPagination.page - 1) * (globalPagination.limit || globalPagination.chunkSize || 50) + index + 1);
+              } else {
+                // Для локального лидерборда используем position из ответа или индекс
+                position = entry.position || entry.leaguePosition || (index + 1);
+              }
               
               return (
                 <LeaderboardItem 
@@ -275,8 +312,8 @@ export default function Leaderboard() {
               );
             })}
 
-            {/* Пагинация для глобального лидерборда */}
-            {activeTab === 'global' && globalPagination && (
+            {/* Пагинация для глобального лидерборда - показываем только если больше 1 страницы */}
+            {activeTab === 'global' && globalPagination && (globalPagination.totalPages || globalPagination.totalChunks) > 1 && (
               <div className="leaderboard-pagination">
                 <button
                   className="pagination-button"
@@ -286,7 +323,7 @@ export default function Leaderboard() {
                   Назад
                 </button>
                 <span className="pagination-info">
-                  Страница {globalPagination.page} из {globalPagination.totalPages}
+                  Страница {globalPagination.page} из {globalPagination.totalPages || globalPagination.totalChunks || 1}
                 </span>
                 <button
                   className="pagination-button"

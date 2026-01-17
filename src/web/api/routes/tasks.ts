@@ -4,6 +4,56 @@ import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
+import { calculateNextDueDate } from '../../../utils/recurrence';
+
+/**
+ * Получает первый доступный день для повторяющейся задачи
+ * Если сегодня входит в дни повторения - возвращает сегодня, иначе следующий доступный день
+ */
+function getFirstAvailableDate(recurrenceType: string | null, payload: any, now: Date): Date {
+  if (!recurrenceType || recurrenceType === 'none') {
+    return now; // Для одноразовых задач возвращаем текущую дату
+  }
+  
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  
+  // Для ежедневных задач (7 дней) - сегодня
+  if (recurrenceType === 'daily') {
+    return today;
+  }
+  
+  // Для еженедельных задач проверяем дни недели
+  if (recurrenceType === 'weekly' && payload?.daysOfWeek && payload.daysOfWeek.length > 0) {
+    const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+    const daysOfWeek = payload.daysOfWeek.sort((a: number, b: number) => a - b);
+    
+    // Если сегодня входит в дни недели - возвращаем сегодня
+    if (daysOfWeek.includes(currentDay)) {
+      return today;
+    }
+    
+    // Иначе находим следующий доступный день
+    let nextDay = daysOfWeek.find((d: number) => d > currentDay);
+    if (!nextDay) {
+      // Следующий день на следующей неделе
+      nextDay = daysOfWeek[0];
+      const nextAvailable = new Date(now);
+      nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
+      nextAvailable.setHours(0, 0, 0, 0);
+      return nextAvailable;
+    } else {
+      // Следующий день на этой неделе
+      const nextAvailable = new Date(now);
+      nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
+      nextAvailable.setHours(0, 0, 0, 0);
+      return nextAvailable;
+    }
+  }
+  
+  // По умолчанию - сегодня
+  return today;
+}
 
 const router = Router();
 
@@ -75,13 +125,31 @@ router.post('/', async (req: Request, res: Response) => {
     const taskRecurrenceType = recurrenceType || 'none';
     const calculatedXp = xp !== undefined ? xp : calculateTaskXp(taskDifficulty, taskRecurrenceType);
 
+    // Для повторяющихся задач устанавливаем dueAt на первый доступный день
+    // Для одноразовых - используем переданный dueAt
+    let taskDueAt: Date | null = null;
+    const now = new Date();
+    
+    if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
+      // Для повторяющихся задач устанавливаем dueAt на первый доступный день
+      const firstAvailableDate = getFirstAvailableDate(
+        recurrenceType,
+        { daysOfWeek },
+        now
+      );
+      taskDueAt = firstAvailableDate;
+    } else if (dueAt) {
+      // Для одноразовых задач используем переданный dueAt
+      taskDueAt = new Date(dueAt);
+    }
+
     const task = await prisma.task.create({
       data: {
         spaceId: authReq.currentSpaceId,
         title: title || 'Задача',
         difficulty: taskDifficulty,
         xp: calculatedXp,
-        dueAt: dueAt ? new Date(dueAt) : null,
+        dueAt: taskDueAt,
         recurrenceType,
         recurrencePayload: recurrencePayload === Prisma.JsonNull ? Prisma.JsonNull : recurrencePayload,
         createdBy: authReq.user!.id,
@@ -121,13 +189,39 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
     // Update user stats with XP using the utility function
     const result = await addXp(authReq.currentSpaceId, authReq.user.id, task.xp);
 
-    // Для повторяющихся задач не удаляем, а обновляем updatedAt (будет использоваться как lastCompletedAt)
+    // Для повторяющихся задач не удаляем, а обновляем updatedAt и dueAt на следующий доступный день
     // Для одноразовых задач удаляем
     if (task.recurrenceType && task.recurrenceType !== 'none') {
-      // Обновляем updatedAt для отслеживания времени последнего выполнения
+      const now = new Date();
+      
+      // Определяем тип повторения
+      let recurrenceType = task.recurrenceType;
+      const payload = task.recurrencePayload as { daysOfWeek?: number[] } | null;
+      
+      // Если есть daysOfWeek - это еженедельная задача, независимо от типа
+      if (payload?.daysOfWeek && payload.daysOfWeek.length > 0) {
+        if (payload.daysOfWeek.length === 7) {
+          recurrenceType = 'daily';
+        } else {
+          recurrenceType = 'weekly';
+        }
+      }
+      
+      // Рассчитываем следующий доступный день для выполнения
+      const nextDueDate = calculateNextDueDate(
+        recurrenceType,
+        payload as any,
+        now
+      );
+      
+      // Обновляем задачу: updatedAt для отслеживания последнего выполнения и dueAt на следующий день
       await prisma.task.update({
         where: { id: taskId },
-        data: { updatedAt: new Date() },
+        data: {
+          updatedAt: now, // Время последнего выполнения
+          dueAt: nextDueDate, // Следующий доступный день для выполнения
+          reminderSent: false, // Сбрасываем флаг напоминания для следующего периода
+        },
       });
     } else {
       // Удаляем одноразовую задачу

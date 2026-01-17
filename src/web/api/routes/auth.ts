@@ -32,6 +32,7 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
       firstName: user.firstName,
       language: user.language,
       role: role,
+      photoUrl: user.photoUrl, // Добавляем photoUrl для отображения аватарки
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get user info' });

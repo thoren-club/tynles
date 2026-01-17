@@ -189,8 +189,10 @@ router.get('/leaderboard/global', async (req: Request, res: Response) => {
       leaderboard: leaderboardWithLeagues,
       pagination: {
         page: chunkNumber, // Номер чанка
+        limit: chunkSize, // Добавляем limit для совместимости
         chunkSize,
         total: shuffledUsers.length,
+        totalPages: totalChunks, // Добавляем totalPages для совместимости
         totalChunks,
         hasNextPage: chunkNumber < totalChunks,
         hasPrevPage: chunkNumber > 1,
