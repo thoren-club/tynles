@@ -21,19 +21,6 @@ function getTotalXpForLevel(targetLevel: number): number {
   return totalXp;
 }
 
-function calculateLevel(totalXp: number): number {
-  if (totalXp <= 0) return 1;
-  let level = 1;
-  let xpRequired = BASE_XP_PER_LEVEL;
-  let currentXp = totalXp;
-  while (currentXp >= xpRequired && level < 80) {
-    currentXp -= xpRequired;
-    level++;
-    xpRequired = Math.floor(BASE_XP_PER_LEVEL * (1 + (level - 1) * 0.02));
-  }
-  return Math.min(level, 80);
-}
-
 export default function LevelProgression() {
   const navigate = useNavigate();
   const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);

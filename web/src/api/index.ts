@@ -159,12 +159,12 @@ export const api = {
   },
 
   async useInviteCode(code: string) {
-    const result = await this.request('/auth/invites/use', {
+    const result = await this.request<any>('/auth/invites/use', {
       method: 'POST',
       body: JSON.stringify({ code }),
     });
     // После подключения автоматически переключаемся на новое пространство
-    if (result.space?.id) {
+    if (result?.space?.id) {
       await this.switchSpace(result.space.id);
     }
     return result;
