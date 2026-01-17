@@ -1,5 +1,5 @@
-import { prisma } from '../../db';
-import { logger } from '../../logger';
+import { prisma } from '../db';
+import { logger } from '../logger';
 
 /**
  * Система лиг (12 лиг)
@@ -111,7 +111,7 @@ export async function getLeagueLeaderboard(
 
   // Рассчитываем опыт за 30 дней для каждого пользователя
   const leaderboard = await Promise.all(
-    users.map(async (userStat, index) => {
+    users.map(async (userStat: typeof users[0], index: number) => {
       const xp30Days = await getUserXpLast30Days(spaceId, userStat.userId);
       return {
         userId: userStat.userId,
@@ -122,10 +122,10 @@ export async function getLeagueLeaderboard(
   );
 
   // Сортируем по опыту за 30 дней (убывание)
-  leaderboard.sort((a, b) => b.xp - a.xp);
+  leaderboard.sort((a: { xp: number }, b: { xp: number }) => b.xp - a.xp);
 
   // Переназначаем позиции после сортировки
-  return leaderboard.map((entry, index) => ({
+  return leaderboard.map((entry: typeof leaderboard[0], index: number) => ({
     ...entry,
     position: index + 1,
   }));
@@ -177,7 +177,7 @@ export async function updateLeaguesForSpace(spaceId: bigint) {
 
     // Рассчитываем опыт за 30 дней для каждого пользователя
     const usersWithXp = await Promise.all(
-      allUsers.map(async (userStat) => {
+      allUsers.map(async (userStat: typeof allUsers[0]) => {
         const xp30Days = await getUserXpLast30Days(spaceId, userStat.userId);
         return {
           userId: userStat.userId,
@@ -188,7 +188,7 @@ export async function updateLeaguesForSpace(spaceId: bigint) {
     );
 
     // Сортируем по опыту за 30 дней (убывание)
-    usersWithXp.sort((a, b) => b.xp - a.xp);
+    usersWithXp.sort((a: { xp: number }, b: { xp: number }) => b.xp - a.xp);
 
     // Распределяем пользователей по лигам
     // Для MVP: используем простую логику распределения

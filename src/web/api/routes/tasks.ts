@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
@@ -53,7 +54,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Обработка повторяющейся задачи
     let recurrenceType: string | null = null;
-    let recurrencePayload = null;
+    let recurrencePayload: Prisma.InputJsonValue | Prisma.JsonNullValueInput | null = null;
     
     if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
       // Определяем тип повторения: ежедневная (7 дней) или еженедельная (меньше 7)
@@ -63,6 +64,9 @@ router.post('/', async (req: Request, res: Response) => {
         recurrenceType = 'weekly';
       }
       recurrencePayload = { daysOfWeek: daysOfWeek };
+    } else {
+      // Используем Prisma.JsonNull для явного null в Json поле
+      recurrencePayload = Prisma.JsonNull;
     }
 
     // Рассчитываем XP автоматически, если не передано
@@ -78,7 +82,7 @@ router.post('/', async (req: Request, res: Response) => {
         xp: calculatedXp,
         dueAt: dueAt ? new Date(dueAt) : null,
         recurrenceType,
-        recurrencePayload,
+        recurrencePayload: recurrencePayload === Prisma.JsonNull ? Prisma.JsonNull : recurrencePayload,
         createdBy: authReq.user!.id,
       },
     });

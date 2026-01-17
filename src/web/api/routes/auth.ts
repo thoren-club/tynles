@@ -175,10 +175,9 @@ router.post('/spaces/:spaceId/switch', async (req: AuthRequest, res: Response) =
 });
 
 // Update user name
-router.put('/me', async (req: Request, res: Response) => {
+router.put('/me', async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as AuthRequest;
-    if (!authReq.user) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
@@ -189,7 +188,7 @@ router.put('/me', async (req: Request, res: Response) => {
     }
 
     const updatedUser = await prisma.telegramUser.update({
-      where: { id: authReq.user.id },
+      where: { id: req.user.id },
       data: { firstName: firstName.trim() },
     });
 
