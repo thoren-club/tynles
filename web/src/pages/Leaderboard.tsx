@@ -2,6 +2,22 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import './Leaderboard.css';
 
+// Названия лиг
+const LEAGUE_NAMES = [
+  'Бронзовая',
+  'Серебряная',
+  'Золотая',
+  'Сапфировая',
+  'Рубиновая',
+  'Изумрудная',
+  'Аметистовая',
+  'Жемчужная',
+  'Обсидиановая',
+  'Алмазная',
+  'Мастер',
+  'Легендарная',
+];
+
 export default function Leaderboard() {
   const [activeTab, setActiveTab] = useState<'global' | 'space'>('global');
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
@@ -13,23 +29,38 @@ export default function Leaderboard() {
     loadData();
   }, []);
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
   const loadData = async () => {
     try {
-      const [leaderboardData, spaceLeaderboardData, spaceData] = await Promise.all([
+      const [leaderboardData, spaceLeaderboardData, spaceData, userData] = await Promise.all([
         api.getLeaderboard(),
         api.getSpaceLeaderboard().catch(() => ({ leaderboard: [], periodDays: 30 })),
         api.getCurrentSpace().catch(() => null),
+        api.getUser().catch(() => null),
       ]);
       
       setGlobalLeaderboard(leaderboardData.leaderboard || []);
       setSpaceLeaderboard(spaceLeaderboardData.leaderboard || []);
       setCurrentSpace(spaceData);
+      setCurrentUser(userData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Находим текущего пользователя в лидерборде для определения его лиги
+  const getCurrentUserLeague = (): number => {
+    if (!globalLeaderboard.length || !currentUser) return 1;
+    const currentUserEntry = globalLeaderboard.find((entry: any) => {
+      return entry.userId === currentUser.id?.toString();
+    });
+    return currentUserEntry?.league || 1;
+  };
+  
+  const currentUserLeague = getCurrentUserLeague();
 
   if (loading) {
     return <div className="leaderboard">Loading...</div>;
@@ -58,20 +89,24 @@ export default function Leaderboard() {
         </button>
       </div>
 
-      {/* Информация о лигах (для глобального) */}
+      {/* Визуализация лиг (для глобального) */}
       {activeTab === 'global' && (
-        <div className="league-info">
-          <div className="info-text">
-            12 лиг • Система работает как в Duolingo
-          </div>
-        </div>
-      )}
-
-      {/* Информация о пространстве (для таба пространства) */}
-      {activeTab === 'space' && (
-        <div className="space-info">
-          <div className="info-text">
-            Количество выполненных задач за 30 дней (скользящее окно)
+        <div className="leagues-container">
+          <div className="leagues-list">
+            {LEAGUE_NAMES.map((leagueName, index) => {
+              const leagueNumber = index + 1;
+              const isUnlocked = leagueNumber <= currentUserLeague;
+              
+              return (
+                <div 
+                  key={leagueNumber}
+                  className={`league-badge ${isUnlocked ? 'unlocked' : 'locked'} ${leagueNumber === currentUserLeague ? 'current' : ''}`}
+                >
+                  <div className="league-number">{leagueNumber}</div>
+                  <div className="league-name">{leagueName}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -84,7 +119,7 @@ export default function Leaderboard() {
           leaderboard.map((entry, index) => {
             const position = entry.position || index + 1;
             const displayStats = activeTab === 'space' && entry.tasksCompleted30Days !== undefined
-              ? `${entry.tasksCompleted30Days} задач за 30 дней`
+              ? `${entry.tasksCompleted30Days} задач`
               : `Уровень ${entry.level} • ${entry.totalXp} XP`;
             
             return (

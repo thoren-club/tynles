@@ -40,18 +40,61 @@
   color: var(--tg-theme-text-color, #000000);
 }
 
-.league-info,
-.space-info {
-  padding: 12px 16px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 8px;
-  margin-bottom: 20px;
+/* Контейнер лиг */
+.leagues-container {
+  margin-bottom: 24px;
 }
 
-.info-text {
+.leagues-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.league-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-width: 70px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.league-badge.unlocked {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  opacity: 1;
+}
+
+.league-badge.locked {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  opacity: 0.4;
+}
+
+.league-badge.current {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+}
+
+.league-badge.current .league-number,
+.league-badge.current .league-name {
+  color: white;
+}
+
+.league-number {
   font-size: 14px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.league-name {
+  font-size: 11px;
   color: var(--tg-theme-hint-color, #999999);
   text-align: center;
+  line-height: 1.2;
 }
 
 .leaderboard-list {

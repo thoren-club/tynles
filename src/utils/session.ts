@@ -3,8 +3,12 @@
 
 const currentSpaces = new Map<number, bigint>(); // userId -> spaceId
 
-export function setCurrentSpace(userId: bigint, spaceId: bigint) {
-  currentSpaces.set(Number(userId), spaceId);
+export function setCurrentSpace(userId: bigint, spaceId: bigint | undefined) {
+  if (spaceId === undefined) {
+    currentSpaces.delete(Number(userId));
+  } else {
+    currentSpaces.set(Number(userId), spaceId);
+  }
 }
 
 export function getCurrentSpace(userId: bigint): bigint | undefined {

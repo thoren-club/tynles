@@ -12,6 +12,7 @@ const HIDE_NAVBAR_PATHS = [
   '/settings',
   '/level-progression',
   '/goal',
+  '/task',
   '/all-goals',
   '/space-settings',
 ];

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../../db';
+import { getCurrentSpace, setCurrentSpace } from '../../../utils/session';
 import crypto from 'crypto';
 
 export interface AuthRequest extends Request {
@@ -257,14 +258,45 @@ export async function authMiddleware(
       language: user.language,
     };
 
-    // Get current space from session or first space
-    const spaceMember = await prisma.spaceMember.findFirst({
-      where: { userId: user.id },
-      orderBy: { joinedAt: 'asc' },
-    });
-
-    if (spaceMember) {
-      req.currentSpaceId = spaceMember.spaceId;
+    // Get current space from session or use first available space
+    const savedSpaceId = getCurrentSpace(user.id);
+    
+    if (savedSpaceId) {
+      // Проверяем, что пространство все еще существует и пользователь является участником
+      const spaceMember = await prisma.spaceMember.findUnique({
+        where: {
+          spaceId_userId: {
+            spaceId: savedSpaceId,
+            userId: user.id,
+          },
+        },
+      });
+      
+      if (spaceMember) {
+        req.currentSpaceId = savedSpaceId;
+      } else {
+        // Пространство больше не доступно, находим первое доступное
+        const firstSpaceMember = await prisma.spaceMember.findFirst({
+          where: { userId: user.id },
+          orderBy: { joinedAt: 'asc' },
+        });
+        
+        if (firstSpaceMember) {
+          req.currentSpaceId = firstSpaceMember.spaceId;
+          setCurrentSpace(user.id, firstSpaceMember.spaceId);
+        }
+      }
+    } else {
+      // Нет сохраненного пространства, берем первое доступное
+      const firstSpaceMember = await prisma.spaceMember.findFirst({
+        where: { userId: user.id },
+        orderBy: { joinedAt: 'asc' },
+      });
+      
+      if (firstSpaceMember) {
+        req.currentSpaceId = firstSpaceMember.spaceId;
+        setCurrentSpace(user.id, firstSpaceMember.spaceId);
+      }
     }
 
     next();

@@ -40,6 +40,7 @@ router.get('/current', async (req: Request, res: Response) => {
       name: space.name,
       timezone: space.timezone,
       role: member?.role,
+      isOwner: space.ownerUserId === authReq.user!.id,
       stats: {
         tasks: space._count.tasks,
         goals: space._count.goals,
@@ -203,6 +204,43 @@ router.get('/current/rewards', async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get level rewards' });
+  }
+});
+
+// Delete current space (Owner only)
+router.delete('/current', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId || !authReq.user) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    // Получаем информацию о пространстве
+    const space = await prisma.space.findUnique({
+      where: { id: authReq.currentSpaceId },
+    });
+
+    if (!space) {
+      return res.status(404).json({ error: 'Space not found' });
+    }
+
+    // Проверяем, что пользователь - владелец пространства
+    if (space.ownerUserId !== authReq.user.id) {
+      return res.status(403).json({ error: 'Only space owner can delete the space' });
+    }
+
+    // Удаляем пространство (каскадное удаление удалит всех участников, задачи, цели и т.д.)
+    await prisma.space.delete({
+      where: { id: authReq.currentSpaceId },
+    });
+
+    // Очищаем текущее пространство из session
+    setCurrentSpace(authReq.user.id, undefined);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete space:', error);
+    res.status(500).json({ error: 'Failed to delete space' });
   }
 });
 

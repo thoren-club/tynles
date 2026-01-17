@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import LevelProgression from './pages/LevelProgression';
 import GoalDetail from './pages/GoalDetail';
+import TaskDetail from './pages/TaskDetail';
 import AllGoals from './pages/AllGoals';
 import Layout from './components/Layout';
 
@@ -210,6 +211,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/level-progression" element={<LevelProgression />} />
           <Route path="/goal/:id" element={<GoalDetail />} />
+          <Route path="/task/:id" element={<TaskDetail />} />
           <Route path="/all-goals" element={<AllGoals />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

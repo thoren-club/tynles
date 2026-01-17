@@ -98,10 +98,35 @@
 .complete-button {
   background: var(--tg-theme-button-color, #3390ec);
   color: white;
+  transition: background-color 0.3s ease, opacity 0.2s ease;
 }
 
-.complete-button:hover {
+.complete-button:hover:not(:disabled) {
   opacity: 0.9;
+}
+
+.complete-button:active:not(:disabled) {
+  background: #2a7fd9;
+  opacity: 0.95;
+}
+
+.complete-button.completing {
+  background: #66b3ff;
+  cursor: wait;
+}
+
+.complete-button.done {
+  background: #22c55e;
+}
+
+.complete-button.done:hover:not(:disabled) {
+  background: #20b955;
+  opacity: 0.9;
+}
+
+.complete-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .delete-button {

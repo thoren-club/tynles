@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { IconSettings } from '@tabler/icons-react';
+import { useEffect, useState, useRef } from 'react';
+import { IconSettings, IconPlus, IconLink } from '@tabler/icons-react';
 import { api } from '../api';
 import './Spaces.css';
 
@@ -11,15 +11,31 @@ export default function Spaces() {
   const [selectedSpace, setSelectedSpace] = useState<any>(null);
   const [currentSpaceRole, setCurrentSpaceRole] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [isSpaceOwner, setIsSpaceOwner] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [spaceMembers, setSpaceMembers] = useState<any[]>([]);
   const [inviteCode, setInviteCode] = useState<string>('');
   const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);
   const [editingRewardLevel, setEditingRewardLevel] = useState<number | null>(null);
   const [editingRewardText, setEditingRewardText] = useState<string>('');
   const [editingMemberRole, setEditingMemberRole] = useState<{ userId: string; role: string } | null>(null);
+  const [showSpacesDropdown, setShowSpacesDropdown] = useState(false);
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const spacesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadSpaces();
+    
+    // Закрытие dropdown при клике вне его
+    const handleClickOutside = (e: MouseEvent) => {
+      if (spacesDropdownRef.current && !spacesDropdownRef.current.contains(e.target as Node)) {
+        setShowSpacesDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const loadSpaces = async () => {
@@ -57,11 +73,33 @@ export default function Spaces() {
   const handleSwitchSpace = async (spaceId: string) => {
     try {
       await api.switchSpace(spaceId);
-      alert('Пространство переключено!');
+      // Автоматически перезагружаем список пространств
+      await loadSpaces();
+      // Перезагружаем страницу для применения изменений
       window.location.reload();
     } catch (error) {
       console.error('Failed to switch space:', error);
       alert('Не удалось переключить пространство');
+    }
+  };
+  
+  const handleJoinSpace = async () => {
+    if (!inviteCodeInput.trim()) {
+      alert('Введите код приглашения');
+      return;
+    }
+    
+    try {
+      await api.useInviteCode(inviteCodeInput.trim());
+      setInviteCodeInput('');
+      setShowJoinForm(false);
+      setShowSpacesDropdown(false);
+      await loadSpaces();
+      alert('Вы успешно подключились к пространству!');
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Failed to join space:', error);
+      alert(error.message || 'Не удалось подключиться к пространству');
     }
   };
 
@@ -79,6 +117,7 @@ export default function Spaces() {
       
       setCurrentSpaceRole((currentSpaceData as any)?.role || (space as any)?.role || '');
       setCurrentUserId((userData as any)?.id?.toString() || '');
+      setIsSpaceOwner((currentSpaceData as any)?.isOwner || false);
       setSpaceMembers(membersData.members || []);
       setInviteCode(inviteData?.code || '');
       setLevelRewards(rewardsData.rewards || []);
@@ -96,6 +135,37 @@ export default function Spaces() {
     setEditingRewardLevel(null);
     setEditingRewardText('');
     setEditingMemberRole(null);
+    setIsSpaceOwner(false);
+  };
+
+  const handleDeleteSpace = async () => {
+    if (!confirm('Вы уверены, что хотите удалить это пространство? Это действие нельзя отменить.')) {
+      return;
+    }
+
+    if (!confirm('Все данные пространства (задачи, цели, участники) будут безвозвратно удалены. Продолжить?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await api.deleteSpace();
+      closeSpaceSettings();
+      await loadSpaces();
+      // Если удалено текущее пространство, переключимся на первое доступное
+      const updatedSpaces = await api.getSpaces();
+      if (updatedSpaces.spaces.length > 0) {
+        await api.switchSpace(updatedSpaces.spaces[0].id);
+        window.location.reload();
+      } else {
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Failed to delete space:', error);
+      alert(error.message || 'Не удалось удалить пространство');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const isAdmin = currentSpaceRole === 'Admin';
@@ -160,17 +230,68 @@ export default function Spaces() {
       <div className="spaces">
         <div className="spaces-header">
           <h1>Spaces</h1>
-          {canCreateSpace && (
-            <button className="btn-primary" onClick={() => setShowCreate(!showCreate)}>
-              {showCreate ? 'Отмена' : '+ Создать'}
-            </button>
-          )}
-          {!canCreateSpace && (
-            <div className="limit-reached">
-              Максимум 3 пространства
-            </div>
-          )}
+          <div className="spaces-actions" ref={spacesDropdownRef}>
+            {(canCreateSpace || true) && (
+              <button 
+                className="btn-primary spaces-dropdown-button"
+                onClick={() => setShowSpacesDropdown(!showSpacesDropdown)}
+              >
+                <IconPlus size={18} />
+                <span>Действия</span>
+              </button>
+            )}
+            {showSpacesDropdown && (
+              <div className="spaces-dropdown">
+                {canCreateSpace && (
+                  <button 
+                    className="dropdown-item"
+                    onClick={() => {
+                      setShowCreate(!showCreate);
+                      setShowSpacesDropdown(false);
+                    }}
+                  >
+                    <IconPlus size={18} />
+                    <span>Создать пространство</span>
+                  </button>
+                )}
+                <button 
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowJoinForm(!showJoinForm);
+                    setShowSpacesDropdown(false);
+                  }}
+                >
+                  <IconLink size={18} />
+                  <span>Подключиться</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+        
+        {/* Форма подключения */}
+        {showJoinForm && (
+          <div className="join-space-form">
+            <input
+              type="text"
+              placeholder="Код приглашения"
+              value={inviteCodeInput}
+              onChange={(e) => setInviteCodeInput(e.target.value)}
+              className="input"
+            />
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={() => {
+                setShowJoinForm(false);
+                setInviteCodeInput('');
+              }}>
+                Отмена
+              </button>
+              <button className="btn-primary" onClick={handleJoinSpace}>
+                Подключиться
+              </button>
+            </div>
+          </div>
+        )}
 
         {showCreate && (
           <div className="create-space-form">
@@ -303,7 +424,7 @@ export default function Spaces() {
                 <div className="settings-section">
                   <h3 className="section-title">Награды уровней</h3>
                   <div className="rewards-list">
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map((level) => {
+                    {Array.from({ length: 80 }, (_, i) => i + 1).map((level) => {
                       const reward = levelRewards.find(r => r.level === level);
                       const isEditing = editingRewardLevel === level;
                       
@@ -350,6 +471,20 @@ export default function Spaces() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Удаление пространства (только для владельца) */}
+              {isSpaceOwner && (
+                <div className="settings-section">
+                  <h3 className="section-title">Опасная зона</h3>
+                  <button
+                    className="btn-delete-space"
+                    onClick={handleDeleteSpace}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Удаление...' : 'Удалить пространство'}
+                  </button>
                 </div>
               )}
             </div>

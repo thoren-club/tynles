@@ -1,0 +1,174 @@
+/* Аналог GoalDetail.css */
+.task-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.task-detail-sheet {
+  width: 100%;
+  max-height: 90vh;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 20px 20px 0 0;
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.task-detail {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.task-detail-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding-top: 8px;
+}
+
+.swipe-indicator {
+  width: 40px;
+  height: 4px;
+  background: var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 2px;
+}
+
+.task-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.task-value {
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000000);
+  word-break: break-word;
+}
+
+.task-value.overdue {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.task-importance {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.task-importance.importance-low {
+  background: #e0e0e0;
+  color: #666666;
+}
+
+.task-importance.importance-medium {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.task-importance.importance-high {
+  background: #ffe0b2;
+  color: #e65100;
+}
+
+.task-importance.importance-urgent {
+  background: #ffcdd2;
+  color: #c62828;
+}
+
+.task-xp {
+  color: var(--tg-theme-button-color, #3390ec);
+  font-weight: 600;
+}
+
+.task-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.btn-complete {
+  flex: 1;
+  padding: 14px 24px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-complete:hover {
+  opacity: 0.9;
+}
+
+.btn-complete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-delete {
+  flex: 1;
+  padding: 14px 24px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  color: var(--tg-theme-text-color, #000000);
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-delete:hover {
+  opacity: 0.9;
+}
+
+.btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

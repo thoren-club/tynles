@@ -159,10 +159,15 @@ export const api = {
   },
 
   async useInviteCode(code: string) {
-    return this.request('/auth/invites/use', {
+    const result = await this.request('/auth/invites/use', {
       method: 'POST',
       body: JSON.stringify({ code }),
     });
+    // После подключения автоматически переключаемся на новое пространство
+    if (result.space?.id) {
+      await this.switchSpace(result.space.id);
+    }
+    return result;
   },
 
   // Spaces
@@ -174,6 +179,12 @@ export const api = {
     return this.request('/spaces/create', {
       method: 'POST',
       body: JSON.stringify({ name }),
+    });
+  },
+
+  async deleteSpace() {
+    return this.request('/spaces/current', {
+      method: 'DELETE',
     });
   },
 

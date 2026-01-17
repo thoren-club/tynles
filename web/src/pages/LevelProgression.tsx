@@ -1,24 +1,59 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
+import { IconChevronLeft, IconCheck } from '@tabler/icons-react';
 import { api } from '../api';
 import './LevelProgression.css';
+
+// Константы для расчета XP (должны совпадать с backend)
+const BASE_XP_PER_LEVEL = 100;
+
+function getXpForNextLevel(currentLevel: number): number {
+  if (currentLevel >= 80) return 0;
+  return Math.floor(BASE_XP_PER_LEVEL * (1 + currentLevel * 0.02));
+}
+
+function getTotalXpForLevel(targetLevel: number): number {
+  if (targetLevel <= 1) return 0;
+  let totalXp = 0;
+  for (let level = 1; level < targetLevel; level++) {
+    totalXp += getXpForNextLevel(level);
+  }
+  return totalXp;
+}
+
+function calculateLevel(totalXp: number): number {
+  if (totalXp <= 0) return 1;
+  let level = 1;
+  let xpRequired = BASE_XP_PER_LEVEL;
+  let currentXp = totalXp;
+  while (currentXp >= xpRequired && level < 80) {
+    currentXp -= xpRequired;
+    level++;
+    xpRequired = Math.floor(BASE_XP_PER_LEVEL * (1 + (level - 1) * 0.02));
+  }
+  return Math.min(level, 80);
+}
 
 export default function LevelProgression() {
   const navigate = useNavigate();
   const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);
+  const [userStats, setUserStats] = useState<{ level: number; totalXp: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadRewards();
+    loadData();
   }, []);
 
-  const loadRewards = async () => {
+  const loadData = async () => {
     try {
-      const data = await api.getLevelRewards();
-      setLevelRewards(data.rewards || []);
+      const [rewardsData, statsData] = await Promise.all([
+        api.getLevelRewards().catch(() => ({ rewards: [] })),
+        api.getMyStats().catch(() => ({ level: 1, totalXp: 0 })),
+      ]);
+      setLevelRewards(rewardsData.rewards || []);
+      setUserStats(statsData as { level: number; totalXp: number });
     } catch (error) {
-      console.error('Failed to load level rewards:', error);
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
@@ -26,6 +61,9 @@ export default function LevelProgression() {
 
   // Генерируем список уровней от 1 до 80
   const levels = Array.from({ length: 80 }, (_, i) => i + 1);
+  
+  const currentLevel = userStats ? userStats.level : 1;
+  const currentTotalXp = userStats ? userStats.totalXp : 0;
 
   return (
     <div className="level-progression">
@@ -42,17 +80,72 @@ export default function LevelProgression() {
 
       {/* Список уровней */}
       {loading ? (
-        <div className="loading-state">Загрузка наград...</div>
+        <div className="loading-state">Загрузка...</div>
       ) : (
         <div className="levels-list">
           {levels.map((level) => {
             const reward = levelRewards.find(r => r.level === level);
+            const isCompleted = level < currentLevel;
+            const isCurrent = level === currentLevel;
+            const levelTotalXp = getTotalXpForLevel(level);
+            const nextLevelTotalXp = getTotalXpForLevel(level + 1);
+            const xpForThisLevel = nextLevelTotalXp - levelTotalXp;
+            const xpIntoLevel = isCurrent ? currentTotalXp - levelTotalXp : (isCompleted ? xpForThisLevel : 0);
+            const xpRemaining = isCurrent ? xpForThisLevel - xpIntoLevel : (isCompleted ? 0 : xpForThisLevel);
+            const progressPercent = isCurrent ? (xpIntoLevel / xpForThisLevel) * 100 : (isCompleted ? 100 : 0);
+            const hasReward = reward?.text && reward.text.trim() !== '';
             
             return (
-              <div key={level} className="level-item">
-                <div className="level-number">Уровень {level}</div>
-                <div className="level-reward">
-                  {reward?.text || 'нет'}
+              <div 
+                key={level} 
+                className={`level-item ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`}
+              >
+                <div className="level-header">
+                  <div className="level-number">
+                    Уровень {level}
+                    {isCompleted && <IconCheck size={16} className="completed-icon" />}
+                    {isCurrent && <span className="current-badge">Текущий</span>}
+                  </div>
+                  {isCurrent && (
+                    <div className="level-progress-info">
+                      <div className="progress-text">
+                        {xpIntoLevel} / {xpForThisLevel} XP ({Math.round(progressPercent)}%)
+                      </div>
+                      <div className="progress-text-small">
+                        Осталось: {xpRemaining} XP
+                      </div>
+                    </div>
+                  )}
+                  {!isCurrent && !isCompleted && (
+                    <div className="level-progress-info">
+                      <div className="progress-text">
+                        Требуется: {xpForThisLevel} XP
+                      </div>
+                    </div>
+                  )}
+                  {isCompleted && (
+                    <div className="level-progress-info">
+                      <div className="progress-text completed-text">
+                        Завершено
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="level-progress-bar-container">
+                  <div 
+                    className="level-progress-bar" 
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <div className={`level-reward ${hasReward && isCompleted ? 'reward-earned' : ''}`}>
+                  {hasReward ? (
+                    <>
+                      <span className="reward-text">{reward.text}</span>
+                      {isCompleted && <IconCheck size={14} className="reward-check" />}
+                    </>
+                  ) : (
+                    <span className="reward-empty">нет</span>
+                  )}
                 </div>
               </div>
             );

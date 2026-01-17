@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
+  const [dailyRecurringTasks, setDailyRecurringTasks] = useState<any[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,9 +75,16 @@ export default function Dashboard() {
       setStats(statsData);
       setStories(storiesData.stories || []);
       
-      // Фильтруем только ежедневные задачи
-      const daily = tasksData.tasks.filter((task: any) => task.isDaily === true || task.repeatType === 'daily');
-      setDailyTasks(daily);
+      // Фильтруем задачи: показываем все задачи (одноразовые и ежедневные)
+      // Для статистики "на сегодня" используем только ежедневные повторяющиеся
+      const allTasks = tasksData.tasks;
+      const dailyRecurring = allTasks.filter((task: any) => 
+        task.recurrenceType === 'daily' || 
+        (task.recurrenceType === 'weekly' && task.recurrencePayload?.daysOfWeek?.length === 7)
+      );
+      // Для актуальных задач показываем все невыполненные задачи
+      setDailyTasks(allTasks);
+      setDailyRecurringTasks(dailyRecurring);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -178,9 +186,12 @@ export default function Dashboard() {
     return <div className="dashboard">Loading...</div>;
   }
 
-  const completedToday = dailyTasks.filter((task: any) => task.isCompleted === true).length;
-  const totalToday = dailyTasks.length;
+  // Статистика "на сегодня" - только для ежедневных повторяющихся задач
+  const completedToday = dailyRecurringTasks.filter((task: any) => task.isCompleted === true).length;
+  const totalToday = dailyRecurringTasks.length;
   const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
+  
+  // Актуальные задачи - все невыполненные задачи (одноразовые + ежедневные)
   const uncompletedTasks = dailyTasks.filter((task: any) => !task.isCompleted);
 
   // Мотивационные фразы
@@ -265,7 +276,9 @@ export default function Dashboard() {
       {/* Блок статистики задач на сегодня */}
       <div className="today-stats-block">
         <div className="today-stats-header">
-          <span className="stats-text">{completedToday} / {totalToday} выполнено</span>
+          <span className="stats-text">
+            {totalToday === 0 ? 'Задач нет' : `${completedToday} / ${totalToday} выполнено`}
+          </span>
         </div>
         <div className="progress-bar-container">
           <div className="progress-bar">
@@ -282,7 +295,9 @@ export default function Dashboard() {
       <div className="actual-tasks-block">
         <h2 className="block-title">Актуальные задачи</h2>
         {uncompletedTasks.length === 0 ? (
-          <div className="empty-state">Все задачи выполнены! 🎉</div>
+          <div className="empty-state">
+            {totalToday === 0 ? 'Вы можете добавить задачу' : 'Все задачи выполнены! 🎉'}
+          </div>
         ) : (
           <div className="tasks-list">
             {uncompletedTasks.map((task: any) => {

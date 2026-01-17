@@ -9,6 +9,7 @@ export default function GoalDetail() {
   const [goal, setGoal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -46,11 +47,15 @@ export default function GoalDetail() {
   };
 
   const handleComplete = async () => {
+    setIsCompleting(true);
     try {
       await api.toggleGoal(id!);
-      loadGoal();
+      await loadGoal();
     } catch (error) {
       console.error('Failed to toggle goal:', error);
+      alert('Не удалось изменить статус цели');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -136,10 +141,16 @@ export default function GoalDetail() {
           {/* Действия */}
           <div className="goal-actions">
             <button 
-              className="complete-button"
+              className={`complete-button ${goal.isDone ? 'done' : ''} ${isCompleting ? 'completing' : ''}`}
               onClick={handleComplete}
+              disabled={isCompleting}
             >
-              {goal.isDone ? 'Отменить выполнение' : 'Подтвердить выполнение'}
+              {isCompleting 
+                ? 'Обработка...' 
+                : goal.isDone 
+                  ? 'Отменить выполнение' 
+                  : 'Подтвердить выполнение'
+              }
             </button>
             <button 
               className="delete-button"

@@ -314,6 +314,23 @@ export default function Deals() {
     navigate(`/goal/${goalId}`);
   };
 
+  const handleTaskClick = (taskId: string) => {
+    navigate(`/task/${taskId}`);
+  };
+
+  const handleTaskCompleteClick = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Предотвращаем открытие детальной страницы
+    if (!confirm('Выполнить задачу?')) return;
+    
+    try {
+      await api.completeTask(taskId);
+      await loadData(); // Перезагружаем данные
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      alert('Не удалось выполнить задачу');
+    }
+  };
+
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
@@ -495,7 +512,11 @@ export default function Deals() {
               const taskTypeIcon = getTaskTypeIcon(task);
               
               return (
-                <div key={task.id} className={`task-card task-type-${taskType}`}>
+                <div 
+                  key={task.id} 
+                  className={`task-card task-type-${taskType}`}
+                  onClick={() => handleTaskClick(task.id)}
+                >
                   <div className="task-content">
                     <div className="task-header">
                       <div className="task-title">{task.title}</div>
@@ -510,6 +531,12 @@ export default function Deals() {
                       </span>
                     </div>
                   </div>
+                  <button
+                    className="task-complete-btn"
+                    onClick={(e) => handleTaskCompleteClick(task.id, e)}
+                  >
+                    Выполнить
+                  </button>
                 </div>
               );
             })}

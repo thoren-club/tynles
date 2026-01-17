@@ -234,6 +234,10 @@
   border-radius: 12px;
   border: 2px solid transparent;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .task-card:hover {
@@ -309,6 +313,28 @@
   flex-shrink: 0;
 }
 
+.task-complete-btn {
+  padding: 8px 16px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.task-complete-btn:hover {
+  opacity: 0.9;
+}
+
+.task-complete-btn:active {
+  opacity: 0.8;
+}
+
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -369,8 +395,12 @@
 .create-modal-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   -webkit-overflow-scrolling: touch;
+  /* Убеждаемся, что скролл работает на ПК */
+  overscroll-behavior-y: contain;
+  max-height: calc(90vh - 80px); /* Учитываем высоту хедера */
 }
 
 .create-modal-header {
