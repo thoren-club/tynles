@@ -237,6 +237,7 @@ export async function authMiddleware(
           username: userData.username || null,
           firstName: userData.firstName || null,
           language: userData.languageCode?.split('-')[0] || 'en',
+          photoUrl: userData.photoUrl || null,
         },
       });
 
@@ -275,6 +276,7 @@ export async function authMiddleware(
         data: {
           username: userData.username || null,
           firstName: userData.firstName || null,
+          photoUrl: userData.photoUrl || null, // Обновляем фото если доступно
         },
       });
     }

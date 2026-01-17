@@ -13,10 +13,11 @@
 .level-zone {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
   cursor: pointer;
   flex: 1;
   max-width: 60%;
+  min-width: 200px; /* Минимальная ширина для отображения прогресс-бара */
 }
 
 .level-icon {
@@ -35,10 +36,10 @@
 
 .level-progress-container {
   flex: 1;
-  min-width: 0;
+  min-width: 120px; /* Минимальная ширина для отображения прогресс-бара */
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 .level-progress-bar {

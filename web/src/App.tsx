@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './api';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Dashboard from './pages/Dashboard';
 import Spaces from './pages/Spaces';
 import Deals from './pages/Deals';
@@ -215,23 +216,25 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/deals" element={<Deals />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/spaces" element={<Spaces />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/level-progression" element={<LevelProgression />} />
-          <Route path="/goal/:id" element={<GoalDetail />} />
-          <Route path="/task/:id" element={<TaskDetail />} />
-          <Route path="/all-goals" element={<AllGoals />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/deals" element={<Deals />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/spaces" element={<Spaces />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/level-progression" element={<LevelProgression />} />
+            <Route path="/goal/:id" element={<GoalDetail />} />
+            <Route path="/task/:id" element={<TaskDetail />} />
+            <Route path="/all-goals" element={<AllGoals />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

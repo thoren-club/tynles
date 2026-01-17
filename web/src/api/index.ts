@@ -256,6 +256,12 @@ export const api = {
     return this.request(`/stats/leaderboard/global?page=${page}`);
   },
 
+  async pokeUser(userId: string): Promise<any> {
+    return this.request(`/stats/leaderboard/${userId}/poke`, {
+      method: 'POST',
+    });
+  },
+
   // Space leaderboard (based on completed tasks in last 30 days)
   async getSpaceLeaderboard(): Promise<SpaceLeaderboardResponse> {
     return this.request<SpaceLeaderboardResponse>('/spaces/current/leaderboard');
@@ -314,5 +320,25 @@ export const api = {
       weekStartDate: string;
       createdAt: string;
     }> }>('/stories');
+  },
+
+  // Notifications
+  async getNotificationSettings() {
+    return this.request<{
+      taskRemindersEnabled: boolean;
+      reminderHoursBefore: number;
+      pokeEnabled: boolean;
+    }>('/notifications/settings');
+  },
+
+  async updateNotificationSettings(settings: {
+    taskRemindersEnabled?: boolean;
+    reminderHoursBefore?: number;
+    pokeEnabled?: boolean;
+  }) {
+    return this.request('/notifications/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
   },
 };

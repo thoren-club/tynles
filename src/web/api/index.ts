@@ -7,6 +7,7 @@ import { membersRouter } from './routes/members';
 import { statsRouter } from './routes/stats';
 import { authRouter } from './routes/auth';
 import { storiesRouter } from './routes/stories';
+import { notificationsRouter } from './routes/notifications';
 
 export function setupApiRoutes() {
   const router = Router();
@@ -22,6 +23,7 @@ export function setupApiRoutes() {
   router.use('/members', membersRouter);
   router.use('/stats', statsRouter);
   router.use('/stories', storiesRouter);
+  router.use('/notifications', notificationsRouter);
 
   return router;
 }

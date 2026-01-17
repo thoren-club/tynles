@@ -59,3 +59,89 @@
   font-style: italic;
   text-align: center;
 }
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+}
+
+.settings-item-label {
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000000);
+  font-weight: 500;
+}
+
+.language-switcher {
+  display: flex;
+  gap: var(--spacing-xs);
+  background: var(--tg-theme-bg-color, #ffffff);
+  padding: var(--spacing-xs);
+  border-radius: 8px;
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.language-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999999);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.language-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.language-button.active {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: #ffffff;
+}
+
+.settings-select {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #000000);
+  background: var(--tg-theme-bg-color, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.settings-select:focus {
+  border-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.toggle-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999999);
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+  min-width: 90px;
+}
+
+.toggle-button.active {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: #ffffff;
+  border-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.toggle-button:hover {
+  opacity: 0.8;
+}

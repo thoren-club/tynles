@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { IconDashboard, IconListCheck, IconTrophy, IconFolder } from '@tabler/icons-react';
 import './Layout.css';
 
 interface LayoutProps {
@@ -27,19 +28,19 @@ export default function Layout({ children }: LayoutProps) {
       {!shouldHideNavbar && (
         <nav className="bottom-nav">
           <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-            <span className="nav-icon">📊</span>
+            <IconDashboard size={24} className="nav-icon" />
             <span className="nav-label">Dashboard</span>
           </Link>
           <Link to="/deals" className={location.pathname === '/deals' ? 'active' : ''}>
-            <span className="nav-icon">📋</span>
+            <IconListCheck size={24} className="nav-icon" />
             <span className="nav-label">Дела</span>
           </Link>
           <Link to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>
-            <span className="nav-icon">🏆</span>
+            <IconTrophy size={24} className="nav-icon" />
             <span className="nav-label">Лидерборд</span>
           </Link>
           <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
-            <span className="nav-icon">📁</span>
+            <IconFolder size={24} className="nav-icon" />
             <span className="nav-label">Spaces</span>
           </Link>
         </nav>

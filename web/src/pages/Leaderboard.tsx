@@ -18,6 +18,82 @@ const LEAGUE_NAMES = [
   'Легендарная',
 ];
 
+// Компонент для элемента лидерборда с поддержкой аватарок и пинков
+function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: { 
+  entry: any; 
+  position: number;
+  onPoke: (userId: string) => Promise<void>;
+  isSpaceLeaderboard: boolean;
+}) {
+  const [avatarError, setAvatarError] = useState(false);
+  const [isPoking, setIsPoking] = useState(false);
+  const [poked, setPoked] = useState(entry.isPokedToday || false);
+  
+  // Обновляем состояние poked при изменении entry.isPokedToday
+  useEffect(() => {
+    setPoked(entry.isPokedToday || false);
+  }, [entry.isPokedToday]);
+  
+  const displayAvatar = entry.photoUrl && !avatarError;
+  const displayPlaceholder = !entry.photoUrl || avatarError;
+  const avatarInitial = (entry.firstName || entry.username || 'U').charAt(0).toUpperCase();
+  const canPoke = isSpaceLeaderboard && entry.canPoke && !poked;
+  
+  const handlePoke = async () => {
+    if (!canPoke || isPoking) return;
+    
+    setIsPoking(true);
+    try {
+      await onPoke(entry.userId);
+      setPoked(true);
+    } catch (error) {
+      console.error('Failed to poke user:', error);
+      alert('Не удалось пнуть пользователя');
+    } finally {
+      setIsPoking(false);
+    }
+  };
+  
+  return (
+    <div className="leaderboard-item">
+      <div className="rank">#{position}</div>
+      {displayAvatar && (
+        <img 
+          src={entry.photoUrl} 
+          alt={entry.firstName || entry.username || 'User'} 
+          className="user-avatar"
+          onError={() => setAvatarError(true)}
+        />
+      )}
+      {displayPlaceholder && (
+        <div className="user-avatar user-avatar-placeholder">
+          {avatarInitial}
+        </div>
+      )}
+      <div className="user-info">
+        <div className="user-name">
+          {entry.firstName || entry.username || 'Unknown'}
+        </div>
+        <div className="user-stats">
+          {entry.tasksCompleted30Days !== undefined
+            ? `${entry.tasksCompleted30Days} задач`
+            : `Уровень ${entry.level} • ${entry.totalXp} XP`}
+        </div>
+      </div>
+      {isSpaceLeaderboard && (
+        <button
+          className={`poke-button ${canPoke ? '' : 'disabled'} ${poked ? 'poked' : ''}`}
+          onClick={handlePoke}
+          disabled={!canPoke || isPoking}
+          title={poked ? 'Уже пнули сегодня' : canPoke ? 'Пнуть игрока' : 'Нельзя пнуть'}
+        >
+          {isPoking ? '...' : poked ? '✓' : '👆'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const [activeTab, setActiveTab] = useState<'global' | 'space'>('global');
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
@@ -35,6 +111,9 @@ export default function Leaderboard() {
   useEffect(() => {
     if (activeTab === 'global') {
       loadGlobalLeaderboard(currentPage);
+    } else {
+      // При переключении на space tab обновляем данные для получения статуса пинков
+      loadData();
     }
   }, [activeTab, currentPage]);
 
@@ -178,22 +257,21 @@ export default function Leaderboard() {
               const position = entry.position || (activeTab === 'global' && globalPagination 
                 ? (globalPagination.page - 1) * globalPagination.limit + index + 1
                 : index + 1);
-              const displayStats = activeTab === 'space' && entry.tasksCompleted30Days !== undefined
-                ? `${entry.tasksCompleted30Days} задач`
-                : `Уровень ${entry.level} • ${entry.totalXp} XP`;
               
               return (
-                <div key={entry.userId || index} className="leaderboard-item">
-                  <div className="rank">#{position}</div>
-                  <div className="user-info">
-                    <div className="user-name">
-                      {entry.firstName || entry.username || 'Unknown'}
-                    </div>
-                    <div className="user-stats">
-                      {displayStats}
-                    </div>
-                  </div>
-                </div>
+                <LeaderboardItem 
+                  key={entry.userId || index} 
+                  entry={entry} 
+                  position={position}
+                  onPoke={async (userId: string) => {
+                    await api.pokeUser(userId);
+                    // Обновляем лидерборд после пинка
+                    if (activeTab === 'space') {
+                      await loadData();
+                    }
+                  }}
+                  isSpaceLeaderboard={activeTab === 'space'}
+                />
               );
             })}
 
