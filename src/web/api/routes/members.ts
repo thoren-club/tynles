@@ -55,15 +55,19 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/invites', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
-    if (!authReq.currentSpaceId) {
-      return res.status(404).json({ error: 'No current space' });
+    // Поддерживаем создание приглашения для конкретного Space через query параметр
+    const spaceIdParam = req.query.spaceId as string | undefined;
+    const targetSpaceId = spaceIdParam ? BigInt(spaceIdParam) : authReq.currentSpaceId;
+    
+    if (!targetSpaceId) {
+      return res.status(404).json({ error: 'No space specified' });
     }
 
     // Check if user is Admin
     const member = await prisma.spaceMember.findUnique({
       where: {
         spaceId_userId: {
-          spaceId: authReq.currentSpaceId,
+          spaceId: targetSpaceId,
           userId: authReq.user!.id,
         },
       },
@@ -84,7 +88,7 @@ router.post('/invites', async (req: Request, res: Response) => {
 
     const invite = await prisma.invite.create({
       data: {
-        spaceId: authReq.currentSpaceId,
+        spaceId: targetSpaceId,
         role,
         code,
         expiresAt,
@@ -106,15 +110,19 @@ router.post('/invites', async (req: Request, res: Response) => {
 router.put('/:userId/role', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
-    if (!authReq.currentSpaceId) {
-      return res.status(404).json({ error: 'No current space' });
+    // Поддерживаем изменение роли в конкретном Space через query параметр
+    const spaceIdParam = req.query.spaceId as string | undefined;
+    const targetSpaceId = spaceIdParam ? BigInt(spaceIdParam) : authReq.currentSpaceId;
+    
+    if (!targetSpaceId) {
+      return res.status(404).json({ error: 'No space specified' });
     }
 
-    // Check if user is Admin
+    // Check if user is Admin of target space
     const currentMember = await prisma.spaceMember.findUnique({
       where: {
         spaceId_userId: {
-          spaceId: authReq.currentSpaceId,
+          spaceId: targetSpaceId,
           userId: authReq.user!.id,
         },
       },
@@ -139,7 +147,7 @@ router.put('/:userId/role', async (req: Request, res: Response) => {
     const updatedMember = await prisma.spaceMember.update({
       where: {
         spaceId_userId: {
-          spaceId: authReq.currentSpaceId,
+          spaceId: targetSpaceId,
           userId,
         },
       },

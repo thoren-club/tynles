@@ -267,15 +267,17 @@ export const api = {
     return this.request<MembersResponse>(url);
   },
 
-  async createInvite(role: 'Admin' | 'Editor' | 'Viewer'): Promise<InviteResponse> {
-    return this.request<InviteResponse>('/members/invites', {
+  async createInvite(role: 'Admin' | 'Editor' | 'Viewer', spaceId?: string): Promise<InviteResponse> {
+    const url = spaceId ? `/members/invites?spaceId=${spaceId}` : '/members/invites';
+    return this.request<InviteResponse>(url, {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
   },
 
-  async updateMemberRole(userId: string, role: 'Admin' | 'Editor' | 'Viewer') {
-    return this.request(`/members/${userId}/role`, {
+  async updateMemberRole(userId: string, role: 'Admin' | 'Editor' | 'Viewer', spaceId?: string) {
+    const url = spaceId ? `/members/${userId}/role?spaceId=${spaceId}` : `/members/${userId}/role`;
+    return this.request(url, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     });
@@ -286,8 +288,9 @@ export const api = {
     return this.request<{ rewards: Array<{ level: number; text: string }> }>('/spaces/current/rewards');
   },
 
-  async updateLevelReward(level: number, text: string) {
-    return this.request(`/spaces/current/rewards/${level}`, {
+  async updateLevelReward(level: number, text: string, spaceId?: string) {
+    const url = spaceId ? `/spaces/${spaceId}/rewards/${level}` : `/spaces/current/rewards/${level}`;
+    return this.request(url, {
       method: 'PUT',
       body: JSON.stringify({ text }),
     });

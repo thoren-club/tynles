@@ -207,6 +207,46 @@ router.get('/current/rewards', async (req: Request, res: Response) => {
   }
 });
 
+// Get level rewards for specific space
+router.get('/:spaceId/rewards', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+
+    // Проверяем, что пользователь является участником этого пространства
+    const member = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: spaceId,
+          userId: authReq.user.id,
+        },
+      },
+    });
+
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this space' });
+    }
+
+    const rewards = await prisma.reward.findMany({
+      where: { spaceId: spaceId },
+      orderBy: { level: 'asc' },
+    });
+
+    res.json({
+      rewards: rewards.map((r) => ({
+        level: r.level,
+        text: r.text,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get level rewards' });
+  }
+});
+
 // Delete space by ID (Owner only)
 router.delete('/:spaceId', async (req: Request, res: Response) => {
   try {
@@ -267,7 +307,108 @@ router.delete('/:spaceId', async (req: Request, res: Response) => {
   }
 });
 
-// Update level reward (Admin only)
+// Get space info by ID
+router.get('/:spaceId/info', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+
+    const space = await prisma.space.findUnique({
+      where: { id: spaceId },
+      include: {
+        members: {
+          where: { userId: authReq.user.id },
+        },
+      },
+    });
+
+    if (!space) {
+      return res.status(404).json({ error: 'Space not found' });
+    }
+
+    // Проверяем, что пользователь является участником
+    const member = space.members[0];
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this space' });
+    }
+
+    res.json({
+      id: space.id.toString(),
+      name: space.name,
+      role: member.role,
+      isOwner: space.ownerUserId === authReq.user.id,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get space info' });
+  }
+});
+
+// Update level reward for specific space (Admin only)
+router.put('/:spaceId/rewards/:level', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+
+    // Check if user is Admin of this space
+    const member = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: spaceId,
+          userId: authReq.user.id,
+        },
+      },
+    });
+
+    if (!member || member.role !== 'Admin') {
+      return res.status(403).json({ error: 'Admin role required' });
+    }
+
+    const level = parseInt(req.params.level);
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+
+    if (level < 1 || level > 80) {
+      return res.status(400).json({ error: 'Level must be between 1 and 80' });
+    }
+
+    const reward = await prisma.reward.upsert({
+      where: {
+        spaceId_level: {
+          spaceId: spaceId,
+          level,
+        },
+      },
+      update: {
+        text,
+      },
+      create: {
+        spaceId: spaceId,
+        level,
+        text,
+      },
+    });
+
+    res.json({
+      level: reward.level,
+      text: reward.text,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update level reward' });
+  }
+});
+
+// Update level reward (Admin only) - для обратной совместимости с текущим пространством
 router.put('/current/rewards/:level', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;

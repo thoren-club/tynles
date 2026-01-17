@@ -106,44 +106,20 @@ export default function Spaces() {
   const handleSettingsClick = async (space: any, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Переключаемся на выбранное пространство для получения правильных данных
       const spaceId = space.id;
       
-      // Загружаем данные для выбранного пространства
-      const [membersData, userData] = await Promise.all([
+      // Загружаем все данные для выбранного пространства параллельно
+      const [membersData, userData, spaceInfo, inviteData, rewardsData] = await Promise.all([
         api.getMembers(spaceId).catch(() => ({ members: [] })),
         api.getUser().catch(() => null),
+        api.getSpaceInfo(spaceId).catch(() => null),
+        api.createInvite('Viewer', spaceId).catch(() => null),
+        api.getLevelRewards(spaceId).catch(() => ({ rewards: [] })),
       ]);
       
-      // Получаем роль пользователя в выбранном пространстве из списка участников
-      const currentUserMember = membersData.members.find((m: any) => m.id === (userData as any)?.id?.toString());
-      const userRole = currentUserMember?.role || (space as any)?.role || '';
-      
-      // Проверяем, является ли пользователь владельцем выбранного пространства
-      // Для этого нужно получить информацию о пространстве
-      let isOwner = false;
-      try {
-        const currentSpaceData = await api.getCurrentSpace().catch(() => null);
-        // Если выбранное пространство - текущее, используем isOwner из API
-        if (currentSpaceData && (currentSpaceData as any).id === spaceId) {
-          isOwner = (currentSpaceData as any)?.isOwner || false;
-        } else {
-          // Если это не текущее пространство, нужно проверить через API или использовать данные из space
-          // Пока используем роль Admin как индикатор владельца (в будущем можно добавить отдельный endpoint)
-          isOwner = userRole === 'Admin' && space.role === 'Admin';
-        }
-      } catch (e) {
-        // Если не удалось получить текущее пространство, используем роль
-        isOwner = userRole === 'Admin';
-      }
-      
-      // Получаем код приглашения и награды для выбранного пространства
-      // Для этого нужно переключиться на это пространство или использовать отдельный endpoint
-      // Пока используем текущее пространство для этих данных
-      const [inviteData, rewardsData] = await Promise.all([
-        api.createInvite('Viewer').catch(() => null),
-        api.getLevelRewards().catch(() => ({ rewards: [] })),
-      ]);
+      // Получаем роль пользователя из информации о пространстве
+      const userRole = spaceInfo?.role || (space as any)?.role || '';
+      const isOwner = spaceInfo?.isOwner || false;
       
       setCurrentSpaceRole(userRole);
       setCurrentUserId((userData as any)?.id?.toString() || '');
@@ -209,10 +185,11 @@ export default function Spaces() {
   };
 
   const handleRewardSave = async () => {
-    if (editingRewardLevel === null) return;
+    if (editingRewardLevel === null || !selectedSpace) return;
     
     try {
-      await api.updateLevelReward(editingRewardLevel, editingRewardText);
+      // Передаем ID выбранного пространства для обновления награды
+      await api.updateLevelReward(editingRewardLevel, editingRewardText, selectedSpace.id);
       // Обновляем локальное состояние
       setLevelRewards(prev => {
         const existing = prev.find(r => r.level === editingRewardLevel);
@@ -235,10 +212,15 @@ export default function Spaces() {
   };
 
   const handleMemberRoleSave = async () => {
-    if (!editingMemberRole) return;
+    if (!editingMemberRole || !selectedSpace) return;
     
     try {
-      await api.updateMemberRole(editingMemberRole.userId, editingMemberRole.role as 'Admin' | 'Editor' | 'Viewer');
+      // Передаем ID выбранного пространства для изменения роли
+      await api.updateMemberRole(
+        editingMemberRole.userId, 
+        editingMemberRole.role as 'Admin' | 'Editor' | 'Viewer',
+        selectedSpace.id
+      );
       // Обновляем локальное состояние
       setSpaceMembers(prev => prev.map(m => 
         m.id === editingMemberRole.userId 
