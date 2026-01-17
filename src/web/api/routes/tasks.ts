@@ -31,6 +31,7 @@ router.get('/', async (req: Request, res: Response) => {
         recurrenceType: task.recurrenceType || null,
         recurrencePayload: task.recurrencePayload as any || null,
         createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
       })),
     });
   } catch (error) {
@@ -120,15 +121,26 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
     // Update user stats with XP using the utility function
     const result = await addXp(authReq.currentSpaceId, authReq.user.id, task.xp);
 
-    // Delete the task (or mark as completed if we add that field later)
-    await prisma.task.delete({
-      where: { id: taskId },
-    });
+    // Для повторяющихся задач не удаляем, а обновляем updatedAt (будет использоваться как lastCompletedAt)
+    // Для одноразовых задач удаляем
+    if (task.recurrenceType && task.recurrenceType !== 'none') {
+      // Обновляем updatedAt для отслеживания времени последнего выполнения
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { updatedAt: new Date() },
+      });
+    } else {
+      // Удаляем одноразовую задачу
+      await prisma.task.delete({
+        where: { id: taskId },
+      });
+    }
 
     res.json({ 
       success: true,
       xpEarned: task.xp,
       newLevel: result.levelUp ? result.newLevel : null,
+      isRecurring: !!(task.recurrenceType && task.recurrenceType !== 'none'),
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to complete task' });

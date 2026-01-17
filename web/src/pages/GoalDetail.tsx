@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { Button } from '../components/ui';
 import './GoalDetail.css';
 
 export default function GoalDetail() {
@@ -80,10 +81,10 @@ export default function GoalDetail() {
   }
 
   const importanceOptions = [
-    'Не обязательно',
-    'Можно не торопиться',
-    'Нужно торопиться',
-    'Подпекает',
+    'Низкая',
+    'Средняя',
+    'Высокая',
+    'Критическая',
   ];
 
   const importance = importanceOptions[goal.difficulty - 1] || importanceOptions[0];
@@ -140,25 +141,25 @@ export default function GoalDetail() {
 
           {/* Действия */}
           <div className="goal-actions">
-            <button 
-              className={`complete-button ${goal.isDone ? 'done' : ''} ${isCompleting ? 'completing' : ''}`}
+            <Button 
+              variant={goal.isDone ? 'success' : 'primary'}
               onClick={handleComplete}
               disabled={isCompleting}
+              loading={isCompleting}
+              fullWidth
+              className={goal.isDone ? 'done' : ''}
             >
-              {isCompleting 
-                ? 'Обработка...' 
-                : goal.isDone 
-                  ? 'Отменить выполнение' 
-                  : 'Подтвердить выполнение'
-              }
-            </button>
-            <button 
-              className="delete-button"
+              {goal.isDone ? 'Отменить выполнение' : 'Подтвердить выполнение'}
+            </Button>
+            <Button 
+              variant="danger"
               onClick={handleDelete}
               disabled={isDeleting}
+              loading={isDeleting}
+              fullWidth
             >
-              {isDeleting ? 'Удаление...' : 'Удалить цель'}
-            </button>
+              Удалить цель
+            </Button>
           </div>
         </div>
       </div>

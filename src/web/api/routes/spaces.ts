@@ -207,17 +207,19 @@ router.get('/current/rewards', async (req: Request, res: Response) => {
   }
 });
 
-// Delete current space (Owner only)
-router.delete('/current', async (req: Request, res: Response) => {
+// Delete space by ID (Owner only)
+router.delete('/:spaceId', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
-    if (!authReq.currentSpaceId || !authReq.user) {
-      return res.status(404).json({ error: 'No current space' });
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
+
+    const spaceId = BigInt(req.params.spaceId);
 
     // Получаем информацию о пространстве
     const space = await prisma.space.findUnique({
-      where: { id: authReq.currentSpaceId },
+      where: { id: spaceId },
     });
 
     if (!space) {
@@ -229,13 +231,34 @@ router.delete('/current', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Only space owner can delete the space' });
     }
 
-    // Удаляем пространство (каскадное удаление удалит всех участников, задачи, цели и т.д.)
-    await prisma.space.delete({
-      where: { id: authReq.currentSpaceId },
+    // Персональный Space нельзя удалить
+    if (space.name === 'Персональный') {
+      return res.status(403).json({ error: 'Персональный Space нельзя удалить' });
+    }
+
+    // Проверяем, что пользователь является участником этого пространства
+    const member = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: spaceId,
+          userId: authReq.user.id,
+        },
+      },
     });
 
-    // Очищаем текущее пространство из session
-    setCurrentSpace(authReq.user.id, undefined);
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this space' });
+    }
+
+    // Удаляем пространство (каскадное удаление удалит всех участников, задачи, цели и т.д.)
+    await prisma.space.delete({
+      where: { id: spaceId },
+    });
+
+    // Если удаляемое пространство - текущее активное, очищаем session
+    if (authReq.currentSpaceId === spaceId) {
+      setCurrentSpace(authReq.user.id, undefined);
+    }
 
     res.json({ success: true });
   } catch (error) {

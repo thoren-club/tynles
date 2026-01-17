@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { Button } from '../components/ui';
 import './TaskDetail.css';
 
 export default function TaskDetail() {
@@ -51,8 +52,13 @@ export default function TaskDetail() {
     
     setIsCompleting(true);
     try {
-      await api.completeTask(id!);
-      navigate('/deals');
+      const result = await api.completeTask(id!);
+      // Для повторяющихся задач не переходим на /deals, а обновляем данные
+      if (result && (result as any).isRecurring) {
+        await loadTask();
+      } else {
+        navigate('/deals');
+      }
     } catch (error) {
       console.error('Failed to complete task:', error);
       alert('Не удалось выполнить задачу');
@@ -83,10 +89,10 @@ export default function TaskDetail() {
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Не обязательно',
-      2: 'Можно не торопиться',
-      3: 'Нужно торопиться',
-      4: 'Подпекает',
+      1: 'Низкая',
+      2: 'Средняя',
+      3: 'Высокая',
+      4: 'Критическая',
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -140,6 +146,67 @@ export default function TaskDetail() {
     }
   };
 
+  // Проверяем, является ли задача повторяющейся и была ли выполнена недавно
+  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+  const lastCompletedAt = task.updatedAt ? new Date(task.updatedAt) : null;
+  const now = new Date();
+  
+  // Определяем, доступна ли задача для выполнения
+  const getNextAvailableTime = (): Date | null => {
+    if (!isRecurring || !lastCompletedAt) return null;
+    
+    const taskType = getTaskType(task);
+    
+    if (taskType === 'daily') {
+      // Ежедневная задача - доступна через 24 часа после выполнения
+      const nextAvailable = new Date(lastCompletedAt);
+      nextAvailable.setHours(nextAvailable.getHours() + 24);
+      return nextAvailable;
+    } else if (taskType === 'weekly') {
+      // Еженедельная задача - находим следующий доступный день недели
+      const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
+      if (daysOfWeek.length === 0) return null;
+      
+      const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+      const nextDay = daysOfWeek.find((day: number) => day > currentDay) || daysOfWeek[0];
+      
+      const nextAvailable = new Date(now);
+      if (nextDay > currentDay) {
+        nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
+      } else {
+        // Следующий день на следующей неделе
+        nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
+      }
+      nextAvailable.setHours(0, 0, 0, 0);
+      return nextAvailable;
+    }
+    
+    return null;
+  };
+
+  const nextAvailableTime = getNextAvailableTime();
+  const isTaskAvailable = !nextAvailableTime || now >= nextAvailableTime;
+  
+  // Форматируем время до следующего выполнения
+  const formatTimeUntilNext = (): string => {
+    if (!nextAvailableTime) return '';
+    
+    const diffMs = nextAvailableTime.getTime() - now.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 24) {
+      const diffDays = Math.floor(diffHours / 24);
+      return `Доступна через ${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'}`;
+    } else if (diffHours > 0) {
+      return `Доступна через ${diffHours} ${diffHours === 1 ? 'час' : diffHours < 5 ? 'часа' : 'часов'}`;
+    } else if (diffMinutes > 0) {
+      return `Доступна через ${diffMinutes} ${diffMinutes === 1 ? 'минуту' : diffMinutes < 5 ? 'минуты' : 'минут'}`;
+    } else {
+      return 'Доступна сейчас';
+    }
+  };
+
   if (loading) {
     return (
       <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
@@ -164,6 +231,67 @@ export default function TaskDetail() {
   const importanceClass = getImportanceClass(task.difficulty || 1);
   const taskType = getTaskTypeText(task);
   const deadlineText = formatDeadline(task.dueAt);
+
+  // Проверяем, является ли задача повторяющейся и была ли выполнена недавно
+  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+  const lastCompletedAt = task.updatedAt ? new Date(task.updatedAt) : null;
+  const now = new Date();
+  
+  // Определяем, доступна ли задача для выполнения
+  const getNextAvailableTime = (): Date | null => {
+    if (!isRecurring || !lastCompletedAt) return null;
+    
+    const taskTypeEnum = getTaskType(task);
+    
+    if (taskTypeEnum === 'daily') {
+      // Ежедневная задача - доступна через 24 часа после выполнения
+      const nextAvailable = new Date(lastCompletedAt);
+      nextAvailable.setHours(nextAvailable.getHours() + 24);
+      return nextAvailable;
+    } else if (taskTypeEnum === 'weekly') {
+      // Еженедельная задача - находим следующий доступный день недели
+      const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
+      if (daysOfWeek.length === 0) return null;
+      
+      const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+      const nextDay = daysOfWeek.find((day: number) => day > currentDay) || daysOfWeek[0];
+      
+      const nextAvailable = new Date(now);
+      if (nextDay > currentDay) {
+        nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
+      } else {
+        // Следующий день на следующей неделе
+        nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
+      }
+      nextAvailable.setHours(0, 0, 0, 0);
+      return nextAvailable;
+    }
+    
+    return null;
+  };
+
+  const nextAvailableTime = getNextAvailableTime();
+  const isTaskAvailable = !nextAvailableTime || now >= nextAvailableTime;
+  
+  // Форматируем время до следующего выполнения
+  const formatTimeUntilNext = (): string => {
+    if (!nextAvailableTime) return '';
+    
+    const diffMs = nextAvailableTime.getTime() - now.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 24) {
+      const diffDays = Math.floor(diffHours / 24);
+      return `Доступна через ${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'}`;
+    } else if (diffHours > 0) {
+      return `Доступна через ${diffHours} ${diffHours === 1 ? 'час' : diffHours < 5 ? 'часа' : 'часов'}`;
+    } else if (diffMinutes > 0) {
+      return `Доступна через ${diffMinutes} ${diffMinutes === 1 ? 'минуту' : diffMinutes < 5 ? 'минуты' : 'минут'}`;
+    } else {
+      return 'Доступна сейчас';
+    }
+  };
 
   return (
     <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
@@ -222,20 +350,30 @@ export default function TaskDetail() {
 
           {/* Кнопки действий */}
           <div className="task-actions">
-            <button
-              className="btn-complete"
-              onClick={handleComplete}
-              disabled={isCompleting}
-            >
-              {isCompleting ? 'Выполнение...' : 'Выполнить'}
-            </button>
-            <button
-              className="btn-delete"
+            {isRecurring && !isTaskAvailable ? (
+              <div className="task-next-available">
+                <span className="next-available-text">{formatTimeUntilNext()}</span>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={handleComplete}
+                disabled={isCompleting || !isTaskAvailable}
+                loading={isCompleting}
+                fullWidth
+              >
+                Выполнить
+              </Button>
+            )}
+            <Button
+              variant="secondary"
               onClick={handleDelete}
               disabled={isDeleting}
+              loading={isDeleting}
+              fullWidth
             >
-              {isDeleting ? 'Удаление...' : 'Удалить'}
-            </button>
+              Удалить
+            </Button>
           </div>
         </div>
       </div>

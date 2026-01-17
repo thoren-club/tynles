@@ -9,12 +9,30 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
-    if (!authReq.currentSpaceId) {
-      return res.status(404).json({ error: 'No current space' });
+    // Поддерживаем получение участников конкретного Space через query параметр
+    const spaceIdParam = req.query.spaceId as string | undefined;
+    const targetSpaceId = spaceIdParam ? BigInt(spaceIdParam) : authReq.currentSpaceId;
+    
+    if (!targetSpaceId) {
+      return res.status(404).json({ error: 'No space specified' });
+    }
+
+    // Проверяем, что пользователь является участником этого Space
+    const userMember = await prisma.spaceMember.findUnique({
+      where: {
+        spaceId_userId: {
+          spaceId: targetSpaceId,
+          userId: authReq.user!.id,
+        },
+      },
+    });
+
+    if (!userMember) {
+      return res.status(403).json({ error: 'Not a member of this space' });
     }
 
     const members = await prisma.spaceMember.findMany({
-      where: { spaceId: authReq.currentSpaceId },
+      where: { spaceId: targetSpaceId },
       include: { user: true },
       orderBy: { joinedAt: 'asc' },
     });

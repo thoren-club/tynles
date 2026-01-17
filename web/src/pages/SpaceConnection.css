@@ -1,0 +1,113 @@
+.space-connection {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--tg-theme-bg-color, #ffffff);
+}
+
+.connection-container {
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.connection-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+}
+
+.connection-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+  margin: 0 0 12px 0;
+}
+
+.connection-description {
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #999999);
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+}
+
+.connection-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #000000);
+  margin-bottom: 8px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+  pointer-events: none;
+}
+
+.form-input {
+  width: 100%;
+  padding: 14px 14px 14px 44px;
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 12px;
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000000);
+  background: var(--tg-theme-bg-color, #ffffff);
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.error-message {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #ff4444;
+  text-align: left;
+}
+
+.connection-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.connection-divider::before,
+.connection-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.connection-divider span {
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.connection-hint {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+  line-height: 1.5;
+  margin: 0;
+}

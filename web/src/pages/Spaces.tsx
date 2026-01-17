@@ -106,18 +106,48 @@ export default function Spaces() {
   const handleSettingsClick = async (space: any, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Загружаем текущее пространство для получения роли пользователя, участников, код приглашения и награды уровней
-      const [currentSpaceData, membersData, inviteData, rewardsData, userData] = await Promise.all([
-        api.getCurrentSpace().catch(() => null),
-        api.getMembers().catch(() => ({ members: [] })),
-        api.createInvite('Viewer').catch(() => null), // TODO: правильная роль
-        api.getLevelRewards().catch(() => ({ rewards: [] })),
+      // Переключаемся на выбранное пространство для получения правильных данных
+      const spaceId = space.id;
+      
+      // Загружаем данные для выбранного пространства
+      const [membersData, userData] = await Promise.all([
+        api.getMembers(spaceId).catch(() => ({ members: [] })),
         api.getUser().catch(() => null),
       ]);
       
-      setCurrentSpaceRole((currentSpaceData as any)?.role || (space as any)?.role || '');
+      // Получаем роль пользователя в выбранном пространстве из списка участников
+      const currentUserMember = membersData.members.find((m: any) => m.id === (userData as any)?.id?.toString());
+      const userRole = currentUserMember?.role || (space as any)?.role || '';
+      
+      // Проверяем, является ли пользователь владельцем выбранного пространства
+      // Для этого нужно получить информацию о пространстве
+      let isOwner = false;
+      try {
+        const currentSpaceData = await api.getCurrentSpace().catch(() => null);
+        // Если выбранное пространство - текущее, используем isOwner из API
+        if (currentSpaceData && (currentSpaceData as any).id === spaceId) {
+          isOwner = (currentSpaceData as any)?.isOwner || false;
+        } else {
+          // Если это не текущее пространство, нужно проверить через API или использовать данные из space
+          // Пока используем роль Admin как индикатор владельца (в будущем можно добавить отдельный endpoint)
+          isOwner = userRole === 'Admin' && space.role === 'Admin';
+        }
+      } catch (e) {
+        // Если не удалось получить текущее пространство, используем роль
+        isOwner = userRole === 'Admin';
+      }
+      
+      // Получаем код приглашения и награды для выбранного пространства
+      // Для этого нужно переключиться на это пространство или использовать отдельный endpoint
+      // Пока используем текущее пространство для этих данных
+      const [inviteData, rewardsData] = await Promise.all([
+        api.createInvite('Viewer').catch(() => null),
+        api.getLevelRewards().catch(() => ({ rewards: [] })),
+      ]);
+      
+      setCurrentSpaceRole(userRole);
       setCurrentUserId((userData as any)?.id?.toString() || '');
-      setIsSpaceOwner((currentSpaceData as any)?.isOwner || false);
+      setIsSpaceOwner(isOwner);
       setSpaceMembers(membersData.members || []);
       setInviteCode(inviteData?.code || '');
       setLevelRewards(rewardsData.rewards || []);
@@ -139,6 +169,8 @@ export default function Spaces() {
   };
 
   const handleDeleteSpace = async () => {
+    if (!selectedSpace) return;
+
     if (!confirm('Вы уверены, что хотите удалить это пространство? Это действие нельзя отменить.')) {
       return;
     }
@@ -149,7 +181,8 @@ export default function Spaces() {
 
     setIsDeleting(true);
     try {
-      await api.deleteSpace();
+      // Передаем ID выбранного пространства, а не текущего
+      await api.deleteSpace(selectedSpace.id);
       closeSpaceSettings();
       await loadSpaces();
       // Если удалено текущее пространство, переключимся на первое доступное
@@ -474,8 +507,8 @@ export default function Spaces() {
                 </div>
               )}
 
-              {/* Удаление пространства (только для владельца) */}
-              {isSpaceOwner && (
+              {/* Удаление пространства (только для владельца и не персональное) */}
+              {isSpaceOwner && selectedSpace.name !== 'Персональный' && (
                 <div className="settings-section">
                   <h3 className="section-title">Опасная зона</h3>
                   <button

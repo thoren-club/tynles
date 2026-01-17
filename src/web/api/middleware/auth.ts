@@ -239,6 +239,35 @@ export async function authMiddleware(
           language: userData.languageCode?.split('-')[0] || 'en',
         },
       });
+
+      // Создаем автоматически персональный Space для нового пользователя
+      const personalSpace = await prisma.space.create({
+        data: {
+          name: 'Персональный',
+          ownerUserId: user.id,
+          timezone: 'Europe/Berlin',
+        },
+      });
+
+      await prisma.spaceMember.create({
+        data: {
+          spaceId: personalSpace.id,
+          userId: user.id,
+          role: 'Admin',
+        },
+      });
+
+      await prisma.userSpaceStats.create({
+        data: {
+          spaceId: personalSpace.id,
+          userId: user.id,
+          totalXp: 0,
+          level: 1,
+        },
+      });
+
+      setCurrentSpace(user.id, personalSpace.id);
+      req.currentSpaceId = personalSpace.id;
     } else {
       // Update user info
       user = await prisma.telegramUser.update({

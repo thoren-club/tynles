@@ -11,6 +11,7 @@ import LevelProgression from './pages/LevelProgression';
 import GoalDetail from './pages/GoalDetail';
 import TaskDetail from './pages/TaskDetail';
 import AllGoals from './pages/AllGoals';
+import SpaceConnection from './pages/SpaceConnection';
 import Layout from './components/Layout';
 
 declare global {
@@ -50,6 +51,7 @@ declare global {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasSpace, setHasSpace] = useState<boolean | null>(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -141,6 +143,14 @@ function App() {
           const user = await api.getUser();
           if (user) {
             setIsAuthenticated(true);
+            // Проверяем, есть ли у пользователя хотя бы одно пространство
+            try {
+              const spaces = await api.getSpaces();
+              setHasSpace(spaces.spaces && spaces.spaces.length > 0);
+            } catch (spaceError) {
+              // Если не удалось получить пространства, предполагаем что их нет
+              setHasSpace(false);
+            }
           }
         } catch (authError: any) {
           // Show detailed error in Telegram
@@ -197,6 +207,11 @@ function App() {
         </div>
       </div>
     );
+  }
+
+  // Если у пользователя нет ни одного пространства, показываем экран подключения
+  if (hasSpace === false) {
+    return <SpaceConnection />;
   }
 
   return (

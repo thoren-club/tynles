@@ -182,8 +182,8 @@ export const api = {
     });
   },
 
-  async deleteSpace() {
-    return this.request('/spaces/current', {
+  async deleteSpace(spaceId: string) {
+    return this.request(`/spaces/${spaceId}`, {
       method: 'DELETE',
     });
   },
@@ -252,14 +252,19 @@ export const api = {
     return this.request<LeaderboardResponse>('/stats/leaderboard');
   },
 
+  async getGlobalLeaderboard(page: number = 1): Promise<any> {
+    return this.request(`/stats/leaderboard/global?page=${page}`);
+  },
+
   // Space leaderboard (based on completed tasks in last 30 days)
   async getSpaceLeaderboard(): Promise<SpaceLeaderboardResponse> {
     return this.request<SpaceLeaderboardResponse>('/spaces/current/leaderboard');
   },
 
   // Members
-  async getMembers(): Promise<MembersResponse> {
-    return this.request<MembersResponse>('/members');
+  async getMembers(spaceId?: string): Promise<MembersResponse> {
+    const url = spaceId ? `/members?spaceId=${spaceId}` : '/members';
+    return this.request<MembersResponse>(url);
   },
 
   async createInvite(role: 'Admin' | 'Editor' | 'Viewer'): Promise<InviteResponse> {

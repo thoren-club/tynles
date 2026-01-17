@@ -100,10 +100,10 @@ export default function Dashboard() {
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Не обязательно',
-      2: 'Можно не торопиться',
-      3: 'Нужно торопиться',
-      4: 'Подпекает',
+      1: 'Низкая',
+      2: 'Средняя',
+      3: 'Высокая',
+      4: 'Критическая',
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -224,6 +224,12 @@ export default function Dashboard() {
                 style={{ width: `${levelProgress}%` }}
               />
             </div>
+            <div className="level-xp-info">
+              <span className="level-xp-current">{currentXp}</span>
+              <span className="level-xp-separator"> / </span>
+              <span className="level-xp-total">{xpToNextLevel}</span>
+              <span className="level-xp-label"> XP</span>
+            </div>
           </div>
           <IconChevronRight size={20} className="level-chevron" />
         </div>
@@ -280,15 +286,29 @@ export default function Dashboard() {
             {totalToday === 0 ? 'Задач нет' : `${completedToday} / ${totalToday} выполнено`}
           </span>
         </div>
-        <div className="progress-bar-container">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${progress}%` }}
-            />
+        {totalToday > 0 && (
+          <>
+            <div className="progress-bar-container">
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            <div className="motivational-text">{motivationalText}</div>
+          </>
+        )}
+        {totalToday === 0 && (
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: '0%' }}
+              />
+            </div>
           </div>
-        </div>
-        <div className="motivational-text">{motivationalText}</div>
+        )}
       </div>
 
       {/* Блок актуальных задач */}

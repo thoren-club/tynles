@@ -334,10 +334,10 @@ export default function Deals() {
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Не обязательно',
-      2: 'Можно не торопиться',
-      3: 'Нужно торопиться',
-      4: 'Подпекает',
+      1: 'Низкая',
+      2: 'Средняя',
+      3: 'Высокая',
+      4: 'Критическая',
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -606,16 +606,18 @@ export default function Deals() {
                   />
                 </div>
 
-                {/* Дедлайн */}
-                <div className="form-field">
-                  <label className="form-label">Дедлайн</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  />
-                </div>
+                {/* Дедлайн - показываем только для целей и одноразовых задач */}
+                {(createType === 'goal' || (createType === 'task' && !formData.isRecurring)) && (
+                  <div className="form-field">
+                    <label className="form-label">Дедлайн</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    />
+                  </div>
+                )}
 
                 {/* Важность */}
                 <div className="form-field">
@@ -625,10 +627,10 @@ export default function Deals() {
                     value={formData.importance}
                     onChange={(e) => setFormData({ ...formData, importance: parseInt(e.target.value) })}
                   >
-                    <option value={1}>Не обязательно</option>
-                    <option value={2}>Можно не торопиться</option>
-                    <option value={3}>Нужно торопиться</option>
-                    <option value={4}>Подпекает</option>
+                    <option value={1}>Низкая</option>
+                    <option value={2}>Средняя</option>
+                    <option value={3}>Высокая</option>
+                    <option value={4}>Критическая</option>
                   </select>
                 </div>
 

@@ -1,0 +1,53 @@
+.ui-button {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.ui-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ui-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.ui-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-button-full-width {
+  width: 100%;
+}
+
+/* Варианты */
+.ui-button-primary {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+}
+
+.ui-button-secondary {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  color: var(--tg-theme-text-color, #000000);
+  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  font-weight: 500;
+}
+
+.ui-button-danger {
+  background: #ff4444;
+  color: white;
+}
+
+.ui-button-success {
+  background: #22c55e;
+  color: white;
+}

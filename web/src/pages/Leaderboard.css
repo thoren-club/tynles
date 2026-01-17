@@ -97,6 +97,63 @@
   line-height: 1.2;
 }
 
+/* Информация о периоде раунда */
+.period-info {
+  margin: 16px 0;
+  padding: 12px 16px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.period-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+  margin-bottom: 4px;
+}
+
+.period-date {
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+/* Пагинация */
+.leaderboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.pagination-button {
+  padding: 10px 20px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
 .leaderboard-list {
   display: flex;
   flex-direction: column;
