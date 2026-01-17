@@ -111,3 +111,34 @@
   line-height: 1.5;
   margin: 0;
 }
+
+.mode-switcher {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999999);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mode-button.active {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: #ffffff;
+}
