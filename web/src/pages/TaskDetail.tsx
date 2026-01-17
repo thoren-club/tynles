@@ -146,67 +146,6 @@ export default function TaskDetail() {
     }
   };
 
-  // Проверяем, является ли задача повторяющейся и была ли выполнена недавно
-  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-  const lastCompletedAt = task.updatedAt ? new Date(task.updatedAt) : null;
-  const now = new Date();
-  
-  // Определяем, доступна ли задача для выполнения
-  const getNextAvailableTime = (): Date | null => {
-    if (!isRecurring || !lastCompletedAt) return null;
-    
-    const taskType = getTaskType(task);
-    
-    if (taskType === 'daily') {
-      // Ежедневная задача - доступна через 24 часа после выполнения
-      const nextAvailable = new Date(lastCompletedAt);
-      nextAvailable.setHours(nextAvailable.getHours() + 24);
-      return nextAvailable;
-    } else if (taskType === 'weekly') {
-      // Еженедельная задача - находим следующий доступный день недели
-      const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
-      if (daysOfWeek.length === 0) return null;
-      
-      const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
-      const nextDay = daysOfWeek.find((day: number) => day > currentDay) || daysOfWeek[0];
-      
-      const nextAvailable = new Date(now);
-      if (nextDay > currentDay) {
-        nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
-      } else {
-        // Следующий день на следующей неделе
-        nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
-      }
-      nextAvailable.setHours(0, 0, 0, 0);
-      return nextAvailable;
-    }
-    
-    return null;
-  };
-
-  const nextAvailableTime = getNextAvailableTime();
-  const isTaskAvailable = !nextAvailableTime || now >= nextAvailableTime;
-  
-  // Форматируем время до следующего выполнения
-  const formatTimeUntilNext = (): string => {
-    if (!nextAvailableTime) return '';
-    
-    const diffMs = nextAvailableTime.getTime() - now.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffHours > 24) {
-      const diffDays = Math.floor(diffHours / 24);
-      return `Доступна через ${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'}`;
-    } else if (diffHours > 0) {
-      return `Доступна через ${diffHours} ${diffHours === 1 ? 'час' : diffHours < 5 ? 'часа' : 'часов'}`;
-    } else if (diffMinutes > 0) {
-      return `Доступна через ${diffMinutes} ${diffMinutes === 1 ? 'минуту' : diffMinutes < 5 ? 'минуты' : 'минут'}`;
-    } else {
-      return 'Доступна сейчас';
-    }
-  };
-
   if (loading) {
     return (
       <div className="task-detail-overlay" onClick={() => navigate('/deals')}>

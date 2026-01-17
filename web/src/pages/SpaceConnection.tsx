@@ -1,12 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconLink, IconPlus } from '@tabler/icons-react';
+import { useState } from 'react';
+import { IconLink } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button } from '../components/ui';
 import './SpaceConnection.css';
 
 export default function SpaceConnection() {
-  const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);

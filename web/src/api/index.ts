@@ -284,8 +284,13 @@ export const api = {
   },
 
   // Level Rewards
-  async getLevelRewards() {
-    return this.request<{ rewards: Array<{ level: number; text: string }> }>('/spaces/current/rewards');
+  async getLevelRewards(spaceId?: string) {
+    const url = spaceId ? `/spaces/${spaceId}/rewards` : '/spaces/current/rewards';
+    return this.request<{ rewards: Array<{ level: number; text: string }> }>(url);
+  },
+  
+  async getSpaceInfo(spaceId: string) {
+    return this.request<{ id: string; name: string; role: string; isOwner: boolean }>(`/spaces/${spaceId}/info`);
   },
 
   async updateLevelReward(level: number, text: string, spaceId?: string) {
