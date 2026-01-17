@@ -18,9 +18,9 @@ export default function Profile() {
 
   const loadUser = async () => {
     try {
-      const userData = await api.getUser();
+      const userData = await api.getUser() as any;
       setUser(userData);
-      setEditedName(userData?.firstName || '');
+      setEditedName((userData?.firstName as string) || '');
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {

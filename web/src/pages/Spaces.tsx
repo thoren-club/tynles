@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { IconSettings } from '@tabler/icons-react';
 import { api } from '../api';
 import './Spaces.css';
 
 export default function Spaces() {
-  const navigate = useNavigate();
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -79,8 +77,8 @@ export default function Spaces() {
         api.getUser().catch(() => null),
       ]);
       
-      setCurrentSpaceRole(currentSpaceData?.role || space.role || '');
-      setCurrentUserId(userData?.id?.toString() || '');
+      setCurrentSpaceRole((currentSpaceData as any)?.role || (space as any)?.role || '');
+      setCurrentUserId((userData as any)?.id?.toString() || '');
       setSpaceMembers(membersData.members || []);
       setInviteCode(inviteData?.code || '');
       setLevelRewards(rewardsData.rewards || []);
@@ -250,11 +248,14 @@ export default function Spaces() {
                               {member.firstName || member.username || 'Unknown'}
                               {isCurrentUser && <span className="current-user-badge">Вы</span>}
                             </div>
-                            {isEditing && isAdmin && !isCurrentUser ? (
+                            {isEditing && isAdmin && !isCurrentUser && editingMemberRole ? (
                               <select
                                 className="role-select"
                                 value={editingMemberRole.role}
-                                onChange={(e) => setEditingMemberRole({ ...editingMemberRole, role: e.target.value })}
+                                onChange={(e) => setEditingMemberRole({ 
+                                  userId: editingMemberRole.userId, 
+                                  role: e.target.value 
+                                })}
                                 onBlur={handleMemberRoleSave}
                                 autoFocus
                               >

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconPlus, IconChevronDown, IconChevronRight, IconX } from '@tabler/icons-react';
+import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import './Deals.css';
 
