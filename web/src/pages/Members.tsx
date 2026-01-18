@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './Members.css';
 
 export default function Members() {
@@ -45,7 +46,24 @@ export default function Members() {
   };
 
   if (loading) {
-    return <div className="members">Loading...</div>;
+    return (
+      <div className="members">
+        <div className="members-header">
+          <Skeleton width={140} height={34} />
+          <Skeleton width={110} height={34} radius={10} />
+        </div>
+        <div className="members-list">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="member-card">
+              <div className="member-info">
+                <Skeleton width="55%" height={16} radius={8} />
+                <Skeleton width={70} height={14} radius={8} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

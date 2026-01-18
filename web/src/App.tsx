@@ -177,6 +177,13 @@ function App() {
     initAuth();
   }, []);
 
+  // When the app finished its initial auth/bootstrap, hide the first-paint splash.
+  useEffect(() => {
+    if (!loading) {
+      window.dispatchEvent(new Event('app:ready'));
+    }
+  }, [loading]);
+
   if (loading) {
     return <LoadingScreen text="Загрузка..." />;
   }

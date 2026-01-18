@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
+import { Skeleton, SkeletonValue } from '../components/ui';
 import './Profile.css';
 
 export default function Profile() {
@@ -45,7 +46,31 @@ export default function Profile() {
   };
 
   if (loading) {
-    return <div className="profile">Loading...</div>;
+    return (
+      <div className="profile">
+        <div className="profile-header">
+          <IconChevronLeft size={24} className="back-icon" onClick={() => navigate('/')} />
+          <Skeleton width={120} height={26} />
+          <div style={{ width: 24 }} />
+        </div>
+
+        <div className="profile-avatar-section">
+          <Skeleton width={92} height={92} radius={999} />
+          <Skeleton width={160} height={18} radius={10} />
+        </div>
+
+        <div className="profile-info-list">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="profile-info-item">
+              <Skeleton width={90} height={14} radius={8} />
+              <div className="info-value">
+                <Skeleton width="70%" height={16} radius={8} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const tgId = user?.tgId || window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'N/A';
@@ -76,9 +101,15 @@ export default function Profile() {
       {/* Аватарка и имя */}
       <div className="profile-avatar-section">
         <div className="profile-avatar">
-          {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+          <SkeletonValue loading={!user} width={42} height={42} radius={999}>
+            {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+          </SkeletonValue>
         </div>
-        <div className="profile-name">{user?.firstName || 'Пользователь'}</div>
+        <div className="profile-name">
+          <SkeletonValue loading={!user} width={160} height={18} radius={10}>
+            {user?.firstName || 'Пользователь'}
+          </SkeletonValue>
+        </div>
       </div>
 
       {/* Список информации */}

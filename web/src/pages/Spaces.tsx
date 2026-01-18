@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { IconSettings, IconPlus, IconLink } from '@tabler/icons-react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './Spaces.css';
 
 export default function Spaces() {
@@ -235,7 +236,32 @@ export default function Spaces() {
   };
 
   if (loading) {
-    return <div className="spaces">Loading...</div>;
+    return (
+      <div className="spaces">
+        <div className="spaces-header">
+          <Skeleton width={120} height={34} />
+          <Skeleton width={120} height={36} radius={12} />
+        </div>
+        <div className="spaces-list">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-card">
+              <div className="space-content">
+                <div className="space-main">
+                  <Skeleton width="55%" height={18} radius={8} />
+                  <div className="space-info">
+                    <Skeleton width={70} height={14} radius={999} />
+                    <Skeleton width={60} height={14} radius={999} />
+                  </div>
+                </div>
+                <div className="space-settings-icon">
+                  <Skeleton width={24} height={24} radius={8} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const canCreateSpace = spaces.length < 3;

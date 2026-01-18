@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronRight, IconSettings, IconBell, IconX } from '@tabler/icons-react';
 import { api } from '../api';
+import { Skeleton, SkeletonValue } from '../components/ui';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import './Dashboard.css';
 
@@ -184,7 +185,80 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="dashboard">Loading...</div>;
+    return (
+      <div className="dashboard" aria-busy="true">
+        <div className="dashboard-top-bar">
+          <div className="level-zone">
+            <div className="level-icon">
+              <Skeleton width={28} height={28} radius={10} />
+            </div>
+            <div className="level-progress-container" style={{ width: '100%' }}>
+              <div className="level-progress-bar">
+                <div className="level-progress-fill" style={{ width: '35%' }} />
+              </div>
+              <div className="level-xp-info">
+                <Skeleton width={120} height={14} radius={8} />
+              </div>
+            </div>
+            <IconChevronRight size={20} className="level-chevron" />
+          </div>
+
+          <div className="top-bar-right">
+            <div className="avatar-container">
+              <div className="avatar avatar-image" style={{ display: 'none' }} />
+              <div className="avatar" style={{ display: 'flex' }}>
+                <Skeleton width={36} height={36} radius={999} />
+              </div>
+            </div>
+            <IconSettings size={24} className="settings-icon" />
+            <IconBell size={24} className="notifications-icon" />
+          </div>
+        </div>
+
+        <div className="today-stats-block">
+          <div className="today-stats-header">
+            <Skeleton width={160} height={14} radius={8} />
+          </div>
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: '45%' }} />
+            </div>
+          </div>
+          <div className="motivational-text">
+            <Skeleton width={220} height={14} radius={8} />
+          </div>
+        </div>
+
+        <div className="actual-tasks-block">
+          <h2 className="block-title">
+            <SkeletonValue loading={true} width={170} height={22} radius={10}>
+              Актуальные задачи
+            </SkeletonValue>
+          </h2>
+          <div className="tasks-list">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="task-item">
+                <div className="task-checkbox" />
+                <div className="task-content">
+                  <div className="task-header">
+                    <div className="task-title">
+                      <Skeleton width="70%" height={16} radius={8} />
+                    </div>
+                    <div className="task-xp">
+                      <Skeleton width={60} height={14} radius={8} />
+                    </div>
+                  </div>
+                  <div className="task-meta">
+                    <Skeleton width={80} height={14} radius={999} />
+                    <Skeleton width={70} height={14} radius={999} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Статистика "на сегодня" - только для ежедневных повторяющихся задач

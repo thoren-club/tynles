@@ -10,6 +10,8 @@ export type { InputProps } from './Input';
 export { default as DatePicker } from './DatePicker';
 export type { DatePickerProps } from './DatePicker';
 
+export { Skeleton, SkeletonValue } from './Skeleton';
+
 // Инструкция по добавлению новых компонентов:
 // 1. Создайте компонент в папке web/src/components/ui/
 // 2. Создайте соответствующий CSS файл с префиксом компонента

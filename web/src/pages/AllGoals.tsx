@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './AllGoals.css';
 
 export default function AllGoals() {
@@ -43,7 +44,32 @@ export default function AllGoals() {
   };
 
   if (loading) {
-    return <div className="all-goals">Loading...</div>;
+    return (
+      <div className="all-goals">
+        <div className="all-goals-header">
+          <IconChevronLeft size={24} className="back-icon" onClick={() => navigate('/deals')} />
+          <Skeleton width={140} height={26} />
+          <div style={{ width: 24 }} />
+        </div>
+
+        <div className="period-filters">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} width={92} height={34} radius={999} />
+          ))}
+        </div>
+
+        <div className="goals-section">
+          <Skeleton width={140} height={20} />
+          <div className="goals-list">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="goal-card">
+                <Skeleton width="70%" height={16} radius={8} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const { current, completed } = getFilteredGoals();

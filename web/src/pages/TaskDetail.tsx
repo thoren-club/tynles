@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button } from '../components/ui';
+import { Button, Skeleton } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
 import './TaskDetail.css';
 
@@ -174,7 +174,31 @@ export default function TaskDetail() {
     return (
       <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="task-detail">Loading...</div>
+          <div className="task-detail" aria-busy="true">
+            <div className="task-detail-header">
+              <div className="swipe-indicator" />
+            </div>
+
+            <div className="task-field">
+              <Skeleton width={90} height={12} radius={8} />
+              <Skeleton width="75%" height={18} radius={10} />
+            </div>
+
+            <div className="task-field">
+              <Skeleton width={70} height={12} radius={8} />
+              <Skeleton width="90%" height={44} radius={12} />
+            </div>
+
+            <div className="task-field">
+              <Skeleton width={70} height={12} radius={8} />
+              <Skeleton width={120} height={18} radius={999} />
+            </div>
+
+            <div className="task-actions">
+              <Skeleton width="100%" height={44} radius={12} />
+              <Skeleton width="100%" height={44} radius={12} />
+            </div>
+          </div>
         </div>
       </div>
     );

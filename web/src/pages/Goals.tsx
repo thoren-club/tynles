@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './Goals.css';
 
 export default function Goals() {
@@ -63,7 +64,32 @@ export default function Goals() {
   };
 
   if (loading) {
-    return <div className="goals">Loading...</div>;
+    return (
+      <div className="goals">
+        <div className="goals-header">
+          <Skeleton width={120} height={34} />
+          <Skeleton width={88} height={34} radius={10} />
+        </div>
+        <div className="goals-list">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="goal-card">
+              <div className="goal-content">
+                <Skeleton width="64%" height={18} radius={8} />
+                <div className="goal-meta">
+                  <Skeleton width={120} height={14} radius={8} />
+                  <Skeleton width={80} height={14} radius={8} />
+                  <Skeleton width={52} height={14} radius={999} />
+                </div>
+              </div>
+              <div className="goal-actions">
+                <Skeleton width={34} height={34} radius={10} />
+                <Skeleton width={64} height={34} radius={10} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

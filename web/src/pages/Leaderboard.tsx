@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './Leaderboard.css';
 
 // Названия лиг
@@ -207,7 +208,28 @@ export default function Leaderboard() {
   const currentUserLeague = getCurrentUserLeague();
 
   if (loading) {
-    return <div className="leaderboard">Loading...</div>;
+    return (
+      <div className="leaderboard">
+        <Skeleton width={160} height={30} />
+        <div className="leaderboard-tabs">
+          <Skeleton width={120} height={34} radius={999} />
+          <Skeleton width={140} height={34} radius={999} />
+        </div>
+        <div className="leaderboard-list">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="leaderboard-item">
+              <Skeleton width={54} height={14} radius={8} />
+              <Skeleton width={44} height={44} radius={999} />
+              <div className="user-info">
+                <Skeleton width={160} height={16} radius={8} />
+                <Skeleton width={110} height={14} radius={8} />
+              </div>
+              <Skeleton width={34} height={34} radius={999} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const leaderboard = activeTab === 'global' ? globalLeaderboard : spaceLeaderboard;

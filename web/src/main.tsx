@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { detectPlatform } from './utils/platform';
 
-function hideBootSplash() {
-  const el = document.getElementById('boot-splash');
-  if (!el) return;
-  el.classList.add('hide');
-  window.setTimeout(() => el.remove(), 260);
+function hideBootSplashFallback() {
+  // Primary hide logic lives in `index.html` (so it works even before JS bundles).
+  // This fallback is just in case.
+  (window as any).__hideBootSplash?.();
 }
 
 // Initialize Telegram WebApp when it loads
@@ -29,11 +29,14 @@ initTelegramWebApp();
 // Also try after a short delay in case script loads later
 setTimeout(initTelegramWebApp, 100);
 
+// Set platform attribute for platform-specific styling (navbar, etc.)
+document.documentElement.dataset.platform = detectPlatform();
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
 
-// Once React is mounted, remove the first-paint splash.
-hideBootSplash();
+// As a fallback, hide after mount (real hide should happen on app:ready).
+setTimeout(hideBootSplashFallback, 2500);

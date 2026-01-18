@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
+import { Skeleton } from '../components/ui';
 import './Deals.css';
 
 export default function Deals() {
@@ -433,7 +434,53 @@ export default function Deals() {
   });
 
   if (loading) {
-    return <div className="deals">Loading...</div>;
+    return (
+      <div className="deals">
+        <div className="deals-header">
+          <Skeleton width={90} height={30} />
+          <Skeleton width={110} height={34} radius={999} />
+        </div>
+
+        <div className="goals-section">
+          <div className="section-header">
+            <Skeleton width={90} height={22} />
+            <Skeleton width={110} height={18} radius={10} />
+          </div>
+          <div className="goals-list">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="goal-card">
+                <div className="goal-content">
+                  <Skeleton width="70%" height={16} radius={8} />
+                  <div className="goal-meta">
+                    <Skeleton width={90} height={12} radius={999} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tasks-section">
+          <Skeleton width={90} height={22} />
+          <div className="tasks-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="task-card">
+                <div className="task-content">
+                  <div className="task-header">
+                    <Skeleton width="65%" height={16} radius={8} />
+                    <Skeleton width={60} height={14} radius={999} />
+                  </div>
+                  <div className="task-meta">
+                    <Skeleton width={140} height={14} radius={999} />
+                  </div>
+                </div>
+                <Skeleton width={92} height={34} radius={999} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

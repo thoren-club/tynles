@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button } from '../components/ui';
+import { Button, Skeleton } from '../components/ui';
 import './GoalDetail.css';
 
 export default function GoalDetail() {
@@ -64,7 +64,26 @@ export default function GoalDetail() {
     return (
       <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="goal-detail">Loading...</div>
+          <div className="goal-detail" aria-busy="true">
+            <div className="goal-detail-header">
+              <div className="swipe-indicator" />
+            </div>
+
+            <div className="goal-field">
+              <Skeleton width={90} height={12} radius={8} />
+              <Skeleton width="78%" height={18} radius={10} />
+            </div>
+
+            <div className="goal-field">
+              <Skeleton width={70} height={12} radius={8} />
+              <Skeleton width="92%" height={44} radius={12} />
+            </div>
+
+            <div className="goal-actions">
+              <Skeleton width="100%" height={44} radius={12} />
+              <Skeleton width="100%" height={44} radius={12} />
+            </div>
+          </div>
         </div>
       </div>
     );

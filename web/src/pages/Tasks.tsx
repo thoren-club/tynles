@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
 import './Tasks.css';
 
 export default function Tasks() {
@@ -63,7 +64,31 @@ export default function Tasks() {
   };
 
   if (loading) {
-    return <div className="tasks">Loading...</div>;
+    return (
+      <div className="tasks">
+        <div className="tasks-header">
+          <Skeleton width={120} height={34} />
+          <Skeleton width={88} height={34} radius={10} />
+        </div>
+        <div className="tasks-list">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="task-card">
+              <div className="task-content">
+                <Skeleton width="72%" height={18} radius={8} />
+                <div className="task-meta">
+                  <Skeleton width={120} height={14} radius={8} />
+                  <Skeleton width={80} height={14} radius={8} />
+                </div>
+              </div>
+              <div className="task-actions">
+                <Skeleton width={34} height={34} radius={10} />
+                <Skeleton width={64} height={34} radius={10} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
