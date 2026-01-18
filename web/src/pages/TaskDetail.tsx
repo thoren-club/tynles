@@ -1,22 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button, Skeleton } from '../components/ui';
+import { Button, Input, Dropdown, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
 import { useLanguage } from '../contexts/LanguageContext';
 import './TaskDetail.css';
 
 export default function TaskDetail() {
   const navigate = useNavigate();
-  const { tr, locale } = useLanguage();
+  const { tr } = useLanguage();
   const { id } = useParams<{ id: string }>();
-  const [task, setTask] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [assigneeUserId, setAssigneeUserId] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [isAssigning, setIsAssigning] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    dueAt: '',
+    importance: 1,
+    assigneeUserId: '',
+    isRecurring: false,
+    daysOfWeek: [] as number[],
+    xp: 0,
+  });
+  
+  const [originalTask, setOriginalTask] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -30,16 +43,58 @@ export default function TaskDetail() {
         api.getTasks(),
         api.getMembers().catch(() => ({ members: [] })),
       ]);
+      
       const foundTask = tasksData.tasks.find((t: any) => t.id === id);
       if (foundTask) {
-        setTask(foundTask);
-        setAssigneeUserId(foundTask.assigneeUserId || null);
+        setOriginalTask(foundTask);
+        const daysOfWeek = foundTask.recurrencePayload?.daysOfWeek || [];
+        setFormData({
+          title: foundTask.title || '',
+          description: foundTask.description || '',
+          dueAt: foundTask.dueAt || '',
+          importance: foundTask.difficulty || 1,
+          assigneeUserId: foundTask.assigneeUserId || '',
+          isRecurring: !!foundTask.recurrenceType && foundTask.recurrenceType !== 'none',
+          daysOfWeek: daysOfWeek,
+          xp: foundTask.xp || 0,
+        });
       }
       setMembers(membersData.members || []);
     } catch (error) {
       console.error('Failed to load task:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.title.trim()) {
+      alert(tr('Название обязательно', 'Title is required'));
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const taskData: any = {
+        title: formData.title.trim(),
+        difficulty: formData.importance,
+        description: formData.description.trim() || undefined,
+        dueAt: formData.dueAt || undefined,
+        assigneeUserId: formData.assigneeUserId || undefined,
+      };
+
+      if (formData.isRecurring && formData.daysOfWeek.length > 0) {
+        taskData.isRecurring = true;
+        taskData.daysOfWeek = formData.daysOfWeek;
+      }
+
+      await api.updateTask(id!, taskData);
+      navigate('/deals');
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      alert(tr('Не удалось обновить задачу', 'Failed to update task'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -64,7 +119,6 @@ export default function TaskDetail() {
     setIsCompleting(true);
     try {
       const result = await api.completeTask(id!);
-      // Для повторяющихся задач не переходим на /deals, а обновляем данные
       if (result && (result as any).isRecurring) {
         await loadTask();
       } else {
@@ -78,99 +132,15 @@ export default function TaskDetail() {
     }
   };
 
-  const handleAssigneeChange = async (nextUserId: string | null) => {
-    if (!id) return;
-    setIsAssigning(true);
-    try {
-      await api.setTaskAssignee(id, nextUserId);
-      setAssigneeUserId(nextUserId);
-      await loadTask();
-    } catch (error) {
-      console.error('Failed to set assignee:', error);
-      alert(tr('Не удалось назначить исполнителя', 'Failed to assign user'));
-    } finally {
-      setIsAssigning(false);
-    }
-  };
+  // Больше не нужно - используются новые компоненты
 
-  // Форматируем дедлайн
-  const formatDeadline = (dueAt: string | null): string | null => {
-    if (!dueAt) return null;
-    
-    const deadline = new Date(dueAt);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-    
-    const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return tr('Сегодня', 'Today');
-    if (diffDays === 1) return tr('Завтра', 'Tomorrow');
-    if (diffDays === -1) return tr('Вчера', 'Yesterday');
-    if (diffDays < 0) return tr('Просрочено', 'Overdue');
-    
-    return deadline.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
-  };
-
-  // Получаем текст важности по difficulty
-  const getImportanceText = (difficulty: number): string => {
-    const importanceMap: { [key: number]: string } = {
-      1: tr('Низкая', 'Low'),
-      2: tr('Средняя', 'Medium'),
-      3: tr('Высокая', 'High'),
-      4: tr('Критическая', 'Critical'),
-    };
-    return importanceMap[difficulty] || importanceMap[1];
-  };
-
-  // Получаем класс для важности (для цвета)
-  const getImportanceClass = (difficulty: number): string => {
-    const classMap: { [key: number]: string } = {
-      1: 'importance-low',
-      2: 'importance-medium',
-      3: 'importance-high',
-      4: 'importance-urgent',
-    };
-    return classMap[difficulty] || classMap[1];
-  };
-
-  // Определяем тип задачи
-  const getTaskType = (task: any): 'one-time' | 'daily' | 'weekly' => {
-    if (!task.recurrenceType) {
-      return 'one-time';
-    }
-    
-    if (task.recurrenceType === 'daily') {
-      const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
-      if (daysOfWeek.length === 7) {
-        return 'daily';
-      }
-      return 'weekly';
-    }
-    
-    return 'weekly';
-  };
-
-  // Получаем текст типа задачи
-  const getTaskTypeText = (task: any): string => {
-    const type = getTaskType(task);
-    
-    switch (type) {
-      case 'one-time':
-        return tr('Одноразовая', 'One-time');
-      case 'daily':
-        return tr('Ежедневная', 'Daily');
-      case 'weekly': {
-        const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
-        if (daysOfWeek.length === 0) {
-          return tr('Еженедельная', 'Weekly');
-        }
-        return tr(`Еженедельная (${daysOfWeek.length} дней)`, `Weekly (${daysOfWeek.length} days)`);
-      }
-      default:
-        return tr('Одноразовая', 'One-time');
-    }
-  };
+  const memberOptions = [
+    { value: '', label: tr('Не назначено', 'Unassigned') },
+    ...members.map((m: any) => ({
+      value: m.id,
+      label: m.firstName || m.username || m.id,
+    })),
+  ];
 
   if (loading) {
     return (
@@ -180,33 +150,14 @@ export default function TaskDetail() {
             <div className="task-detail-header">
               <div className="swipe-indicator" />
             </div>
-
-            <div className="task-field">
-              <Skeleton width={90} height={12} radius={8} />
-              <Skeleton width="75%" height={18} radius={10} />
-            </div>
-
-            <div className="task-field">
-              <Skeleton width={70} height={12} radius={8} />
-              <Skeleton width="90%" height={44} radius={12} />
-            </div>
-
-            <div className="task-field">
-              <Skeleton width={70} height={12} radius={8} />
-              <Skeleton width={120} height={18} radius={999} />
-            </div>
-
-            <div className="task-actions">
-              <Skeleton width="100%" height={44} radius={12} />
-              <Skeleton width="100%" height={44} radius={12} />
-            </div>
+            <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!task) {
+  if (!originalTask) {
     return (
       <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
@@ -216,120 +167,132 @@ export default function TaskDetail() {
     );
   }
 
-  const importance = getImportanceText(task.difficulty || 1);
-  const importanceClass = getImportanceClass(task.difficulty || 1);
-  const taskType = getTaskTypeText(task);
-  const deadlineText = formatDeadline(task.dueAt);
-
-  // Используем утилиту для проверки доступности задачи
-  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-  const taskAvailable = isTaskAvailable(task);
-  const nextAvailableTime = getNextAvailableDate(task);
+  const isRecurring = originalTask.recurrenceType && originalTask.recurrenceType !== 'none';
+  const taskAvailable = isTaskAvailable(originalTask);
+  const nextAvailableTime = getNextAvailableDate(originalTask);
   
-  // Форматируем время до следующего выполнения
   const formatTimeUntilNextText = (): string => {
-    return formatTimeUntilNextUtil(task);
+    return formatTimeUntilNextUtil(originalTask);
   };
 
   return (
     <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
       <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="task-detail">
-          {/* Хедер с возможностью свайпа */}
           <div className="task-detail-header">
             <div className="swipe-indicator" />
           </div>
 
-          {/* Название */}
-          <div className="task-field">
-            <label className="task-label">{tr('Название', 'Title')}</label>
-            <div className="task-value">{task.title}</div>
-          </div>
+          <div className="task-detail-content">
+            <h2 className="detail-title">{tr('Редактировать задачу', 'Edit Task')}</h2>
 
-          {/* Описание */}
-          {(task as any).description && (
-            <div className="task-field">
-              <label className="task-label">{tr('Описание', 'Description')}</label>
-              <div className="task-value">{(task as any).description}</div>
+            {/* Название */}
+            <Input
+              label={tr('Название', 'Title') + ' *'}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder={tr('Задача', 'Task')}
+              fullWidth
+            />
+
+            {/* Описание */}
+            <div className="form-field">
+              <label className="form-label">{tr('Описание', 'Description')}</label>
+              <textarea
+                className="form-textarea"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder={tr('Необязательное описание', 'Optional description')}
+                rows={3}
+              />
             </div>
-          )}
 
-          {/* Дедлайн */}
-          {deadlineText && (
-            <div className="task-field">
-              <label className="task-label">{tr('Дедлайн', 'Deadline')}</label>
-              <div className={`task-value ${deadlineText === tr('Просрочено', 'Overdue') || deadlineText === tr('Вчера', 'Yesterday') ? 'overdue' : ''}`}>
-                {deadlineText}
-              </div>
+            {/* Дедлайн - только для одноразовых задач */}
+            {!formData.isRecurring && (
+              <DateTimePickerWithPresets
+                label={tr('Дедлайн', 'Deadline')}
+                value={formData.dueAt}
+                onChange={(e) => setFormData({ ...formData, dueAt: e.target.value })}
+                fullWidth
+              />
+            )}
+
+            {/* Важность */}
+            <ImportanceSelector
+              label={tr('Важность', 'Priority')}
+              value={formData.importance}
+              onChange={(value) => setFormData({ ...formData, importance: value })}
+              fullWidth
+            />
+
+            {/* Исполнитель */}
+            <Dropdown
+              label={tr('Исполнитель', 'Assignee')}
+              value={String(formData.assigneeUserId)}
+              onChange={(value: string | number) => setFormData({ ...formData, assigneeUserId: String(value) })}
+              options={memberOptions}
+              fullWidth
+            />
+
+            {/* Повторяющаяся задача */}
+            <div className="form-field">
+              <label className="form-checkbox-label">
+                <input
+                  type="checkbox"
+                  className="form-checkbox"
+                  checked={formData.isRecurring}
+                  onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                />
+                <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
+              </label>
             </div>
-          )}
 
-          {/* Важность */}
-          <div className="task-field">
-            <label className="task-label">{tr('Важность', 'Priority')}</label>
-            <div className={`task-value task-importance ${importanceClass}`}>
-              {importance}
-            </div>
-          </div>
+            {/* Дни недели */}
+            {formData.isRecurring && (
+              <RecurringPresets
+                label={tr('Дни недели', 'Days of week')}
+                selectedDays={formData.daysOfWeek}
+                onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
+                fullWidth
+              />
+            )}
 
-          {/* Тип */}
-          <div className="task-field">
-            <label className="task-label">{tr('Тип', 'Type')}</label>
-            <div className="task-value">{taskType}</div>
-          </div>
-
-          {/* XP */}
-          {task.xp > 0 && (
-            <div className="task-field">
-              <label className="task-label">{tr('Опыт', 'XP')}</label>
-              <div className="task-value task-xp">+{task.xp} XP</div>
-            </div>
-          )}
-
-          {/* Исполнитель */}
-          <div className="task-field">
-            <label className="task-label">{tr('Исполнитель', 'Assignee')}</label>
-            <select
-              className="task-value"
-              value={assigneeUserId || ''}
-              onChange={(e) => handleAssigneeChange(e.target.value || null)}
-              disabled={isAssigning}
-            >
-              <option value="">{tr('Не назначено', 'Unassigned')}</option>
-              {members.map((m: any) => (
-                <option key={m.id} value={m.id}>
-                  {m.firstName || m.username || m.id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Кнопки действий */}
-          <div className="task-actions">
-            {isRecurring && !taskAvailable && nextAvailableTime ? (
-              <div className="task-next-available">
-                <span className="next-available-text">{formatTimeUntilNextText()}</span>
-              </div>
-            ) : (
+            {/* Кнопки действий */}
+            <div className="task-actions">
+              {isRecurring && !taskAvailable && nextAvailableTime ? (
+                <div className="task-next-available">
+                  <span className="next-available-text">{formatTimeUntilNextText()}</span>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={handleComplete}
+                  disabled={isCompleting || !taskAvailable}
+                  loading={isCompleting}
+                  fullWidth
+                >
+                  {tr('Выполнить', 'Complete')}
+                </Button>
+              )}
               <Button
                 variant="primary"
-                onClick={handleComplete}
-                disabled={isCompleting || !taskAvailable}
-                loading={isCompleting}
+                onClick={handleSave}
+                disabled={isSaving || !formData.title.trim()}
+                loading={isSaving}
                 fullWidth
               >
-                {tr('Выполнить', 'Complete')}
+                {tr('Сохранить', 'Save')}
               </Button>
-            )}
-            <Button
-              variant="secondary"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              loading={isDeleting}
-              fullWidth
-            >
-              {tr('Удалить', 'Delete')}
-            </Button>
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                loading={isDeleting}
+                fullWidth
+              >
+                {tr('Удалить', 'Delete')}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

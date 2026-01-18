@@ -16,8 +16,10 @@
   transform: scale(0.98);
 }
 
-.ui-button:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .ui-button:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .ui-button:disabled {

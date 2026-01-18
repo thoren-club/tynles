@@ -39,9 +39,11 @@
   outline: none;
 }
 
-.ui-dropdown-trigger:hover:not(:disabled) {
-  border-color: var(--color-primary-500);
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .ui-dropdown-trigger:hover:not(:disabled) {
+    border-color: var(--color-primary-500);
+    opacity: 0.9;
+  }
 }
 
 .ui-dropdown-trigger:focus {
@@ -125,8 +127,10 @@
   transition: background 0.15s ease-out;
 }
 
-.ui-dropdown-option:hover:not(:disabled) {
-  background: var(--color-surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .ui-dropdown-option:hover:not(:disabled) {
+    background: var(--color-surface-2);
+  }
 }
 
 .ui-dropdown-option-selected {

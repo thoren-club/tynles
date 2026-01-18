@@ -33,6 +33,9 @@ body {
 
 #root {
   min-height: 100vh;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  width: 100%;
 }
 
 button {

@@ -1,17 +1,20 @@
 /* Spacing tokens - используем только эти значения для отступов */
 :root {
   /* Токены отступов на основе 4px */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
+  --spacing-xs: 3px;
+  --spacing-sm: 6px;
+  --spacing-md: 10px;
+  --spacing-lg: 14px;
+  --spacing-xl: 18px;
+  --spacing-2xl: 22px;
+  --spacing-3xl: 28px;
+  --spacing-4xl: 36px;
   
   /* Отступы от краев экрана */
-  --screen-padding: var(--spacing-lg); /* 16px */
+  --screen-padding: var(--spacing-lg); /* 14px */
+  
+  /* Максимальная ширина контента */
+  --content-max-width: 680px;
 }
 
 /* Utility классы для быстрого использования */

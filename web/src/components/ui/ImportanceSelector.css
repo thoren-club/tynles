@@ -1,0 +1,108 @@
+/* ImportanceSelector — согласно DESIGN_GUIDELINES.md */
+
+.importance-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.importance-selector.full-width {
+  width: 100%;
+}
+
+.importance-label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.importance-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.importance-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-sm);
+  background: var(--color-surface-2);
+  border: var(--border-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .importance-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.importance-button:active {
+  transform: scale(0.98);
+}
+
+.importance-button.active {
+  border-width: 2px;
+}
+
+/* Low */
+.importance-button.importance-low.active {
+  background: color-mix(in srgb, var(--color-text-muted) 12%, var(--color-surface-2));
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+/* Medium */
+.importance-button.importance-medium.active {
+  background: color-mix(in srgb, var(--color-success-500) 16%, var(--color-surface-2));
+  border-color: var(--color-success-500);
+  color: var(--color-success-500);
+}
+
+/* High */
+.importance-button.importance-high.active {
+  background: color-mix(in srgb, var(--color-primary-500) 16%, var(--color-surface-2));
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+}
+
+/* Urgent */
+.importance-button.importance-urgent.active {
+  background: color-mix(in srgb, var(--color-danger-500) 16%, var(--color-surface-2));
+  border-color: var(--color-danger-500);
+  color: var(--color-danger-500);
+}
+
+.importance-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.importance-text {
+  font-size: var(--text-sm);
+  line-height: var(--lh-tight);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .importance-button {
+    transition: none;
+  }
+  
+  @media (hover: hover) and (pointer: fine) {
+    .importance-button:hover {
+      transform: none;
+    }
+  }
+  
+  .importance-button:active {
+    transform: none;
+  }
+}

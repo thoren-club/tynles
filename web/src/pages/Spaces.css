@@ -1,5 +1,5 @@
 .spaces {
-  padding: 16px;
+  padding: var(--spacing-lg);
   min-height: 100vh;
   padding-bottom: 80px;
 }
@@ -51,8 +51,10 @@
   transition: background 0.2s;
 }
 
-.spaces-dropdown .dropdown-item:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .spaces-dropdown .dropdown-item:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .spaces-dropdown .dropdown-item span {
@@ -107,8 +109,10 @@
   margin-top: 8px;
 }
 
-.btn-delete-space:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .btn-delete-space:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .btn-delete-space:disabled {
@@ -134,8 +138,10 @@
   transition: opacity 0.2s;
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
 }
 
 .limit-reached {

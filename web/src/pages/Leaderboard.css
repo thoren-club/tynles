@@ -1,5 +1,5 @@
 .leaderboard {
-  padding: 16px;
+  padding: var(--spacing-lg);
   min-height: 100vh;
   padding-bottom: 80px;
 }
@@ -36,8 +36,10 @@
   border-bottom-color: var(--color-primary-500);
 }
 
-.tab-button:hover {
-  color: var(--color-text);
+@media (hover: hover) and (pointer: fine) {
+  .tab-button:hover {
+    color: var(--color-text);
+  }
 }
 
 /* Контейнер лиг */
@@ -255,10 +257,12 @@
   flex-shrink: 0;
 }
 
-.poke-button:hover:not(:disabled) {
-  transform: scale(1.1);
-  background: var(--color-primary-500);
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .poke-button:hover:not(:disabled) {
+    transform: scale(1.1);
+    background: var(--color-primary-500);
+    opacity: 0.9;
+  }
 }
 
 .poke-button:disabled {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
-import { Skeleton } from '../components/ui';
+import { Skeleton, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Deals.css';
 
@@ -124,12 +124,17 @@ export default function Deals() {
   const handleCreateTypeSelect = (type: 'goal' | 'task') => {
     setCreateType(type);
     setShowCreateDropdown(false);
-    // Устанавливаем значения по умолчанию
+    
+    // Умные значения по умолчанию
+    const today = new Date();
+    today.setHours(23, 59, 0, 0);
+    const defaultDeadline = today.toISOString().slice(0, 16);
+    
     setFormData({
-      title: type === 'goal' ? tr('Цель', 'Goal') : tr('Задача', 'Task'),
+      title: '',
       description: '',
-      deadline: '',
-      importance: 1,
+      deadline: defaultDeadline,
+      importance: 2, // Средняя по умолчанию
       type: 'unlimited',
       isRecurring: false,
       daysOfWeek: [],
@@ -295,24 +300,7 @@ export default function Deals() {
     }
   };
 
-  const toggleDayOfWeek = (day: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      daysOfWeek: prev.daysOfWeek.includes(day)
-        ? prev.daysOfWeek.filter((d) => d !== day)
-        : [...prev.daysOfWeek, day],
-    }));
-  };
-
-  const weekDays = [
-    { value: 1, label: tr('ПН', 'Mon') },
-    { value: 2, label: tr('ВТ', 'Tue') },
-    { value: 3, label: tr('СР', 'Wed') },
-    { value: 4, label: tr('ЧТ', 'Thu') },
-    { value: 5, label: tr('ПТ', 'Fri') },
-    { value: 6, label: tr('СБ', 'Sat') },
-    { value: 0, label: tr('ВС', 'Sun') },
-  ];
+  // Больше не нужно - используется RecurringPresets
 
   const handleGoalClick = (goalId: string) => {
     navigate(`/goal/${goalId}`);
@@ -676,31 +664,21 @@ export default function Deals() {
 
                 {/* Дедлайн - показываем только для целей и одноразовых задач */}
                 {(createType === 'goal' || (createType === 'task' && !formData.isRecurring)) && (
-                  <div className="form-field">
-                    <label className="form-label">{tr('Дедлайн', 'Deadline')}</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    />
-                  </div>
+                  <DateTimePickerWithPresets
+                    label={tr('Дедлайн', 'Deadline')}
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    fullWidth
+                  />
                 )}
 
                 {/* Важность */}
-                <div className="form-field">
-                  <label className="form-label">{tr('Важность', 'Priority')}</label>
-                  <select
-                    className="form-select"
-                    value={formData.importance}
-                    onChange={(e) => setFormData({ ...formData, importance: parseInt(e.target.value) })}
-                  >
-                    <option value={1}>{tr('Низкая', 'Low')}</option>
-                    <option value={2}>{tr('Средняя', 'Medium')}</option>
-                    <option value={3}>{tr('Высокая', 'High')}</option>
-                    <option value={4}>{tr('Критическая', 'Critical')}</option>
-                  </select>
-                </div>
+                <ImportanceSelector
+                  label={tr('Важность', 'Priority')}
+                  value={formData.importance}
+                  onChange={(value) => setFormData({ ...formData, importance: value })}
+                  fullWidth
+                />
 
                 {/* Тип цели (только для целей) */}
                 {createType === 'goal' && (
@@ -734,21 +712,12 @@ export default function Deals() {
                     </div>
 
                     {formData.isRecurring && (
-                      <div className="form-field">
-                        <label className="form-label">{tr('Дни недели', 'Days of week')}</label>
-                        <div className="days-of-week">
-                          {weekDays.map((day) => (
-                            <button
-                              key={day.value}
-                              type="button"
-                              className={`day-button ${formData.daysOfWeek.includes(day.value) ? 'active' : ''}`}
-                              onClick={() => toggleDayOfWeek(day.value)}
-                            >
-                              {day.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <RecurringPresets
+                        label={tr('Дни недели', 'Days of week')}
+                        selectedDays={formData.daysOfWeek}
+                        onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
+                        fullWidth
+                      />
                     )}
                   </>
                 )}

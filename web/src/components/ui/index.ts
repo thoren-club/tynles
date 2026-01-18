@@ -18,6 +18,10 @@ export type { DropdownProps, DropdownOption } from './Dropdown';
 export { default as DateTimePicker } from './DateTimePicker';
 export type { DateTimePickerProps } from './DateTimePicker';
 
+export { DateTimePickerWithPresets } from './DateTimePickerWithPresets';
+export { ImportanceSelector } from './ImportanceSelector';
+export { RecurringPresets } from './RecurringPresets';
+
 export { default as BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
 

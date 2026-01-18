@@ -32,9 +32,11 @@
   transition: all 0.2s ease-out;
 }
 
-.mini-leaderboard-row:hover {
-  transform: translateY(-1px);
-  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface-2));
+@media (hover: hover) and (pointer: fine) {
+  .mini-leaderboard-row:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface-2));
+  }
 }
 
 .mini-leaderboard-rank {

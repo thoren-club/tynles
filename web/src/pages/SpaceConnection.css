@@ -135,8 +135,10 @@
   transition: all 0.2s;
 }
 
-.mode-button:hover {
-  background: color-mix(in srgb, var(--color-neutral-0) 6%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mode-button:hover {
+    background: color-mix(in srgb, var(--color-neutral-0) 6%, transparent);
+  }
 }
 
 .mode-button.active {

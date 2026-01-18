@@ -1,5 +1,5 @@
 .all-goals {
-  padding: 16px;
+  padding: var(--spacing-lg);
   min-height: 100vh;
 }
 
@@ -16,8 +16,10 @@
   transition: opacity 0.2s;
 }
 
-.back-icon:hover {
-  opacity: 0.7;
+@media (hover: hover) and (pointer: fine) {
+  .back-icon:hover {
+    opacity: 0.7;
+  }
 }
 
 .all-goals-title {
@@ -58,8 +60,10 @@
   border-color: var(--color-primary-500);
 }
 
-.filter-button:hover {
-  opacity: 0.8;
+@media (hover: hover) and (pointer: fine) {
+  .filter-button:hover {
+    opacity: 0.8;
+  }
 }
 
 .goals-section {
@@ -91,8 +95,10 @@
   align-items: center;
 }
 
-.goal-card:hover {
-  opacity: 0.8;
+@media (hover: hover) and (pointer: fine) {
+  .goal-card:hover {
+    opacity: 0.8;
+  }
 }
 
 .goal-card.completed {

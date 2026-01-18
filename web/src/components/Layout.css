@@ -50,9 +50,11 @@
   stroke-width: 2;
 }
 
-.bottom-nav a:hover .nav-icon {
-  color: var(--color-primary-500);
-  transform: scale(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .bottom-nav a:hover .nav-icon {
+    color: var(--color-primary-500);
+    transform: scale(1.1);
+  }
 }
 
 .bottom-nav a:focus-visible {

@@ -19,6 +19,7 @@ export interface TasksResponse {
   tasks: Array<{
     id: string;
     title: string;
+    description?: string;
     difficulty: number;
     xp: number;
     dueAt: string | null;
@@ -34,9 +35,12 @@ export interface GoalsResponse {
   goals: Array<{
     id: string;
     title: string;
+    description?: string;
     difficulty: number;
     xp: number;
     isDone: boolean;
+    deadline?: string;
+    type?: 'year' | 'month' | 'unlimited';
     createdAt: string;
   }>;
 }
@@ -216,6 +220,22 @@ export const api = {
     return this.request(`/tasks/${taskId}/complete`, { method: 'POST' });
   },
 
+  async updateTask(taskId: string, data: {
+    title?: string;
+    difficulty?: number;
+    xp?: number;
+    dueAt?: string;
+    description?: string;
+    isRecurring?: boolean;
+    daysOfWeek?: number[];
+    assigneeUserId?: string | null;
+  }) {
+    return this.request(`/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   async deleteTask(taskId: string) {
     return this.request(`/tasks/${taskId}`, { method: 'DELETE' });
   },
@@ -248,6 +268,20 @@ export const api = {
 
   async toggleGoal(goalId: string) {
     return this.request(`/goals/${goalId}/toggle`, { method: 'POST' });
+  },
+
+  async updateGoal(goalId: string, data: {
+    title?: string;
+    difficulty?: number;
+    xp?: number;
+    description?: string;
+    deadline?: string;
+    type?: 'year' | 'month' | 'unlimited';
+  }) {
+    return this.request(`/goals/${goalId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   },
 
   async deleteGoal(goalId: string) {

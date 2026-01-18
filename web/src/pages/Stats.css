@@ -1,5 +1,5 @@
 .stats {
-  padding: 16px;
+  padding: var(--spacing-lg);
 }
 
 .stats h1 {

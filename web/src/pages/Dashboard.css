@@ -1,5 +1,5 @@
 .dashboard {
-  padding: 16px;
+  padding: var(--spacing-lg);
 }
 
 /* Верхняя зона Dashboard */
@@ -126,9 +126,11 @@
   transition: opacity 0.2s;
 }
 
-.settings-icon:hover,
-.notifications-icon:hover {
-  opacity: 0.7;
+@media (hover: hover) and (pointer: fine) {
+  .settings-icon:hover,
+  .notifications-icon:hover {
+    opacity: 0.7;
+  }
 }
 
 /* Карусель историй */
@@ -269,9 +271,11 @@
   position: relative;
 }
 
-.task-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .task-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
 }
 
 .task-item.completed {
@@ -292,9 +296,11 @@
   background: var(--color-surface-2);
 }
 
-.task-checkbox:hover {
-  border-color: var(--color-primary-500);
-  transform: scale(1.05);
+@media (hover: hover) and (pointer: fine) {
+  .task-checkbox:hover {
+    border-color: var(--color-primary-500);
+    transform: scale(1.05);
+  }
 }
 
 .task-checkbox.checked {
@@ -436,9 +442,11 @@
   flex-shrink: 0;
 }
 
-.task-undo-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .task-undo-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
 }
 
 .task-undo-button:active {

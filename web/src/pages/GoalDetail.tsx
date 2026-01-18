@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button, Skeleton } from '../components/ui';
+import { Button, Input, Dropdown, DateTimePickerWithPresets, ImportanceSelector } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import './GoalDetail.css';
 
 export default function GoalDetail() {
   const navigate = useNavigate();
-  const { tr, locale } = useLanguage();
+  const { tr } = useLanguage();
   const { id } = useParams<{ id: string }>();
-  const [goal, setGoal] = useState<any>(null);
+  
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    deadline: '',
+    importance: 1,
+    type: 'unlimited' as 'year' | 'month' | 'unlimited',
+  });
+  
+  const [originalGoal, setOriginalGoal] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -25,12 +37,43 @@ export default function GoalDetail() {
       const goals = await api.getGoals();
       const foundGoal = goals.goals.find((g: any) => g.id === id);
       if (foundGoal) {
-        setGoal(foundGoal);
+        setOriginalGoal(foundGoal);
+        setFormData({
+          title: foundGoal.title || '',
+          description: foundGoal.description || '',
+          deadline: foundGoal.deadline || '',
+          importance: foundGoal.difficulty || 1,
+          type: foundGoal.type || 'unlimited',
+        });
       }
     } catch (error) {
       console.error('Failed to load goal:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.title.trim()) {
+      alert(tr('Название обязательно', 'Title is required'));
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await api.updateGoal(id!, {
+        title: formData.title.trim(),
+        difficulty: formData.importance,
+        description: formData.description.trim() || undefined,
+        deadline: formData.deadline || undefined,
+        type: formData.type || undefined,
+      });
+      navigate('/deals');
+    } catch (error) {
+      console.error('Failed to update goal:', error);
+      alert(tr('Не удалось обновить цель', 'Failed to update goal'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -62,6 +105,12 @@ export default function GoalDetail() {
     }
   };
 
+  const typeOptions = [
+    { value: 'unlimited', label: tr('Бессрочная', 'Unlimited') },
+    { value: 'month', label: tr('На месяц', 'Month') },
+    { value: 'year', label: tr('На год', 'Year') },
+  ];
+
   if (loading) {
     return (
       <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
@@ -70,28 +119,14 @@ export default function GoalDetail() {
             <div className="goal-detail-header">
               <div className="swipe-indicator" />
             </div>
-
-            <div className="goal-field">
-              <Skeleton width={90} height={12} radius={8} />
-              <Skeleton width="78%" height={18} radius={10} />
-            </div>
-
-            <div className="goal-field">
-              <Skeleton width={70} height={12} radius={8} />
-              <Skeleton width="92%" height={44} radius={12} />
-            </div>
-
-            <div className="goal-actions">
-              <Skeleton width="100%" height={44} radius={12} />
-              <Skeleton width="100%" height={44} radius={12} />
-            </div>
+            <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!goal) {
+  if (!originalGoal) {
     return (
       <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
@@ -101,90 +136,96 @@ export default function GoalDetail() {
     );
   }
 
-  const importanceOptions = [
-    tr('Низкая', 'Low'),
-    tr('Средняя', 'Medium'),
-    tr('Высокая', 'High'),
-    tr('Критическая', 'Critical'),
-  ];
-
-  const importance = importanceOptions[goal.difficulty - 1] || importanceOptions[0];
-
   return (
     <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
       <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="goal-detail">
-          {/* Хедер с возможностью свайпа */}
           <div className="goal-detail-header">
             <div className="swipe-indicator" />
           </div>
 
-          {/* Название */}
-          <div className="goal-field">
-            <label className="goal-label">{tr('Название', 'Title')}</label>
-            <div className="goal-value">{goal.title}</div>
-          </div>
+          <div className="goal-detail-content">
+            <h2 className="detail-title">{tr('Редактировать цель', 'Edit Goal')}</h2>
 
-          {/* Описание */}
-          <div className="goal-field">
-            <label className="goal-label">{tr('Описание', 'Description')}</label>
-            <div className="goal-value">
-              {goal.description || tr('Описание отсутствует', 'No description')}
-            </div>
-          </div>
-
-          {/* Дедлайн */}
-          <div className="goal-field">
-            <label className="goal-label">{tr('Дедлайн', 'Deadline')}</label>
-            <div className="goal-value">
-              {goal.deadline 
-                ? new Date(goal.deadline).toLocaleDateString(locale)
-                : tr('Не установлен', 'Not set')
-              }
-            </div>
-          </div>
-
-          {/* Важность */}
-          <div className="goal-field">
-            <label className="goal-label">{tr('Важность', 'Priority')}</label>
-            <div className="goal-value">{importance}</div>
-          </div>
-
-          {/* Тип цели */}
-          <div className="goal-field">
-            <label className="goal-label">{tr('Тип цели', 'Goal type')}</label>
-            <div className="goal-value">
-              {goal.type === 'year'
-                ? tr('На год', 'Year')
-                : goal.type === 'month'
-                  ? tr('На месяц', 'Month')
-                  : tr('Бессрочная', 'Unlimited')}
-            </div>
-          </div>
-
-          {/* Действия */}
-          <div className="goal-actions">
-            <Button 
-              variant={goal.isDone ? 'success' : 'primary'}
-              onClick={handleComplete}
-              disabled={isCompleting}
-              loading={isCompleting}
+            {/* Название */}
+            <Input
+              label={tr('Название', 'Title') + ' *'}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder={tr('Цель', 'Goal')}
               fullWidth
-              className={goal.isDone ? 'done' : ''}
-            >
-              {goal.isDone
-                ? tr('Отменить выполнение', 'Undo completion')
-                : tr('Подтвердить выполнение', 'Mark as completed')}
-            </Button>
-            <Button 
-              variant="danger"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              loading={isDeleting}
+            />
+
+            {/* Описание */}
+            <div className="form-field">
+              <label className="form-label">{tr('Описание', 'Description')}</label>
+              <textarea
+                className="form-textarea"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder={tr('Необязательное описание', 'Optional description')}
+                rows={3}
+              />
+            </div>
+
+            {/* Дедлайн */}
+            <DateTimePickerWithPresets
+              label={tr('Дедлайн', 'Deadline')}
+              value={formData.deadline}
+              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
               fullWidth
-            >
-              {tr('Удалить цель', 'Delete goal')}
-            </Button>
+            />
+
+            {/* Важность */}
+            <ImportanceSelector
+              label={tr('Важность', 'Priority')}
+              value={formData.importance}
+              onChange={(value) => setFormData({ ...formData, importance: value })}
+              fullWidth
+            />
+
+            {/* Тип цели */}
+            <Dropdown
+              label={tr('Тип цели', 'Goal type')}
+              value={String(formData.type)}
+              onChange={(value) => setFormData({ ...formData, type: value as 'year' | 'month' | 'unlimited' })}
+              options={typeOptions}
+              fullWidth
+            />
+
+            {/* Кнопки действий */}
+            <div className="goal-actions">
+              <Button 
+                variant={originalGoal.isDone ? 'success' : 'primary'}
+                onClick={handleComplete}
+                disabled={isCompleting}
+                loading={isCompleting}
+                fullWidth
+                className={originalGoal.isDone ? 'done' : ''}
+              >
+                {originalGoal.isDone
+                  ? tr('Отменить выполнение', 'Undo completion')
+                  : tr('Подтвердить выполнение', 'Mark as completed')}
+              </Button>
+              <Button 
+                variant="primary"
+                onClick={handleSave}
+                disabled={isSaving || !formData.title.trim()}
+                loading={isSaving}
+                fullWidth
+              >
+                {tr('Сохранить', 'Save')}
+              </Button>
+              <Button 
+                variant="danger"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                loading={isDeleting}
+                fullWidth
+              >
+                {tr('Удалить цель', 'Delete goal')}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
