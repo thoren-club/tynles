@@ -12,6 +12,15 @@ export type { DatePickerProps } from './DatePicker';
 
 export { Skeleton, SkeletonValue } from './Skeleton';
 
+export { default as Dropdown } from './Dropdown';
+export type { DropdownProps, DropdownOption } from './Dropdown';
+
+export { default as DateTimePicker } from './DateTimePicker';
+export type { DateTimePickerProps } from './DateTimePicker';
+
+export { default as BottomSheet } from './BottomSheet';
+export type { BottomSheetProps } from './BottomSheet';
+
 // Инструкция по добавлению новых компонентов:
 // 1. Создайте компонент в папке web/src/components/ui/
 // 2. Создайте соответствующий CSS файл с префиксом компонента

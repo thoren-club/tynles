@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronRight, IconSettings, IconBell, IconX } from '@tabler/icons-react';
+import { IconChevronRight, IconSettings, IconBell, IconClock } from '@tabler/icons-react';
 import { api } from '../api';
-import { Skeleton, SkeletonValue } from '../components/ui';
+import { Skeleton, SkeletonValue, BottomSheet } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isTaskAvailable } from '../utils/taskAvailability';
+import WeeklyXpChart from '../components/WeeklyXpChart';
 import './Dashboard.css';
+import './SpaceLeaderboardMini.css';
 
 interface Story {
   id: string;
@@ -31,6 +33,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
+  const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
+  const [weeklyXpData, setWeeklyXpData] = useState<Array<{ day: number; xp: number; label: string }>>([]);
+  const [members, setMembers] = useState<any[]>([]);
 
   // Загружаем просмотренные истории из localStorage
   const getViewedStories = (): Set<string> => {
@@ -68,16 +73,20 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, statsData, tasksData, storiesData] = await Promise.all([
+      const [userData, statsData, tasksData, storiesData, leaderboardData, membersData] = await Promise.all([
         api.getUser(),
         api.getMyStats(),
         api.getTasks(),
         api.getStories().catch(() => ({ stories: [] })),
+        api.getSpaceLeaderboard().catch(() => ({ leaderboard: [] })),
+        api.getMembers().catch(() => ({ members: [] })),
       ]);
       
       setUser(userData);
       setStats(statsData);
       setStories(storiesData.stories || []);
+      setSpaceLeaderboard((leaderboardData as any).leaderboard || []);
+      setMembers((membersData as any).members || []);
       
       // Фильтруем задачи: показываем все задачи (одноразовые и ежедневные)
       // Для статистики "на сегодня" используем только ежедневные повторяющиеся
@@ -89,11 +98,32 @@ export default function Dashboard() {
       // Для актуальных задач показываем все невыполненные задачи
       setDailyTasks(allTasks);
       setDailyRecurringTasks(dailyRecurring);
+
+      // Генерируем данные для графика XP за неделю (пока заглушка)
+      // TODO: Заменить на реальный API endpoint для получения XP по дням
+      generateWeeklyXpData();
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Генерирует данные графика XP за неделю (временная заглушка)
+  // TODO: Заменить на реальный API endpoint
+  const generateWeeklyXpData = () => {
+    // Пока возвращаем пустые данные (можно позже добавить API)
+    // Формат: { day: 0-6 (Sunday-Saturday), xp: number, label: string }
+    const weekData = Array.from({ length: 7 }, (_, i) => {
+      const jsDayOfWeek = i; // 0 = Sunday, 1 = Monday, etc.
+      return {
+        day: jsDayOfWeek,
+        xp: 0, // TODO: Получать из API
+        label: '', // Будет установлен в компоненте
+      };
+    });
+    
+    setWeeklyXpData(weekData);
   };
 
   const handleStoryClick = (story: Story) => {
@@ -104,10 +134,10 @@ export default function Dashboard() {
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Низкая',
-      2: 'Средняя',
-      3: 'Высокая',
-      4: 'Критическая',
+      1: tr('Низкая', 'Low'),
+      2: tr('Средняя', 'Medium'),
+      3: tr('Высокая', 'High'),
+      4: tr('Критическая', 'Critical'),
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -242,17 +272,20 @@ export default function Dashboard() {
               <div key={i} className="task-item">
                 <div className="task-checkbox" />
                 <div className="task-content">
-                  <div className="task-header">
-                    <div className="task-title">
-                      <Skeleton width="70%" height={16} radius={8} />
-                    </div>
-                    <div className="task-xp">
-                      <Skeleton width={60} height={14} radius={8} />
-                    </div>
+                  <div className="task-title">
+                    <Skeleton width="70%" height={16} radius={8} />
                   </div>
                   <div className="task-meta">
-                    <Skeleton width={80} height={14} radius={999} />
-                    <Skeleton width={70} height={14} radius={999} />
+                    <Skeleton width={70} height={12} radius={999} />
+                    <Skeleton width={60} height={12} radius={999} />
+                  </div>
+                </div>
+                <div className="task-right">
+                  <div className="task-xp">
+                    <Skeleton width={50} height={14} radius={8} />
+                  </div>
+                  <div className="task-assignee-avatar">
+                    <Skeleton width={28} height={28} radius={999} />
                   </div>
                 </div>
               </div>
@@ -417,6 +450,29 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* График XP за неделю */}
+      <WeeklyXpChart data={weeklyXpData} loading={loading} />
+
+      {/* Таблица лидеров пространства */}
+      {spaceLeaderboard.length > 0 && (
+        <div className="space-leaderboard-mini">
+          <h3 className="mini-leaderboard-title">
+            {tr('Лидеры пространства', 'Space leaders')}
+          </h3>
+          <div className="mini-leaderboard-table">
+            {spaceLeaderboard.slice(0, 5).map((entry, index) => (
+              <div key={entry.userId || index} className="mini-leaderboard-row">
+                <div className="mini-leaderboard-rank">#{index + 1}</div>
+                <div className="mini-leaderboard-name">
+                  {entry.firstName || entry.username || tr('Неизвестно', 'Unknown')}
+                </div>
+                <div className="mini-leaderboard-xp">{entry.totalXp || 0} XP</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Блок актуальных задач */}
       <div className="actual-tasks-block">
         <h2 className="block-title">{tr('Актуальные задачи', 'Current tasks')}</h2>
@@ -431,6 +487,10 @@ export default function Dashboard() {
               const importanceClass = getImportanceClass(task.difficulty || 1);
               const deadlineText = formatDeadline(task.dueAt);
               
+              // Находим assignee (прикрепленного пользователя)
+              const assigneeId = task.assigneeUserId;
+              const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
+              
               return (
                 <div 
                   key={task.id} 
@@ -443,22 +503,36 @@ export default function Dashboard() {
                     {isCompleted && <span className="check-icon">✓</span>}
                   </div>
                   <div className="task-content">
-                    <div className="task-header">
-                      <div className="task-title">{task.title}</div>
-                      {task.xp > 0 && (
-                        <div className="task-xp">+{task.xp} XP</div>
-                      )}
-                    </div>
+                    <div className="task-title">{task.title}</div>
                     <div className="task-meta">
                       <span className={`task-importance ${importanceClass}`}>
                         {getImportanceText(task.difficulty || 1)}
                       </span>
                       {deadlineText && (
-                        <span className={`task-deadline ${deadlineText === 'Просрочено' || deadlineText === 'Вчера' ? 'overdue' : ''}`}>
+                        <span className={`task-deadline ${deadlineText === tr('Просрочено', 'Overdue') || deadlineText === tr('Вчера', 'Yesterday') ? 'overdue' : ''}`}>
+                          <IconClock size={14} style={{ marginRight: '2px', verticalAlign: 'text-top' }} />
                           {deadlineText}
                         </span>
                       )}
                     </div>
+                  </div>
+                  <div className="task-right">
+                    {task.xp > 0 && (
+                      <div className="task-xp">+{task.xp} XP</div>
+                    )}
+                    {assignee ? (
+                      <div className="task-assignee-avatar" title={assignee.firstName || assignee.username || tr('Без имени', 'No name')}>
+                        {assignee.photoUrl ? (
+                          <img src={assignee.photoUrl} alt={assignee.firstName || assignee.username || ''} />
+                        ) : (
+                          <span>{(assignee.firstName || assignee.username || '?').charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="task-assignee-avatar task-assignee-empty" title={tr('Не назначено', 'Unassigned')}>
+                        <span>?</span>
+                      </div>
+                    )}
                   </div>
                   {isCompleted && (
                     <button 
@@ -478,69 +552,57 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Модальное окно просмотра истории */}
-      {selectedStory && (
-        <div className="story-viewer-overlay" onClick={() => setSelectedStory(null)}>
-          <div className="story-viewer-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="story-viewer">
-              <div className="story-viewer-header">
-                <IconX 
-                  size={24} 
-                  className="story-close-icon"
-                  onClick={() => setSelectedStory(null)}
-                />
-              </div>
-
-              <div className="story-content">
-                <div className="story-title">
-                  {selectedStory.type === 'Weekly'
-                    ? tr('Недельная статистика', 'Weekly summary')
-                    : tr('Новость', 'News')}
+      {/* Просмотр истории через BottomSheet */}
+      <BottomSheet
+        isOpen={!!selectedStory}
+        onClose={() => setSelectedStory(null)}
+        title={selectedStory?.type === 'Weekly'
+          ? tr('Недельная статистика', 'Weekly summary')
+          : tr('Новость', 'News')}
+      >
+        {selectedStory && (
+          <div className="story-content">
+            <div className="story-stats">
+              {selectedStory.data.tasksCompleted !== undefined && (
+                <div className="stat-item">
+                  <div className="stat-label">{tr('Выполнено задач', 'Tasks completed')}</div>
+                  <div className="stat-value">{selectedStory.data.tasksCompleted}</div>
                 </div>
+              )}
 
-                <div className="story-stats">
-                  {selectedStory.data.tasksCompleted !== undefined && (
-                    <div className="stat-item">
-                      <div className="stat-label">{tr('Выполнено задач', 'Tasks completed')}</div>
-                      <div className="stat-value">{selectedStory.data.tasksCompleted}</div>
-                    </div>
-                  )}
-
-                  {selectedStory.data.levelsGained !== undefined && selectedStory.data.levelsGained > 0 && (
-                    <div className="stat-item">
-                      <div className="stat-label">{tr('Получено уровней', 'Levels gained')}</div>
-                      <div className="stat-value">+{selectedStory.data.levelsGained}</div>
-                    </div>
-                  )}
-
-                  {selectedStory.data.leaderboardChange !== undefined && (
-                    <div className="stat-item">
-                      <div className="stat-label">{tr('Изменение в лидерборде', 'Leaderboard change')}</div>
-                      <div className={`stat-value ${selectedStory.data.leaderboardChange >= 0 ? 'positive' : 'negative'}`}>
-                        {selectedStory.data.leaderboardChange > 0 ? '↑' : selectedStory.data.leaderboardChange < 0 ? '↓' : '→'} 
-                        {tr(
-                          `${Math.abs(selectedStory.data.leaderboardChange)} мест${Math.abs(selectedStory.data.leaderboardChange) === 1 ? 'о' : ''}`,
-                          `${Math.abs(selectedStory.data.leaderboardChange)} places`,
-                        )}
-                      </div>
-                    </div>
-                  )}
+              {selectedStory.data.levelsGained !== undefined && selectedStory.data.levelsGained > 0 && (
+                <div className="stat-item">
+                  <div className="stat-label">{tr('Получено уровней', 'Levels gained')}</div>
+                  <div className="stat-value">+{selectedStory.data.levelsGained}</div>
                 </div>
+              )}
 
-                <div className="story-date">
-                  {new Date(selectedStory.weekStartDate).toLocaleDateString(locale, { 
-                    day: 'numeric', 
-                    month: 'long' 
-                  })} — {new Date(new Date(selectedStory.weekStartDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(locale, { 
-                    day: 'numeric', 
-                    month: 'long' 
-                  })}
+              {selectedStory.data.leaderboardChange !== undefined && (
+                <div className="stat-item">
+                  <div className="stat-label">{tr('Изменение в лидерборде', 'Leaderboard change')}</div>
+                  <div className={`stat-value ${selectedStory.data.leaderboardChange >= 0 ? 'positive' : 'negative'}`}>
+                    {selectedStory.data.leaderboardChange > 0 ? '↑' : selectedStory.data.leaderboardChange < 0 ? '↓' : '→'} 
+                    {tr(
+                      `${Math.abs(selectedStory.data.leaderboardChange)} мест${Math.abs(selectedStory.data.leaderboardChange) === 1 ? 'о' : ''}`,
+                      `${Math.abs(selectedStory.data.leaderboardChange)} places`,
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+
+            <div className="story-date">
+              {new Date(selectedStory.weekStartDate).toLocaleDateString(locale, { 
+                day: 'numeric', 
+                month: 'long' 
+              })} — {new Date(new Date(selectedStory.weekStartDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(locale, { 
+                day: 'numeric', 
+                month: 'long' 
+              })}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </BottomSheet>
     </div>
   );
 }

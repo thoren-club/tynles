@@ -1,0 +1,151 @@
+/* Dropdown Component — согласно DESIGN_GUIDELINES.md */
+
+.ui-dropdown-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  position: relative;
+}
+
+.ui-dropdown-full-width {
+  width: 100%;
+}
+
+.ui-dropdown-label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
+}
+
+.ui-dropdown-container {
+  position: relative;
+}
+
+.ui-dropdown-trigger {
+  width: 100%;
+  padding: 12px 16px;
+  border: var(--border-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-out;
+  outline: none;
+}
+
+.ui-dropdown-trigger:hover:not(:disabled) {
+  border-color: var(--color-primary-500);
+  opacity: 0.9;
+}
+
+.ui-dropdown-trigger:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+}
+
+.ui-dropdown-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-dropdown-wrapper.ui-dropdown-open .ui-dropdown-trigger {
+  border-color: var(--color-primary-500);
+}
+
+.ui-dropdown-value {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-dropdown-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease-out;
+  margin-left: 8px;
+}
+
+.ui-dropdown-icon-open {
+  transform: rotate(180deg);
+}
+
+.ui-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: var(--border-1);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  z-index: 1000;
+  max-height: 240px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dropdown-menu {
+    animation: none;
+  }
+  .ui-dropdown-icon {
+    transition: none;
+  }
+}
+
+.ui-dropdown-option {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: var(--text-md);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s ease-out;
+}
+
+.ui-dropdown-option:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.ui-dropdown-option-selected {
+  background: color-mix(in srgb, var(--color-primary-500) 12%, var(--color-surface));
+  color: var(--color-primary-500);
+  font-weight: var(--fw-medium);
+}
+
+.ui-dropdown-option-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-dropdown-error-message {
+  font-size: var(--text-xs);
+  color: var(--color-danger-500);
+  margin-top: var(--spacing-xs);
+}
+
+.ui-dropdown-wrapper.ui-dropdown-error .ui-dropdown-trigger {
+  border-color: var(--color-danger-500);
+}

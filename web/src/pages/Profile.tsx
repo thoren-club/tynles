@@ -106,13 +106,30 @@ export default function Profile() {
       {/* Аватарка и имя */}
       <div className="profile-avatar-section">
         <div className="profile-avatar">
-          <SkeletonValue loading={!user} width={42} height={42} radius={999}>
-            {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
-          </SkeletonValue>
+          {user?.photoUrl ? (
+            <img 
+              src={user.photoUrl} 
+              alt={user.firstName || user.username || tr('Пользователь', 'User')}
+              className="profile-avatar-image"
+              onError={(e) => {
+                // Fallback на placeholder если фото не загрузилось
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const placeholder = target.nextElementSibling as HTMLElement;
+                if (placeholder) placeholder.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div 
+            className="profile-avatar-placeholder" 
+            style={{ display: user?.photoUrl ? 'none' : 'flex' }}
+          >
+            {user?.firstName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
+          </div>
         </div>
         <div className="profile-name">
           <SkeletonValue loading={!user} width={160} height={18} radius={10}>
-            {user?.firstName || tr('Пользователь', 'User')}
+            {user?.firstName || user?.username || tr('Пользователь', 'User')}
           </SkeletonValue>
         </div>
       </div>

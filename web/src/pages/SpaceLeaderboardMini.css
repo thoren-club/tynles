@@ -1,0 +1,64 @@
+/* Space Leaderboard Mini Table — согласно DESIGN_GUIDELINES.md */
+
+.space-leaderboard-mini {
+  background: var(--color-surface);
+  border: var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.mini-leaderboard-title {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+  line-height: var(--lh-tight);
+}
+
+.mini-leaderboard-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease-out;
+}
+
+.mini-leaderboard-row:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface-2));
+}
+
+.mini-leaderboard-rank {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-500);
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.mini-leaderboard-name {
+  flex: 1;
+  font-size: var(--text-md);
+  color: var(--color-text);
+  font-weight: var(--fw-medium);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-leaderboard-xp {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-500);
+  flex-shrink: 0;
+}
