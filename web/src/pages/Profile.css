@@ -12,7 +12,7 @@
 
 .back-icon {
   cursor: pointer;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   transition: opacity 0.2s;
 }
 
@@ -24,7 +24,7 @@
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
 }
 
 .profile-avatar-section {
@@ -38,8 +38,8 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: white;
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,7 +51,7 @@
 .profile-name {
   font-size: 24px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
 }
 
 .profile-info-list {
@@ -62,7 +62,7 @@
 
 .profile-info-item {
   padding: 16px 0;
-  border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .profile-info-item:last-child {
@@ -71,18 +71,18 @@
 
 .info-label {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
 .info-value {
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
 }
 
 .info-value.readonly {
   font-family: monospace;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .name-display {
@@ -114,11 +114,11 @@
 .name-input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border: var(--border-1);
   border-radius: 6px;
   font-size: 16px;
-  background: var(--tg-theme-bg-color, #ffffff);
-  color: var(--tg-theme-text-color, #000000);
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .save-btn,
@@ -132,8 +132,8 @@
 }
 
 .save-btn {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: white;
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
 }
 
 .save-btn:hover:not(:disabled) {
@@ -146,8 +146,9 @@
 }
 
 .cancel-btn {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  color: var(--tg-theme-text-color, #000000);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: var(--border-1);
 }
 
 .cancel-btn:hover {

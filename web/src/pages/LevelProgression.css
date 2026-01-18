@@ -12,7 +12,7 @@
 
 .back-icon {
   cursor: pointer;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   transition: opacity 0.2s;
 }
 
@@ -24,7 +24,7 @@
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
 }
 
 .levels-list {
@@ -35,8 +35,9 @@
 
 .level-item {
   padding: 16px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: var(--border-1);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -44,9 +45,10 @@
 }
 
 .level-item.current {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: white;
-  box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3);
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 .level-item.completed {
@@ -64,29 +66,29 @@
 .level-number {
   font-size: 16px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .level-item.current .level-number {
-  color: white;
+  color: var(--tg-theme-button-text-color, #111019);
 }
 
 .completed-icon {
-  color: #22c55e;
+  color: var(--color-success-500);
   flex-shrink: 0;
 }
 
 .level-item.current .completed-icon {
-  color: white;
+  color: var(--tg-theme-button-text-color, #111019);
 }
 
 .current-badge {
   font-size: 12px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.3);
+  background: color-mix(in srgb, var(--tg-theme-button-text-color, #111019) 18%, transparent);
   border-radius: 8px;
   font-weight: 500;
   white-space: nowrap;
@@ -102,58 +104,58 @@
 .progress-text {
   font-size: 13px;
   font-weight: 500;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .level-item.current .progress-text {
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--tg-theme-button-text-color, #111019) 92%, transparent);
 }
 
 .progress-text-small {
   font-size: 11px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   opacity: 0.8;
 }
 
 .level-item.current .progress-text-small {
-  color: rgba(255, 255, 255, 0.8);
+  color: color-mix(in srgb, var(--tg-theme-button-text-color, #111019) 82%, transparent);
 }
 
 .completed-text {
-  color: #22c55e;
+  color: var(--color-success-500);
   font-weight: 600;
 }
 
 .level-progress-bar-container {
   width: 100%;
   height: 6px;
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--color-surface-2);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .level-item.current .level-progress-bar-container {
-  background: rgba(255, 255, 255, 0.3);
+  background: color-mix(in srgb, var(--tg-theme-button-text-color, #111019) 18%, transparent);
 }
 
 .level-progress-bar {
   height: 100%;
-  background: var(--tg-theme-button-color, #3390ec);
+  background: var(--color-primary-500);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
 
 .level-item.current .level-progress-bar {
-  background: white;
+  background: var(--tg-theme-button-text-color, #111019);
 }
 
 .level-item.completed .level-progress-bar {
-  background: #22c55e;
+  background: var(--color-success-500);
 }
 
 .level-reward {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   font-style: italic;
   display: flex;
   align-items: center;
@@ -162,7 +164,7 @@
 }
 
 .level-item.current .level-reward {
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--tg-theme-button-text-color, #111019) 92%, transparent);
 }
 
 .reward-text {
@@ -170,32 +172,32 @@
 }
 
 .reward-empty {
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   opacity: 0.6;
 }
 
 .reward-earned {
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   font-style: normal;
   font-weight: 500;
 }
 
 .level-item.current .reward-earned {
-  color: white;
+  color: var(--tg-theme-button-text-color, #111019);
 }
 
 .reward-check {
-  color: #22c55e;
+  color: var(--color-success-500);
   flex-shrink: 0;
 }
 
 .level-item.current .reward-check {
-  color: white;
+  color: var(--tg-theme-button-text-color, #111019);
 }
 
 .loading-state {
   text-align: center;
   padding: 60px 20px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   font-size: 16px;
 }

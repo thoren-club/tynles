@@ -2,9 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import { IconSettings, IconPlus, IconLink } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Spaces.css';
 
 export default function Spaces() {
+  const { tr } = useLanguage();
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -45,7 +47,7 @@ export default function Spaces() {
       setSpaces(data.spaces || []);
     } catch (error) {
       console.error('Failed to load spaces:', error);
-      alert('Failed to load spaces');
+      alert(tr('Не удалось загрузить пространства', 'Failed to load spaces'));
     } finally {
       setLoading(false);
     }
@@ -56,7 +58,7 @@ export default function Spaces() {
 
     // Проверка ограничения 3 пространства
     if (spaces.length >= 3) {
-      alert('Максимум можно создать 3 пространства');
+      alert(tr('Максимум можно создать 3 пространства', 'You can create up to 3 spaces'));
       return;
     }
 
@@ -67,7 +69,7 @@ export default function Spaces() {
       loadSpaces();
     } catch (error: any) {
       console.error('Failed to create space:', error);
-      alert(error.message || 'Failed to create space');
+      alert(error.message || tr('Не удалось создать пространство', 'Failed to create space'));
     }
   };
 
@@ -80,13 +82,13 @@ export default function Spaces() {
       window.location.reload();
     } catch (error) {
       console.error('Failed to switch space:', error);
-      alert('Не удалось переключить пространство');
+      alert(tr('Не удалось переключить пространство', 'Failed to switch space'));
     }
   };
   
   const handleJoinSpace = async () => {
     if (!inviteCodeInput.trim()) {
-      alert('Введите код приглашения');
+      alert(tr('Введите код приглашения', 'Enter invite code'));
       return;
     }
     
@@ -96,11 +98,11 @@ export default function Spaces() {
       setShowJoinForm(false);
       setShowSpacesDropdown(false);
       await loadSpaces();
-      alert('Вы успешно подключились к пространству!');
+      alert(tr('Вы успешно подключились к пространству!', 'You joined the space successfully!'));
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to join space:', error);
-      alert(error.message || 'Не удалось подключиться к пространству');
+      alert(error.message || tr('Не удалось подключиться к пространству', 'Failed to join the space'));
     }
   };
 
@@ -148,11 +150,11 @@ export default function Spaces() {
   const handleDeleteSpace = async () => {
     if (!selectedSpace) return;
 
-    if (!confirm('Вы уверены, что хотите удалить это пространство? Это действие нельзя отменить.')) {
+    if (!confirm(tr('Вы уверены, что хотите удалить это пространство? Это действие нельзя отменить.', 'Are you sure you want to delete this space? This cannot be undone.'))) {
       return;
     }
 
-    if (!confirm('Все данные пространства (задачи, цели, участники) будут безвозвратно удалены. Продолжить?')) {
+    if (!confirm(tr('Все данные пространства (задачи, цели, участники) будут безвозвратно удалены. Продолжить?', 'All space data (tasks, goals, members) will be deleted permanently. Continue?'))) {
       return;
     }
 
@@ -172,13 +174,19 @@ export default function Spaces() {
       }
     } catch (error: any) {
       console.error('Failed to delete space:', error);
-      alert(error.message || 'Не удалось удалить пространство');
+      alert(error.message || tr('Не удалось удалить пространство', 'Failed to delete space'));
     } finally {
       setIsDeleting(false);
     }
   };
 
   const isAdmin = currentSpaceRole === 'Admin';
+  const roleLabel = (role: string) => {
+    if (role === 'Admin') return tr('Админ', 'Admin');
+    if (role === 'Editor') return tr('Редактор', 'Editor');
+    if (role === 'Viewer') return tr('Наблюдатель', 'Viewer');
+    return role;
+  };
 
   const handleRewardEdit = (level: number, currentText: string) => {
     setEditingRewardLevel(level);
@@ -204,7 +212,7 @@ export default function Spaces() {
       setEditingRewardText('');
     } catch (error: any) {
       console.error('Failed to update reward:', error);
-      alert(error.message || 'Не удалось обновить награду');
+      alert(error.message || tr('Не удалось обновить награду', 'Failed to update reward'));
     }
   };
 
@@ -231,7 +239,7 @@ export default function Spaces() {
       setEditingMemberRole(null);
     } catch (error: any) {
       console.error('Failed to update member role:', error);
-      alert(error.message || 'Не удалось изменить роль');
+      alert(error.message || tr('Не удалось изменить роль', 'Failed to update role'));
     }
   };
 
@@ -270,7 +278,7 @@ export default function Spaces() {
     <>
       <div className="spaces">
         <div className="spaces-header">
-          <h1>Spaces</h1>
+          <h1>{tr('Пространства', 'Spaces')}</h1>
           <div className="spaces-actions" ref={spacesDropdownRef}>
             {(canCreateSpace || true) && (
               <button 
@@ -278,7 +286,7 @@ export default function Spaces() {
                 onClick={() => setShowSpacesDropdown(!showSpacesDropdown)}
               >
                 <IconPlus size={18} />
-                <span>Действия</span>
+                <span>{tr('Действия', 'Actions')}</span>
               </button>
             )}
             {showSpacesDropdown && (
@@ -292,7 +300,7 @@ export default function Spaces() {
                     }}
                   >
                     <IconPlus size={18} />
-                    <span>Создать пространство</span>
+                    <span>{tr('Создать пространство', 'Create space')}</span>
                   </button>
                 )}
                 <button 
@@ -303,7 +311,7 @@ export default function Spaces() {
                   }}
                 >
                   <IconLink size={18} />
-                  <span>Подключиться</span>
+                  <span>{tr('Подключиться', 'Join')}</span>
                 </button>
               </div>
             )}
@@ -315,7 +323,7 @@ export default function Spaces() {
           <div className="join-space-form">
             <input
               type="text"
-              placeholder="Код приглашения"
+              placeholder={tr('Код приглашения', 'Invite code')}
               value={inviteCodeInput}
               onChange={(e) => setInviteCodeInput(e.target.value)}
               className="input"
@@ -325,10 +333,10 @@ export default function Spaces() {
                 setShowJoinForm(false);
                 setInviteCodeInput('');
               }}>
-                Отмена
+                {tr('Отмена', 'Cancel')}
               </button>
               <button className="btn-primary" onClick={handleJoinSpace}>
-                Подключиться
+                {tr('Подключиться', 'Join')}
               </button>
             </div>
           </div>
@@ -338,20 +346,20 @@ export default function Spaces() {
           <div className="create-space-form">
             <input
               type="text"
-              placeholder="Название пространства"
+              placeholder={tr('Название пространства', 'Space name')}
               value={newSpaceName}
               onChange={(e) => setNewSpaceName(e.target.value)}
               className="input"
             />
             <button className="btn-primary" onClick={handleCreateSpace}>
-              Создать
+              {tr('Создать', 'Create')}
             </button>
           </div>
         )}
 
         <div className="spaces-list">
           {spaces.length === 0 ? (
-            <div className="empty-state">Создайте первое пространство</div>
+            <div className="empty-state">{tr('Создайте первое пространство', 'Create your first space')}</div>
           ) : (
             spaces.map((space) => (
               <div
@@ -363,8 +371,8 @@ export default function Spaces() {
                   <div className="space-main">
                     <div className="space-name">{space.name}</div>
                     <div className="space-info">
-                      <span className="space-role">{space.role}</span>
-                      {space.isCurrent && <span className="current-badge">Текущее</span>}
+                      <span className="space-role">{roleLabel(space.role)}</span>
+                      {space.isCurrent && <span className="current-badge">{tr('Текущее', 'Current')}</span>}
                     </div>
                   </div>
                   <div 
@@ -394,9 +402,9 @@ export default function Spaces() {
 
               {/* Участники */}
               <div className="settings-section">
-                <h3 className="section-title">Участники</h3>
+                <h3 className="section-title">{tr('Участники', 'Members')}</h3>
                 {spaceMembers.length === 0 ? (
-                  <div className="empty-list">Нет участников</div>
+                  <div className="empty-list">{tr('Нет участников', 'No members')}</div>
                 ) : (
                   <div className="members-list">
                     {spaceMembers.map((member: any) => {
@@ -407,8 +415,8 @@ export default function Spaces() {
                         <div key={member.id} className="member-item">
                           <div className="member-info">
                             <div className="member-name">
-                              {member.firstName || member.username || 'Unknown'}
-                              {isCurrentUser && <span className="current-user-badge">Вы</span>}
+                              {member.firstName || member.username || tr('Неизвестно', 'Unknown')}
+                              {isCurrentUser && <span className="current-user-badge">{tr('Вы', 'You')}</span>}
                             </div>
                             {isEditing && isAdmin && !isCurrentUser && editingMemberRole ? (
                               <select
@@ -421,19 +429,19 @@ export default function Spaces() {
                                 onBlur={handleMemberRoleSave}
                                 autoFocus
                               >
-                                <option value="Viewer">Viewer</option>
-                                <option value="Editor">Editor</option>
-                                <option value="Admin">Admin</option>
+                                <option value="Viewer">{tr('Наблюдатель', 'Viewer')}</option>
+                                <option value="Editor">{tr('Редактор', 'Editor')}</option>
+                                <option value="Admin">{tr('Админ', 'Admin')}</option>
                               </select>
                             ) : (
                               <div className="member-role">
-                                {member.role}
+                                {roleLabel(member.role)}
                                 {isAdmin && !isCurrentUser && (
                                   <button
                                     className="edit-role-button"
                                     onClick={() => handleMemberRoleEdit(member.id, member.role)}
                                   >
-                                    Изменить
+                                    {tr('Изменить', 'Edit')}
                                   </button>
                                 )}
                               </div>
@@ -448,13 +456,13 @@ export default function Spaces() {
 
               {/* Код приглашения */}
               <div className="settings-section">
-                <h3 className="section-title">Код приглашения</h3>
+                <h3 className="section-title">{tr('Код приглашения', 'Invite code')}</h3>
                 <div className="invite-code-container">
                   {inviteCode ? (
                     <div className="invite-code">{inviteCode}</div>
                   ) : (
                     <div className="invite-code-placeholder">
-                      Нажмите, чтобы создать код
+                      {tr('Нажмите, чтобы создать код', 'Click to generate a code')}
                     </div>
                   )}
                 </div>
@@ -463,7 +471,7 @@ export default function Spaces() {
               {/* Награды уровней (только для админа) */}
               {isAdmin && (
                 <div className="settings-section">
-                  <h3 className="section-title">Награды уровней</h3>
+                  <h3 className="section-title">{tr('Награды уровней', 'Level rewards')}</h3>
                   <div className="rewards-list">
                     {Array.from({ length: 80 }, (_, i) => i + 1).map((level) => {
                       const reward = levelRewards.find(r => r.level === level);
@@ -471,7 +479,7 @@ export default function Spaces() {
                       
                       return (
                         <div key={level} className="reward-item">
-                          <div className="reward-level">Уровень {level}</div>
+                          <div className="reward-level">{tr('Уровень', 'Level')} {level}</div>
                           {isEditing ? (
                             <div className="reward-edit">
                               <input
@@ -479,11 +487,11 @@ export default function Spaces() {
                                 className="reward-input"
                                 value={editingRewardText}
                                 onChange={(e) => setEditingRewardText(e.target.value)}
-                                placeholder="Награда за уровень"
+                                placeholder={tr('Награда за уровень', 'Reward text')}
                                 autoFocus
                               />
                               <button className="save-button" onClick={handleRewardSave}>
-                                Сохранить
+                                {tr('Сохранить', 'Save')}
                               </button>
                               <button 
                                 className="cancel-button" 
@@ -492,19 +500,19 @@ export default function Spaces() {
                                   setEditingRewardText('');
                                 }}
                               >
-                                Отмена
+                                {tr('Отмена', 'Cancel')}
                               </button>
                             </div>
                           ) : (
                             <div className="reward-content">
                               <div className="reward-text">
-                                {reward?.text || 'Нет награды'}
+                                {reward?.text || tr('Нет награды', 'No reward')}
                               </div>
                               <button
                                 className="edit-reward-button"
                                 onClick={() => handleRewardEdit(level, reward?.text || '')}
                               >
-                                {reward ? 'Изменить' : 'Добавить'}
+                                {reward ? tr('Изменить', 'Edit') : tr('Добавить', 'Add')}
                               </button>
                             </div>
                           )}
@@ -516,15 +524,17 @@ export default function Spaces() {
               )}
 
               {/* Удаление пространства (только для владельца и не персональное) */}
-              {isSpaceOwner && selectedSpace.name !== 'Персональный' && (
+              {isSpaceOwner && selectedSpace.name !== 'Персональный' && selectedSpace.name !== 'Personal' && (
                 <div className="settings-section">
-                  <h3 className="section-title">Опасная зона</h3>
+                  <h3 className="section-title">{tr('Опасная зона', 'Danger zone')}</h3>
                   <button
                     className="btn-delete-space"
                     onClick={handleDeleteSpace}
                     disabled={isDeleting}
                   >
-                    {isDeleting ? 'Удаление...' : 'Удалить пространство'}
+                    {isDeleting
+                      ? tr('Удаление...', 'Deleting...')
+                      : tr('Удалить пространство', 'Delete space')}
                   </button>
                 </div>
               )}

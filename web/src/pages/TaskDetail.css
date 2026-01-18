@@ -24,7 +24,7 @@
 .task-detail-sheet {
   width: 100%;
   max-height: 90vh;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-surface);
   border-radius: 20px 20px 0 0;
   animation: slideUp 0.3s ease;
   display: flex;
@@ -60,7 +60,7 @@
 .swipe-indicator {
   width: 40px;
   height: 4px;
-  background: var(--tg-theme-hint-color, #e0e0e0);
+  background: var(--color-border-strong);
   border-radius: 2px;
 }
 
@@ -73,51 +73,56 @@
 .task-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .task-value {
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   word-break: break-word;
 }
 
 .task-value.overdue {
-  color: #c62828;
+  color: var(--color-danger-500);
   font-weight: 600;
 }
 
 .task-importance {
   display: inline-block;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
   width: fit-content;
+  border: 1px solid transparent;
 }
 
 .task-importance.importance-low {
-  background: #e0e0e0;
-  color: #666666;
+  background: color-mix(in srgb, var(--color-neutral-0) 6%, transparent);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
 }
 
 .task-importance.importance-medium {
-  background: #c8e6c9;
-  color: #2e7d32;
+  background: color-mix(in srgb, var(--color-success-500) 16%, transparent);
+  color: var(--color-success-500);
+  border-color: color-mix(in srgb, var(--color-success-500) 38%, transparent);
 }
 
 .task-importance.importance-high {
-  background: #ffe0b2;
-  color: #e65100;
+  background: color-mix(in srgb, var(--color-primary-500) 16%, transparent);
+  color: var(--color-primary-500);
+  border-color: color-mix(in srgb, var(--color-primary-500) 38%, transparent);
 }
 
 .task-importance.importance-urgent {
-  background: #ffcdd2;
-  color: #c62828;
+  background: color-mix(in srgb, var(--color-danger-500) 16%, transparent);
+  color: var(--color-danger-500);
+  border-color: color-mix(in srgb, var(--color-danger-500) 38%, transparent);
 }
 
 .task-xp {
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary-500);
   font-weight: 600;
 }
 
@@ -126,14 +131,14 @@
   gap: 12px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border-top: var(--border-1);
 }
 
 .btn-complete {
   flex: 1;
   padding: 14px 24px;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: white;
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -154,9 +159,9 @@
 .btn-delete {
   flex: 1;
   padding: 14px 24px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  color: var(--tg-theme-text-color, #000000);
-  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: var(--border-1);
   border-radius: 12px;
   font-size: 16px;
   font-weight: 500;
@@ -175,7 +180,7 @@
 
 .task-next-available {
   padding: 14px 20px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-surface-2);
   border-radius: 8px;
   text-align: center;
   margin-bottom: 12px;
@@ -183,6 +188,6 @@
 
 .next-available-text {
   font-size: 16px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   font-weight: 500;
 }

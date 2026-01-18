@@ -23,8 +23,8 @@
   justify-content: space-around;
   align-items: center;
   padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
-  background: var(--tg-theme-bg-color, #111019);
-  border-top: 1px solid color-mix(in srgb, var(--tg-theme-hint-color, #a09abf) 45%, transparent);
+  background: var(--color-bg);
+  border-top: var(--border-1);
   z-index: 1000;
 }
 
@@ -33,30 +33,30 @@
   flex-direction: column;
   align-items: center;
   text-decoration: none;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   padding: 6px 12px;
   border-radius: 14px;
   transition: color 0.2s;
 }
 
 .bottom-nav a.active {
-  color: var(--tg-theme-button-color, #3390ec);
-  background: color-mix(in srgb, var(--tg-theme-button-color, #ff8d00) 18%, transparent);
-  outline: 1px solid color-mix(in srgb, var(--tg-theme-button-color, #ff8d00) 55%, transparent);
+  color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--color-primary-500) 55%, transparent);
 }
 
 .bottom-nav a.active .nav-icon {
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary-500);
   stroke-width: 2;
 }
 
 .bottom-nav a:hover .nav-icon {
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary-500);
   transform: scale(1.1);
 }
 
 .bottom-nav a:focus-visible {
-  outline: 2px solid var(--tg-theme-button-color, #ff8d00);
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
 }
 

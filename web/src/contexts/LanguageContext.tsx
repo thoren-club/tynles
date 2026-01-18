@@ -6,6 +6,8 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  tr: (ru: string, en: string) => string;
+  locale: string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -14,16 +16,16 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const translations: Record<Language, Record<string, string>> = {
   ru: {
     // Dashboard
-    'dashboard.title': 'Dashboard',
+    'dashboard.title': 'Главная',
     'dashboard.no_tasks': 'Задач нет',
     'dashboard.can_add_task': 'Вы можете добавить задачу',
     'dashboard.tasks_completed': 'выполнено',
     'dashboard.current_tasks': 'Актуальные задачи',
     // Navigation
-    'nav.dashboard': 'Dashboard',
+    'nav.dashboard': 'Главная',
     'nav.deals': 'Дела',
     'nav.leaderboard': 'Лидерборд',
-    'nav.spaces': 'Spaces',
+    'nav.spaces': 'Пространства',
     // Common
     'common.loading': 'Загрузка...',
     'common.error': 'Ошибка',
@@ -33,6 +35,9 @@ const translations: Record<Language, Record<string, string>> = {
     'common.edit': 'Редактировать',
     'common.create': 'Создать',
     'common.complete': 'Выполнить',
+    'common.back': 'Назад',
+    'common.yes': 'Да',
+    'common.no': 'Нет',
     // Settings
     'settings.title': 'Настройки',
     'settings.general': 'Основные',
@@ -40,6 +45,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.notifications': 'Уведомления',
     'settings.security': 'Безопасность',
     'settings.about': 'О приложении',
+    // Pages
+    'deals.title': 'Дела',
+    'leaderboard.title': 'Лидерборд',
+    'spaces.title': 'Пространства',
+    'profile.title': 'Профиль',
+    'tasks.title': 'Задачи',
+    'goals.title': 'Цели',
     // Add more translations as needed
   },
   en: {
@@ -63,6 +75,9 @@ const translations: Record<Language, Record<string, string>> = {
     'common.edit': 'Edit',
     'common.create': 'Create',
     'common.complete': 'Complete',
+    'common.back': 'Back',
+    'common.yes': 'Yes',
+    'common.no': 'No',
     // Settings
     'settings.title': 'Settings',
     'settings.general': 'General',
@@ -70,6 +85,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.notifications': 'Notifications',
     'settings.security': 'Security',
     'settings.about': 'About',
+    // Pages
+    'deals.title': 'Deals',
+    'leaderboard.title': 'Leaderboard',
+    'spaces.title': 'Spaces',
+    'profile.title': 'Profile',
+    'tasks.title': 'Tasks',
+    'goals.title': 'Goals',
     // Add more translations as needed
   },
 };
@@ -92,8 +114,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return translations[language][key] || key;
   };
 
+  const tr = (ru: string, en: string): string => {
+    return language === 'ru' ? ru : en;
+  };
+
+  const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, tr, locale }}>
       {children}
     </LanguageContext.Provider>
   );

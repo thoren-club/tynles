@@ -4,10 +4,12 @@ import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Deals.css';
 
 export default function Deals() {
   const navigate = useNavigate();
+  const { tr } = useLanguage();
   const [goals, setGoals] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function Deals() {
     setShowCreateDropdown(false);
     // Устанавливаем значения по умолчанию
     setFormData({
-      title: type === 'goal' ? 'Цель' : 'Задача',
+      title: type === 'goal' ? tr('Цель', 'Goal') : tr('Задача', 'Task'),
       description: '',
       deadline: '',
       importance: 1,
@@ -251,7 +253,7 @@ export default function Deals() {
 
   const handleCreate = async () => {
     if (!formData.title.trim()) {
-      alert('Название обязательно');
+      alert(tr('Название обязательно', 'Title is required'));
       return;
     }
 
@@ -287,7 +289,7 @@ export default function Deals() {
       handleCloseModal();
     } catch (error) {
       console.error('Failed to create:', error);
-      alert('Не удалось создать. Попробуйте ещё раз.');
+      alert(tr('Не удалось создать. Попробуйте ещё раз.', 'Failed to create. Please try again.'));
     } finally {
       setIsCreating(false);
     }
@@ -303,13 +305,13 @@ export default function Deals() {
   };
 
   const weekDays = [
-    { value: 1, label: 'ПН' },
-    { value: 2, label: 'ВТ' },
-    { value: 3, label: 'СР' },
-    { value: 4, label: 'ЧТ' },
-    { value: 5, label: 'ПТ' },
-    { value: 6, label: 'СБ' },
-    { value: 0, label: 'ВС' },
+    { value: 1, label: tr('ПН', 'Mon') },
+    { value: 2, label: tr('ВТ', 'Tue') },
+    { value: 3, label: tr('СР', 'Wed') },
+    { value: 4, label: tr('ЧТ', 'Thu') },
+    { value: 5, label: tr('ПТ', 'Fri') },
+    { value: 6, label: tr('СБ', 'Sat') },
+    { value: 0, label: tr('ВС', 'Sun') },
   ];
 
   const handleGoalClick = (goalId: string) => {
@@ -322,24 +324,24 @@ export default function Deals() {
 
   const handleTaskCompleteClick = async (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Предотвращаем открытие детальной страницы
-    if (!confirm('Выполнить задачу?')) return;
+    if (!confirm(tr('Выполнить задачу?', 'Complete task?'))) return;
     
     try {
       await api.completeTask(taskId);
       await loadData(); // Перезагружаем данные
     } catch (error) {
       console.error('Failed to complete task:', error);
-      alert('Не удалось выполнить задачу');
+      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
     }
   };
 
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Низкая',
-      2: 'Средняя',
-      3: 'Высокая',
-      4: 'Критическая',
+      1: tr('Низкая', 'Low'),
+      2: tr('Средняя', 'Medium'),
+      3: tr('Высокая', 'High'),
+      4: tr('Критическая', 'Critical'),
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -381,19 +383,19 @@ export default function Deals() {
     
     switch (type) {
       case 'one-time':
-        return 'Одноразовая';
+        return tr('Одноразовая', 'One-time');
       case 'daily':
-        return 'Ежедневная';
+        return tr('Ежедневная', 'Daily');
       case 'weekly': {
         const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
         if (daysOfWeek.length === 0) {
-          return 'Еженедельная';
+          return tr('Еженедельная', 'Weekly');
         }
         // Показываем количество выбранных дней
-        return `Еженедельная (${daysOfWeek.length} дней)`;
+        return tr(`Еженедельная (${daysOfWeek.length} дней)`, `Weekly (${daysOfWeek.length} days)`);
       }
       default:
-        return 'Одноразовая';
+        return tr('Одноразовая', 'One-time');
     }
   };
 
@@ -487,14 +489,14 @@ export default function Deals() {
     <div className="deals">
       {/* Хедер с кнопкой создать */}
       <div className="deals-header">
-        <h1 className="deals-title">Дела</h1>
+        <h1 className="deals-title">{tr('Дела', 'Deals')}</h1>
         <div className="create-button-container">
           <button 
             className="create-button"
             onClick={handleCreateClick}
           >
             <IconPlus size={20} />
-            <span>создать</span>
+            <span>{tr('создать', 'create')}</span>
           </button>
           
           {showCreateDropdown && (
@@ -503,13 +505,13 @@ export default function Deals() {
                 className="dropdown-item"
                 onClick={() => handleCreateTypeSelect('goal')}
               >
-                Цель
+                {tr('Цель', 'Goal')}
               </button>
               <button 
                 className="dropdown-item"
                 onClick={() => handleCreateTypeSelect('task')}
               >
-                Задача
+                {tr('Задача', 'Task')}
               </button>
             </div>
           )}
@@ -519,20 +521,20 @@ export default function Deals() {
       {/* Секция целей */}
       <div className="goals-section">
         <div className="section-header">
-          <h2 className="section-title">Цели</h2>
+          <h2 className="section-title">{tr('Цели', 'Goals')}</h2>
           {hasMoreGoals && (
             <button 
               className="all-goals-link"
               onClick={() => navigate('/all-goals')}
             >
-              Все цели
+              {tr('Все цели', 'All goals')}
               <IconChevronRight size={16} />
             </button>
           )}
         </div>
 
         {displayedGoals.length === 0 ? (
-          <div className="empty-state">Целей пока нет</div>
+          <div className="empty-state">{tr('Целей пока нет', 'No goals yet')}</div>
         ) : (
           <div className="goals-list">
             {displayedGoals.map((goal) => {
@@ -565,10 +567,10 @@ export default function Deals() {
 
       {/* Секция задач */}
       <div className="tasks-section">
-        <h2 className="section-title">Задачи</h2>
+        <h2 className="section-title">{tr('Задачи', 'Tasks')}</h2>
         
         {availableTasks.length === 0 ? (
-          <div className="empty-state">Задач пока нет</div>
+          <div className="empty-state">{tr('Задач пока нет', 'No tasks yet')}</div>
         ) : (
           <div className="tasks-list">
             {availableTasks.map((task) => {
@@ -600,7 +602,7 @@ export default function Deals() {
                     className="task-complete-btn"
                     onClick={(e) => handleTaskCompleteClick(task.id, e)}
                   >
-                    Выполнить
+                    {tr('Выполнить', 'Complete')}
                   </button>
                 </div>
               );
@@ -641,32 +643,33 @@ export default function Deals() {
                 ref={sheetContentRef}
               >
                 <div className="create-modal-title">
-                  Создать {createType === 'goal' ? 'цель' : 'задачу'}
+                  {tr('Создать', 'Create')}{' '}
+                  {createType === 'goal' ? tr('цель', 'goal') : tr('задачу', 'task')}
                 </div>
 
                 {/* Форма */}
                 <div className="create-form">
                 {/* Название */}
                 <div className="form-field">
-                  <label className="form-label">Название *</label>
+                  <label className="form-label">{tr('Название', 'Title')} *</label>
                   <input
                     type="text"
                     className="form-input"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder={createType === 'goal' ? 'Цель' : 'Задача'}
+                    placeholder={createType === 'goal' ? tr('Цель', 'Goal') : tr('Задача', 'Task')}
                     autoFocus
                   />
                 </div>
 
                 {/* Описание */}
                 <div className="form-field">
-                  <label className="form-label">Описание</label>
+                  <label className="form-label">{tr('Описание', 'Description')}</label>
                   <textarea
                     className="form-textarea"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Необязательное описание"
+                    placeholder={tr('Необязательное описание', 'Optional description')}
                     rows={3}
                   />
                 </div>
@@ -674,7 +677,7 @@ export default function Deals() {
                 {/* Дедлайн - показываем только для целей и одноразовых задач */}
                 {(createType === 'goal' || (createType === 'task' && !formData.isRecurring)) && (
                   <div className="form-field">
-                    <label className="form-label">Дедлайн</label>
+                    <label className="form-label">{tr('Дедлайн', 'Deadline')}</label>
                     <input
                       type="date"
                       className="form-input"
@@ -686,31 +689,31 @@ export default function Deals() {
 
                 {/* Важность */}
                 <div className="form-field">
-                  <label className="form-label">Важность</label>
+                  <label className="form-label">{tr('Важность', 'Priority')}</label>
                   <select
                     className="form-select"
                     value={formData.importance}
                     onChange={(e) => setFormData({ ...formData, importance: parseInt(e.target.value) })}
                   >
-                    <option value={1}>Низкая</option>
-                    <option value={2}>Средняя</option>
-                    <option value={3}>Высокая</option>
-                    <option value={4}>Критическая</option>
+                    <option value={1}>{tr('Низкая', 'Low')}</option>
+                    <option value={2}>{tr('Средняя', 'Medium')}</option>
+                    <option value={3}>{tr('Высокая', 'High')}</option>
+                    <option value={4}>{tr('Критическая', 'Critical')}</option>
                   </select>
                 </div>
 
                 {/* Тип цели (только для целей) */}
                 {createType === 'goal' && (
                   <div className="form-field">
-                    <label className="form-label">Тип цели</label>
+                    <label className="form-label">{tr('Тип цели', 'Goal type')}</label>
                     <select
                       className="form-select"
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                     >
-                      <option value="unlimited">Бессрочная</option>
-                      <option value="month">На месяц</option>
-                      <option value="year">На год</option>
+                      <option value="unlimited">{tr('Бессрочная', 'Unlimited')}</option>
+                      <option value="month">{tr('На месяц', 'Month')}</option>
+                      <option value="year">{tr('На год', 'Year')}</option>
                     </select>
                   </div>
                 )}
@@ -726,13 +729,13 @@ export default function Deals() {
                           checked={formData.isRecurring}
                           onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
                         />
-                        <span>Повторяющаяся задача</span>
+                        <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
                       </label>
                     </div>
 
                     {formData.isRecurring && (
                       <div className="form-field">
-                        <label className="form-label">Дни недели</label>
+                        <label className="form-label">{tr('Дни недели', 'Days of week')}</label>
                         <div className="days-of-week">
                           {weekDays.map((day) => (
                             <button
@@ -757,14 +760,14 @@ export default function Deals() {
                     onClick={handleCloseModal}
                     disabled={isCreating}
                   >
-                    Отмена
+                    {tr('Отмена', 'Cancel')}
                   </button>
                   <button
                     className="btn-create"
                     onClick={handleCreate}
                     disabled={isCreating || !formData.title.trim()}
                   >
-                    {isCreating ? 'Создание...' : 'Создать'}
+                    {isCreating ? tr('Создание...', 'Creating...') : tr('Создать', 'Create')}
                   </button>
                 </div>
               </div>

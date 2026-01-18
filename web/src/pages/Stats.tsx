@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton, SkeletonValue } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Stats.css';
 
 export default function Stats() {
+  const { tr } = useLanguage();
   const [myStats, setMyStats] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,10 +68,10 @@ export default function Stats() {
 
   return (
     <div className="stats">
-      <h1>Statistics</h1>
+      <h1>{tr('Статистика', 'Statistics')}</h1>
 
       <div className="my-stats-section">
-        <h2>Your Stats</h2>
+        <h2>{tr('Ваша статистика', 'Your Stats')}</h2>
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-value">
@@ -77,7 +79,7 @@ export default function Stats() {
                 {myStats?.level || 1}
               </SkeletonValue>
             </div>
-            <div className="stat-label">Level</div>
+            <div className="stat-label">{tr('Уровень', 'Level')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">
@@ -85,26 +87,26 @@ export default function Stats() {
                 {myStats?.totalXp || 0}
               </SkeletonValue>
             </div>
-            <div className="stat-label">Total XP</div>
+            <div className="stat-label">{tr('Всего XP', 'Total XP')}</div>
           </div>
         </div>
       </div>
 
       <div className="leaderboard-section">
-        <h2>Leaderboard</h2>
+        <h2>{tr('Лидерборд', 'Leaderboard')}</h2>
         <div className="leaderboard">
           {leaderboard.length === 0 ? (
-            <div className="empty-state">No leaderboard data yet</div>
+            <div className="empty-state">{tr('Пока нет данных', 'No leaderboard data yet')}</div>
           ) : (
             leaderboard.map((entry, index) => (
               <div key={entry.userId} className="leaderboard-item">
                 <div className="rank">#{index + 1}</div>
                 <div className="user-info">
                   <div className="user-name">
-                    {entry.firstName || entry.username || 'Unknown'}
+                    {entry.firstName || entry.username || tr('Неизвестно', 'Unknown')}
                   </div>
                   <div className="user-stats">
-                    Level {entry.level} • {entry.totalXp} XP
+                    {tr('Уровень', 'Level')} {entry.level} • {entry.totalXp} XP
                   </div>
                 </div>
               </div>

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { Button, Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './GoalDetail.css';
 
 export default function GoalDetail() {
   const navigate = useNavigate();
+  const { tr, locale } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const [goal, setGoal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function GoalDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Удалить цель?')) return;
+    if (!confirm(tr('Удалить цель?', 'Delete goal?'))) return;
     
     setIsDeleting(true);
     try {
@@ -41,7 +43,7 @@ export default function GoalDetail() {
       navigate('/deals');
     } catch (error) {
       console.error('Failed to delete goal:', error);
-      alert('Не удалось удалить цель');
+      alert(tr('Не удалось удалить цель', 'Failed to delete goal'));
     } finally {
       setIsDeleting(false);
     }
@@ -54,7 +56,7 @@ export default function GoalDetail() {
       await loadGoal();
     } catch (error) {
       console.error('Failed to toggle goal:', error);
-      alert('Не удалось изменить статус цели');
+      alert(tr('Не удалось изменить статус цели', 'Failed to update goal status'));
     } finally {
       setIsCompleting(false);
     }
@@ -93,17 +95,17 @@ export default function GoalDetail() {
     return (
       <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="goal-detail">Цель не найдена</div>
+          <div className="goal-detail">{tr('Цель не найдена', 'Goal not found')}</div>
         </div>
       </div>
     );
   }
 
   const importanceOptions = [
-    'Низкая',
-    'Средняя',
-    'Высокая',
-    'Критическая',
+    tr('Низкая', 'Low'),
+    tr('Средняя', 'Medium'),
+    tr('Высокая', 'High'),
+    tr('Критическая', 'Critical'),
   ];
 
   const importance = importanceOptions[goal.difficulty - 1] || importanceOptions[0];
@@ -119,42 +121,44 @@ export default function GoalDetail() {
 
           {/* Название */}
           <div className="goal-field">
-            <label className="goal-label">Название</label>
+            <label className="goal-label">{tr('Название', 'Title')}</label>
             <div className="goal-value">{goal.title}</div>
           </div>
 
           {/* Описание */}
           <div className="goal-field">
-            <label className="goal-label">Описание</label>
+            <label className="goal-label">{tr('Описание', 'Description')}</label>
             <div className="goal-value">
-              {goal.description || 'Описание отсутствует'}
+              {goal.description || tr('Описание отсутствует', 'No description')}
             </div>
           </div>
 
           {/* Дедлайн */}
           <div className="goal-field">
-            <label className="goal-label">Дедлайн</label>
+            <label className="goal-label">{tr('Дедлайн', 'Deadline')}</label>
             <div className="goal-value">
               {goal.deadline 
-                ? new Date(goal.deadline).toLocaleDateString('ru-RU')
-                : 'Не установлен'
+                ? new Date(goal.deadline).toLocaleDateString(locale)
+                : tr('Не установлен', 'Not set')
               }
             </div>
           </div>
 
           {/* Важность */}
           <div className="goal-field">
-            <label className="goal-label">Важность</label>
+            <label className="goal-label">{tr('Важность', 'Priority')}</label>
             <div className="goal-value">{importance}</div>
           </div>
 
           {/* Тип цели */}
           <div className="goal-field">
-            <label className="goal-label">Тип цели</label>
+            <label className="goal-label">{tr('Тип цели', 'Goal type')}</label>
             <div className="goal-value">
-              {goal.type === 'year' ? 'На год' : 
-               goal.type === 'month' ? 'На месяц' : 
-               'Бессрочная'}
+              {goal.type === 'year'
+                ? tr('На год', 'Year')
+                : goal.type === 'month'
+                  ? tr('На месяц', 'Month')
+                  : tr('Бессрочная', 'Unlimited')}
             </div>
           </div>
 
@@ -168,7 +172,9 @@ export default function GoalDetail() {
               fullWidth
               className={goal.isDone ? 'done' : ''}
             >
-              {goal.isDone ? 'Отменить выполнение' : 'Подтвердить выполнение'}
+              {goal.isDone
+                ? tr('Отменить выполнение', 'Undo completion')
+                : tr('Подтвердить выполнение', 'Mark as completed')}
             </Button>
             <Button 
               variant="danger"
@@ -177,7 +183,7 @@ export default function GoalDetail() {
               loading={isDeleting}
               fullWidth
             >
-              Удалить цель
+              {tr('Удалить цель', 'Delete goal')}
             </Button>
           </div>
         </div>

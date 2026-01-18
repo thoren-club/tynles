@@ -1,23 +1,40 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Leaderboard.css';
 
 // Названия лиг
-const LEAGUE_NAMES = [
-  'Бронзовая',
-  'Серебряная',
-  'Золотая',
-  'Сапфировая',
-  'Рубиновая',
-  'Изумрудная',
-  'Аметистовая',
-  'Жемчужная',
-  'Обсидиановая',
-  'Алмазная',
-  'Мастер',
-  'Легендарная',
-];
+const LEAGUE_NAMES = {
+  ru: [
+    'Бронзовая',
+    'Серебряная',
+    'Золотая',
+    'Сапфировая',
+    'Рубиновая',
+    'Изумрудная',
+    'Аметистовая',
+    'Жемчужная',
+    'Обсидиановая',
+    'Алмазная',
+    'Мастер',
+    'Легендарная',
+  ],
+  en: [
+    'Bronze',
+    'Silver',
+    'Gold',
+    'Sapphire',
+    'Ruby',
+    'Emerald',
+    'Amethyst',
+    'Pearl',
+    'Obsidian',
+    'Diamond',
+    'Master',
+    'Legendary',
+  ],
+} as const;
 
 // Компонент для элемента лидерборда с поддержкой аватарок и пинков
 function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: { 
@@ -26,6 +43,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
   onPoke: (userId: string) => Promise<void>;
   isSpaceLeaderboard: boolean;
 }) {
+  const { tr } = useLanguage();
   const [avatarError, setAvatarError] = useState(false);
   const [isPoking, setIsPoking] = useState(false);
   const [poked, setPoked] = useState(entry.isPokedToday || false);
@@ -49,7 +67,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
       setPoked(true);
     } catch (error) {
       console.error('Failed to poke user:', error);
-      alert('Не удалось пнуть пользователя');
+      alert(tr('Не удалось пнуть пользователя', 'Failed to poke user'));
     } finally {
       setIsPoking(false);
     }
@@ -61,7 +79,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
       {displayAvatar && (
         <img 
           src={entry.photoUrl} 
-          alt={entry.firstName || entry.username || 'User'} 
+          alt={entry.firstName || entry.username || tr('Пользователь', 'User')} 
           className="user-avatar"
           onError={() => setAvatarError(true)}
         />
@@ -73,7 +91,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
       )}
       <div className="user-info">
         <div className="user-name">
-          {entry.firstName || entry.username || 'Unknown'}
+          {entry.firstName || entry.username || tr('Неизвестно', 'Unknown')}
         </div>
         <div className="user-stats">
           {`${entry.totalXp ?? 0} XP`}
@@ -84,7 +102,13 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
           className={`poke-button ${canPoke ? '' : 'disabled'} ${poked ? 'poked' : ''}`}
           onClick={handlePoke}
           disabled={!canPoke || isPoking}
-          title={poked ? 'Уже пнули сегодня' : canPoke ? 'Пнуть игрока' : 'Нельзя пнуть'}
+          title={
+            poked
+              ? tr('Уже пнули сегодня', 'Already poked today')
+              : canPoke
+                ? tr('Пнуть игрока', 'Poke player')
+                : tr('Нельзя пнуть', 'Cannot poke')
+          }
         >
           {isPoking ? '...' : poked ? '✓' : '👆'}
         </button>
@@ -94,6 +118,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
 }
 
 export default function Leaderboard() {
+  const { tr, locale, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'global' | 'space'>('global');
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
   const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
@@ -160,11 +185,19 @@ export default function Leaderboard() {
     if (!periodInfo) return '';
     
     const days = periodInfo.daysRemaining;
-    if (days <= 0) return 'Раунд завершен';
+    if (days <= 0) return tr('Раунд завершен', 'Round ended');
     
     // Форматируем дни, часы, минуты для более точного отображения
     const now = new Date();
     const endDate = periodInfo.endDate ? new Date(periodInfo.endDate) : null;
+
+    const pluralRu = (n: number, one: string, few: string, many: string) => {
+      const mod10 = n % 10;
+      const mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return one;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+      return many;
+    };
     
     if (endDate) {
       const diffMs = endDate.getTime() - now.getTime();
@@ -172,28 +205,29 @@ export default function Leaderboard() {
       const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       
       if (diffDays <= 0 && diffHours <= 0) {
-        return 'Раунд завершен';
+        return tr('Раунд завершен', 'Round ended');
       }
       
       if (diffDays === 0) {
-        return `Осталось ${diffHours} ${diffHours === 1 ? 'час' : diffHours < 5 ? 'часа' : 'часов'}`;
+        const ruHours = pluralRu(diffHours, 'час', 'часа', 'часов');
+        const enHours = diffHours === 1 ? 'hour' : 'hours';
+        return tr(`Осталось ${diffHours} ${ruHours}`, `Remaining ${diffHours} ${enHours}`);
       }
       
       if (diffDays === 1) {
-        return `Остался 1 день`;
+        return tr('Остался 1 день', '1 day remaining');
       }
       
-      if (diffDays < 5) {
-        return `Осталось ${diffDays} дня`;
-      }
-      
-      return `Осталось ${diffDays} дней`;
+      const ruDays = pluralRu(diffDays, 'день', 'дня', 'дней');
+      const enDays = diffDays === 1 ? 'day' : 'days';
+      return tr(`Осталось ${diffDays} ${ruDays}`, `Remaining ${diffDays} ${enDays}`);
     }
     
     // Fallback на старую логику
-    if (days === 1) return 'Остался 1 день';
-    if (days < 5) return `Осталось ${days} дня`;
-    return `Осталось ${days} дней`;
+    if (days === 1) return tr('Остался 1 день', '1 day remaining');
+    const ruDays = pluralRu(days, 'день', 'дня', 'дней');
+    const enDays = days === 1 ? 'day' : 'days';
+    return tr(`Осталось ${days} ${ruDays}`, `Remaining ${days} ${enDays}`);
   };
   
   // Находим текущего пользователя в лидерборде для определения его лиги
@@ -233,11 +267,12 @@ export default function Leaderboard() {
   }
 
   const leaderboard = activeTab === 'global' ? globalLeaderboard : spaceLeaderboard;
-  const spaceName = currentSpace?.name || 'Пространство';
+  const spaceName = currentSpace?.name || tr('Пространство', 'Space');
+  const leagueNames = language === 'ru' ? LEAGUE_NAMES.ru : LEAGUE_NAMES.en;
 
   return (
     <div className="leaderboard">
-      <h1 className="leaderboard-title">Лидерборд</h1>
+      <h1 className="leaderboard-title">{tr('Лидерборд', 'Leaderboard')}</h1>
 
       {/* Табы */}
       <div className="leaderboard-tabs">
@@ -245,7 +280,7 @@ export default function Leaderboard() {
           className={`tab-button ${activeTab === 'global' ? 'active' : ''}`}
           onClick={() => setActiveTab('global')}
         >
-          Глобальный
+          {tr('Глобальный', 'Global')}
         </button>
         <button 
           className={`tab-button ${activeTab === 'space' ? 'active' : ''}`}
@@ -260,7 +295,7 @@ export default function Leaderboard() {
         <>
           <div className="leagues-container">
             <div className="leagues-list">
-              {LEAGUE_NAMES.map((leagueName, index) => {
+              {leagueNames.map((leagueName, index) => {
                 const leagueNumber = index + 1;
                 const isUnlocked = leagueNumber <= currentUserLeague;
                 
@@ -285,7 +320,8 @@ export default function Leaderboard() {
               </div>
               {periodInfo.endDate && (
                 <div className="period-date">
-                  Раунд закончится: {new Date(periodInfo.endDate).toLocaleDateString('ru-RU', { 
+                  {tr('Раунд закончится:', 'Round ends:')}{' '}
+                  {new Date(periodInfo.endDate).toLocaleDateString(locale, { 
                     day: 'numeric', 
                     month: 'long',
                     year: 'numeric'
@@ -300,7 +336,7 @@ export default function Leaderboard() {
       {/* Список лидерборда */}
       <div className="leaderboard-list">
         {leaderboard.length === 0 ? (
-          <div className="empty-state">Нет данных для отображения</div>
+          <div className="empty-state">{tr('Нет данных для отображения', 'No data to display')}</div>
         ) : (
           <>
             {leaderboard.map((entry, index) => {
@@ -340,17 +376,20 @@ export default function Leaderboard() {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={!globalPagination.hasPrevPage || currentPage === 1}
                 >
-                  Назад
+                  {tr('Назад', 'Back')}
                 </button>
                 <span className="pagination-info">
-                  Страница {globalPagination.page} из {globalPagination.totalPages || globalPagination.totalChunks || 1}
+                  {tr(
+                    `Страница ${globalPagination.page} из ${globalPagination.totalPages || globalPagination.totalChunks || 1}`,
+                    `Page ${globalPagination.page} of ${globalPagination.totalPages || globalPagination.totalChunks || 1}`,
+                  )}
                 </span>
                 <button
                   className="pagination-button"
                   onClick={() => setCurrentPage(prev => prev + 1)}
                   disabled={!globalPagination.hasNextPage}
                 >
-                  Вперёд
+                  {tr('Вперёд', 'Next')}
                 </button>
               </div>
             )}

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft, IconCheck } from '@tabler/icons-react';
 import { api } from '../api';
+import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './LevelProgression.css';
 
 // Константы для расчета XP (должны совпадать с backend)
@@ -23,6 +25,7 @@ function getTotalXpForLevel(targetLevel: number): number {
 
 export default function LevelProgression() {
   const navigate = useNavigate();
+  const { tr } = useLanguage();
   const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);
   const [userStats, setUserStats] = useState<{ level: number; totalXp: number } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,13 +64,37 @@ export default function LevelProgression() {
           className="back-icon"
           onClick={() => navigate('/')}
         />
-        <h1 className="progression-title">Прогрессия уровней</h1>
+        <h1 className="progression-title">{tr('Прогрессия уровней', 'Level progression')}</h1>
         <div style={{ width: 24 }} />
       </div>
 
       {/* Список уровней */}
       {loading ? (
-        <div className="loading-state">Загрузка...</div>
+        <div className="levels-list" aria-busy="true">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="level-item">
+              <div className="level-header">
+                <div className="level-number">
+                  <Skeleton width={120} height={16} radius={8} />
+                </div>
+                <div className="level-progress-info">
+                  <div className="progress-text">
+                    <Skeleton width={180} height={14} radius={8} />
+                  </div>
+                  <div className="progress-text-small">
+                    <Skeleton width={140} height={12} radius={8} />
+                  </div>
+                </div>
+              </div>
+              <div className="level-progress-bar-container">
+                <Skeleton width="100%" height={10} radius={999} />
+              </div>
+              <div className="level-reward">
+                <Skeleton width="60%" height={14} radius={8} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="levels-list">
           {levels.map((level) => {
@@ -89,9 +116,9 @@ export default function LevelProgression() {
               >
                 <div className="level-header">
                   <div className="level-number">
-                    Уровень {level}
+                    {tr('Уровень', 'Level')} {level}
                     {isCompleted && <IconCheck size={16} className="completed-icon" />}
-                    {isCurrent && <span className="current-badge">Текущий</span>}
+                    {isCurrent && <span className="current-badge">{tr('Текущий', 'Current')}</span>}
                   </div>
                   {isCurrent && (
                     <div className="level-progress-info">
@@ -99,21 +126,21 @@ export default function LevelProgression() {
                         {xpIntoLevel} / {xpForThisLevel} XP ({Math.round(progressPercent)}%)
                       </div>
                       <div className="progress-text-small">
-                        Осталось: {xpRemaining} XP
+                        {tr('Осталось', 'Remaining')}: {xpRemaining} XP
                       </div>
                     </div>
                   )}
                   {!isCurrent && !isCompleted && (
                     <div className="level-progress-info">
                       <div className="progress-text">
-                        Требуется: {xpForThisLevel} XP
+                        {tr('Требуется', 'Required')}: {xpForThisLevel} XP
                       </div>
                     </div>
                   )}
                   {isCompleted && (
                     <div className="level-progress-info">
                       <div className="progress-text completed-text">
-                        Завершено
+                        {tr('Завершено', 'Completed')}
                       </div>
                     </div>
                   )}
@@ -131,7 +158,7 @@ export default function LevelProgression() {
                       {isCompleted && <IconCheck size={14} className="reward-check" />}
                     </>
                   ) : (
-                    <span className="reward-empty">нет</span>
+                    <span className="reward-empty">{tr('нет', 'none')}</span>
                   )}
                 </div>
               </div>

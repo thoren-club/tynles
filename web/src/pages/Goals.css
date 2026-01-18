@@ -28,7 +28,7 @@
 .empty-state {
   text-align: center;
   padding: 40px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .goals-list {
@@ -38,8 +38,8 @@
 }
 
 .goal-card {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   justify-content: space-between;
@@ -61,7 +61,7 @@
   gap: 16px;
   align-items: center;
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .goal-card.done {
@@ -79,10 +79,10 @@
 }
 
 .btn-toggle {
-  background: #4caf50;
-  color: white;
+  background: var(--color-success-500);
+  color: var(--color-neutral-0);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   font-size: 14px;
   font-weight: bold;
   border: none;
@@ -90,33 +90,33 @@
 }
 
 .btn-toggle.done {
-  background: #999;
+  background: var(--color-neutral-600);
 }
 
 .done-badge {
-  background: #4caf50;
-  color: white;
+  background: var(--color-success-500);
+  color: var(--color-neutral-0);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 10px;
   font-weight: 500;
 }
 
 .btn-delete {
-  background: #ff4444;
-  color: white;
+  background: var(--color-danger-500);
+  color: var(--color-neutral-0);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
   border: none;
   cursor: pointer;
 }
 
 .btn-primary {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
   border: none;

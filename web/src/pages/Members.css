@@ -21,15 +21,15 @@
 }
 
 .invite-code {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
   padding: 16px;
   margin-top: 8px;
 }
 
 .invite-code-label {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
@@ -42,10 +42,10 @@
 }
 
 .btn-copy {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
 }
 
@@ -56,8 +56,8 @@
 }
 
 .member-card {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   padding: 16px;
 }
 
@@ -74,17 +74,17 @@
 
 .member-role {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   padding: 4px 8px;
-  background: var(--tg-theme-bg-color, #ffffff);
-  border-radius: 4px;
+  background: var(--color-bg);
+  border-radius: var(--radius-xs);
 }
 
 .btn-primary {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
   border: none;

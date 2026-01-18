@@ -7,7 +7,7 @@ import './Settings.css';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, tr } = useLanguage();
   const [notificationSettings, setNotificationSettings] = useState<{
     taskRemindersEnabled: boolean;
     reminderHoursBefore: number;
@@ -39,7 +39,7 @@ export default function Settings() {
       setNotificationSettings({ ...notificationSettings, taskRemindersEnabled: newValue });
     } catch (error) {
       console.error('Failed to update notification settings:', error);
-      alert('Не удалось обновить настройки');
+      alert(tr('Не удалось обновить настройки', 'Failed to update settings'));
     }
   };
 
@@ -52,7 +52,7 @@ export default function Settings() {
       setNotificationSettings({ ...notificationSettings, pokeEnabled: newValue });
     } catch (error) {
       console.error('Failed to update notification settings:', error);
-      alert('Не удалось обновить настройки');
+      alert(tr('Не удалось обновить настройки', 'Failed to update settings'));
     }
   };
 
@@ -64,7 +64,7 @@ export default function Settings() {
       setNotificationSettings({ ...notificationSettings, reminderHoursBefore: hours });
     } catch (error) {
       console.error('Failed to update notification settings:', error);
-      alert('Не удалось обновить настройки');
+      alert(tr('Не удалось обновить настройки', 'Failed to update settings'));
     }
   };
 
@@ -109,71 +109,75 @@ export default function Settings() {
           
           {loading ? (
             <div className="settings-placeholder">
-              <div className="placeholder-text">Загрузка...</div>
+              <div className="placeholder-text">{t('common.loading')}</div>
             </div>
           ) : notificationSettings ? (
             <>
               <div className="settings-item">
                 <div className="settings-item-label">
-                  Напоминания о задачах
+                  {tr('Напоминания о задачах', 'Task reminders')}
                 </div>
                 <button
                   className={`toggle-button ${notificationSettings.taskRemindersEnabled ? 'active' : ''}`}
                   onClick={handleToggleReminders}
                 >
-                  {notificationSettings.taskRemindersEnabled ? 'Включено' : 'Выключено'}
+                  {notificationSettings.taskRemindersEnabled
+                    ? tr('Включено', 'On')
+                    : tr('Выключено', 'Off')}
                 </button>
               </div>
 
               {notificationSettings.taskRemindersEnabled && (
                 <div className="settings-item">
                   <div className="settings-item-label">
-                    Напоминать за (часов до дедлайна)
+                    {tr('Напоминать за (часов до дедлайна)', 'Remind (hours before deadline)')}
                   </div>
                   <select
                     className="settings-select"
                     value={notificationSettings.reminderHoursBefore}
                     onChange={(e) => handleReminderHoursChange(parseInt(e.target.value))}
                   >
-                    <option value={1}>1 час</option>
-                    <option value={2}>2 часа</option>
-                    <option value={6}>6 часов</option>
-                    <option value={12}>12 часов</option>
-                    <option value={24}>24 часа</option>
+                    <option value={1}>{tr('1 час', '1 hour')}</option>
+                    <option value={2}>{tr('2 часа', '2 hours')}</option>
+                    <option value={6}>{tr('6 часов', '6 hours')}</option>
+                    <option value={12}>{tr('12 часов', '12 hours')}</option>
+                    <option value={24}>{tr('24 часа', '24 hours')}</option>
                   </select>
                 </div>
               )}
 
               <div className="settings-item">
                 <div className="settings-item-label">
-                  Разрешить другим пользователям "пнуть" меня
+                  {tr('Разрешить другим пользователям "пнуть" меня', 'Allow other users to poke me')}
                 </div>
                 <button
                   className={`toggle-button ${notificationSettings.pokeEnabled ? 'active' : ''}`}
                   onClick={handleTogglePoke}
                 >
-                  {notificationSettings.pokeEnabled ? 'Включено' : 'Выключено'}
+                  {notificationSettings.pokeEnabled
+                    ? tr('Включено', 'On')
+                    : tr('Выключено', 'Off')}
                 </button>
               </div>
             </>
           ) : (
             <div className="settings-placeholder">
-              <div className="placeholder-text">Не удалось загрузить настройки</div>
+              <div className="placeholder-text">{tr('Не удалось загрузить настройки', 'Failed to load settings')}</div>
             </div>
           )}
         </div>
 
         <div className="settings-section">
-          <h2 className="settings-section-title">Безопасность</h2>
+          <h2 className="settings-section-title">{t('settings.security')}</h2>
           <div className="settings-placeholder">
-            <div className="placeholder-text">Здесь возможно будет…</div>
+            <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
           </div>
         </div>
 
         <div className="settings-section">
-          <h2 className="settings-section-title">О приложении</h2>
+          <h2 className="settings-section-title">{t('settings.about')}</h2>
           <div className="settings-placeholder">
-            <div className="placeholder-text">Здесь возможно будет…</div>
+            <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
           </div>
         </div>
       </div>

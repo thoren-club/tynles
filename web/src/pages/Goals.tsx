@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Goals.css';
 
 export default function Goals() {
+  const { tr } = useLanguage();
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -19,7 +21,7 @@ export default function Goals() {
       setGoals(data.goals);
     } catch (error) {
       console.error('Failed to load goals:', error);
-      alert('Failed to load goals');
+      alert(tr('Не удалось загрузить цели', 'Failed to load goals'));
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export default function Goals() {
       loadGoals();
     } catch (error) {
       console.error('Failed to create goal:', error);
-      alert('Failed to create goal');
+      alert(tr('Не удалось создать цель', 'Failed to create goal'));
     }
   };
 
@@ -44,16 +46,21 @@ export default function Goals() {
       const result = await api.toggleGoal(goalId) as { isDone: boolean; xp: number };
       loadGoals();
       if (result.isDone) {
-        alert(`Goal completed! You earned ${result.xp} XP!`);
+        alert(
+          tr(
+            `Цель выполнена! Вы получили ${result.xp} XP!`,
+            `Goal completed! You earned ${result.xp} XP!`,
+          ),
+        );
       }
     } catch (error) {
       console.error('Failed to toggle goal:', error);
-      alert('Failed to toggle goal');
+      alert(tr('Не удалось изменить статус цели', 'Failed to toggle goal'));
     }
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    if (!confirm('Delete this goal?')) return;
+    if (!confirm(tr('Удалить эту цель?', 'Delete this goal?'))) return;
 
     try {
       await api.deleteGoal(goalId);
@@ -95,9 +102,9 @@ export default function Goals() {
   return (
     <div className="goals">
       <div className="goals-header">
-        <h1>Goals</h1>
+        <h1>{tr('Цели', 'Goals')}</h1>
         <button className="btn-primary" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? 'Cancel' : '+ Add'}
+          {showCreate ? tr('Отмена', 'Cancel') : tr('+ Добавить', '+ Add')}
         </button>
       </div>
 
@@ -105,7 +112,7 @@ export default function Goals() {
         <div className="create-goal-form">
           <input
             type="text"
-            placeholder="Goal title"
+            placeholder={tr('Название цели', 'Goal title')}
             value={newGoal.title}
             onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
             className="input"
@@ -113,7 +120,7 @@ export default function Goals() {
           <div className="form-row">
             <input
               type="number"
-              placeholder="Difficulty"
+              placeholder={tr('Сложность', 'Difficulty')}
               value={newGoal.difficulty}
               onChange={(e) => setNewGoal({ ...newGoal, difficulty: parseInt(e.target.value) || 1 })}
               className="input"
@@ -129,14 +136,14 @@ export default function Goals() {
             />
           </div>
           <button className="btn-primary" onClick={handleCreateGoal}>
-            Create
+            {tr('Создать', 'Create')}
           </button>
         </div>
       )}
 
       <div className="goals-list">
         {goals.length === 0 ? (
-          <div className="empty-state">No goals yet</div>
+          <div className="empty-state">{tr('Пока нет целей', 'No goals yet')}</div>
         ) : (
           goals.map((goal) => (
             <div 
@@ -146,16 +153,16 @@ export default function Goals() {
               <div className="goal-content">
                 <div className="goal-title">{goal.title}</div>
                 <div className="goal-meta">
-                  <span>Difficulty: {goal.difficulty}</span>
+                  <span>{tr('Сложность', 'Difficulty')}: {goal.difficulty}</span>
                   <span>XP: {goal.xp}</span>
-                  {goal.isDone && <span className="done-badge">Done</span>}
+                  {goal.isDone && <span className="done-badge">{tr('Готово', 'Done')}</span>}
                 </div>
               </div>
               <div className="goal-actions">
                 <button
                   className={`btn-toggle ${goal.isDone ? 'done' : ''}`}
                   onClick={() => handleToggleGoal(goal.id)}
-                  title={goal.isDone ? 'Mark as incomplete' : 'Mark as complete'}
+                  title={goal.isDone ? tr('Отменить выполнение', 'Mark as incomplete') : tr('Подтвердить выполнение', 'Mark as complete')}
                 >
                   {goal.isDone ? '✓' : '○'}
                 </button>
@@ -163,7 +170,7 @@ export default function Goals() {
                   className="btn-delete"
                   onClick={() => handleDeleteGoal(goal.id)}
                 >
-                  Delete
+                  {tr('Удалить', 'Delete')}
                 </button>
               </div>
             </div>

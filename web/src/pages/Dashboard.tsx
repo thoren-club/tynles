@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronRight, IconSettings, IconBell, IconX } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton, SkeletonValue } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import './Dashboard.css';
 
@@ -20,6 +21,7 @@ interface Story {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { tr, locale } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
@@ -132,12 +134,12 @@ export default function Dashboard() {
     
     const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 0) return 'Сегодня';
-    if (diffDays === 1) return 'Завтра';
-    if (diffDays === -1) return 'Вчера';
-    if (diffDays < 0) return 'Просрочено';
+    if (diffDays === 0) return tr('Сегодня', 'Today');
+    if (diffDays === 1) return tr('Завтра', 'Tomorrow');
+    if (diffDays === -1) return tr('Вчера', 'Yesterday');
+    if (diffDays < 0) return tr('Просрочено', 'Overdue');
     
-    return deadline.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return deadline.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   };
 
   // Выполнение задачи с возможностью отмены
@@ -232,7 +234,7 @@ export default function Dashboard() {
         <div className="actual-tasks-block">
           <h2 className="block-title">
             <SkeletonValue loading={true} width={170} height={22} radius={10}>
-              Актуальные задачи
+              {tr('Актуальные задачи', 'Current tasks')}
             </SkeletonValue>
           </h2>
           <div className="tasks-list">
@@ -284,10 +286,10 @@ export default function Dashboard() {
 
   // Мотивационные фразы
   const motivationalPhrases = [
-    'Поднажмите! Вы всё сможете!',
-    'Продолжайте в том же духе!',
-    'Осталось совсем немного!',
-    'Вы на правильном пути!',
+    tr('Поднажмите! Вы всё сможете!', 'Push a bit more — you can do it!'),
+    tr('Продолжайте в том же духе!', 'Keep it up!'),
+    tr('Осталось совсем немного!', 'Almost there!'),
+    tr('Вы на правильном пути!', 'You’re on the right track!'),
   ];
   const motivationalText = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
 
@@ -330,7 +332,7 @@ export default function Dashboard() {
             {user?.photoUrl ? (
               <img 
                 src={user.photoUrl} 
-                alt={user.firstName || user.username || 'User'} 
+                alt={user.firstName || user.username || tr('Пользователь', 'User')} 
                 className="avatar avatar-image"
                 onError={(e) => {
                   // Fallback на placeholder если фото не загрузилось
@@ -385,7 +387,9 @@ export default function Dashboard() {
       <div className="today-stats-block">
         <div className="today-stats-header">
           <span className="stats-text">
-            {totalToday === 0 ? 'Задач нет' : `${completedToday} / ${totalToday} выполнено`}
+            {totalToday === 0
+              ? tr('Задач нет', 'No tasks')
+              : tr(`${completedToday} / ${totalToday} выполнено`, `${completedToday} / ${totalToday} completed`)}
           </span>
         </div>
         {totalToday > 0 && (
@@ -415,10 +419,10 @@ export default function Dashboard() {
 
       {/* Блок актуальных задач */}
       <div className="actual-tasks-block">
-        <h2 className="block-title">Актуальные задачи</h2>
+        <h2 className="block-title">{tr('Актуальные задачи', 'Current tasks')}</h2>
         {uncompletedTasks.length === 0 ? (
           <div className="empty-state">
-            {totalToday === 0 ? 'Вы можете добавить задачу' : 'Все задачи выполнены! 🎉'}
+            {totalToday === 0 ? tr('Вы можете добавить задачу', 'You can add a task') : tr('Все задачи выполнены! 🎉', 'All tasks completed!')}
           </div>
         ) : (
           <div className="tasks-list">
@@ -464,7 +468,7 @@ export default function Dashboard() {
                         handleTaskUndo();
                       }}
                     >
-                      Отменить
+                      {tr('Отменить', 'Undo')}
                     </button>
                   )}
                 </div>
@@ -489,40 +493,45 @@ export default function Dashboard() {
 
               <div className="story-content">
                 <div className="story-title">
-                  {selectedStory.type === 'Weekly' ? 'Недельная статистика' : 'Новость'}
+                  {selectedStory.type === 'Weekly'
+                    ? tr('Недельная статистика', 'Weekly summary')
+                    : tr('Новость', 'News')}
                 </div>
 
                 <div className="story-stats">
                   {selectedStory.data.tasksCompleted !== undefined && (
                     <div className="stat-item">
-                      <div className="stat-label">Выполнено задач</div>
+                      <div className="stat-label">{tr('Выполнено задач', 'Tasks completed')}</div>
                       <div className="stat-value">{selectedStory.data.tasksCompleted}</div>
                     </div>
                   )}
 
                   {selectedStory.data.levelsGained !== undefined && selectedStory.data.levelsGained > 0 && (
                     <div className="stat-item">
-                      <div className="stat-label">Получено уровней</div>
+                      <div className="stat-label">{tr('Получено уровней', 'Levels gained')}</div>
                       <div className="stat-value">+{selectedStory.data.levelsGained}</div>
                     </div>
                   )}
 
                   {selectedStory.data.leaderboardChange !== undefined && (
                     <div className="stat-item">
-                      <div className="stat-label">Изменение в лидерборде</div>
+                      <div className="stat-label">{tr('Изменение в лидерборде', 'Leaderboard change')}</div>
                       <div className={`stat-value ${selectedStory.data.leaderboardChange >= 0 ? 'positive' : 'negative'}`}>
                         {selectedStory.data.leaderboardChange > 0 ? '↑' : selectedStory.data.leaderboardChange < 0 ? '↓' : '→'} 
-                        {Math.abs(selectedStory.data.leaderboardChange)} мест{Math.abs(selectedStory.data.leaderboardChange) === 1 ? 'о' : ''}
+                        {tr(
+                          `${Math.abs(selectedStory.data.leaderboardChange)} мест${Math.abs(selectedStory.data.leaderboardChange) === 1 ? 'о' : ''}`,
+                          `${Math.abs(selectedStory.data.leaderboardChange)} places`,
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
 
                 <div className="story-date">
-                  {new Date(selectedStory.weekStartDate).toLocaleDateString('ru-RU', { 
+                  {new Date(selectedStory.weekStartDate).toLocaleDateString(locale, { 
                     day: 'numeric', 
                     month: 'long' 
-                  })} — {new Date(new Date(selectedStory.weekStartDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ru-RU', { 
+                  })} — {new Date(new Date(selectedStory.weekStartDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(locale, { 
                     day: 'numeric', 
                     month: 'long' 
                   })}

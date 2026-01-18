@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { Button, Skeleton } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
+import { useLanguage } from '../contexts/LanguageContext';
 import './TaskDetail.css';
 
 export default function TaskDetail() {
   const navigate = useNavigate();
+  const { tr, locale } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
@@ -42,7 +44,7 @@ export default function TaskDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Удалить задачу?')) return;
+    if (!confirm(tr('Удалить задачу?', 'Delete task?'))) return;
     
     setIsDeleting(true);
     try {
@@ -50,14 +52,14 @@ export default function TaskDetail() {
       navigate('/deals');
     } catch (error) {
       console.error('Failed to delete task:', error);
-      alert('Не удалось удалить задачу');
+      alert(tr('Не удалось удалить задачу', 'Failed to delete task'));
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handleComplete = async () => {
-    if (!confirm('Выполнить задачу?')) return;
+    if (!confirm(tr('Выполнить задачу?', 'Complete task?'))) return;
     
     setIsCompleting(true);
     try {
@@ -70,7 +72,7 @@ export default function TaskDetail() {
       }
     } catch (error) {
       console.error('Failed to complete task:', error);
-      alert('Не удалось выполнить задачу');
+      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
     } finally {
       setIsCompleting(false);
     }
@@ -85,7 +87,7 @@ export default function TaskDetail() {
       await loadTask();
     } catch (error) {
       console.error('Failed to set assignee:', error);
-      alert('Не удалось назначить исполнителя');
+      alert(tr('Не удалось назначить исполнителя', 'Failed to assign user'));
     } finally {
       setIsAssigning(false);
     }
@@ -102,21 +104,21 @@ export default function TaskDetail() {
     
     const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 0) return 'Сегодня';
-    if (diffDays === 1) return 'Завтра';
-    if (diffDays === -1) return 'Вчера';
-    if (diffDays < 0) return 'Просрочено';
+    if (diffDays === 0) return tr('Сегодня', 'Today');
+    if (diffDays === 1) return tr('Завтра', 'Tomorrow');
+    if (diffDays === -1) return tr('Вчера', 'Yesterday');
+    if (diffDays < 0) return tr('Просрочено', 'Overdue');
     
-    return deadline.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return deadline.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   };
 
   // Получаем текст важности по difficulty
   const getImportanceText = (difficulty: number): string => {
     const importanceMap: { [key: number]: string } = {
-      1: 'Низкая',
-      2: 'Средняя',
-      3: 'Высокая',
-      4: 'Критическая',
+      1: tr('Низкая', 'Low'),
+      2: tr('Средняя', 'Medium'),
+      3: tr('Высокая', 'High'),
+      4: tr('Критическая', 'Critical'),
     };
     return importanceMap[difficulty] || importanceMap[1];
   };
@@ -155,18 +157,18 @@ export default function TaskDetail() {
     
     switch (type) {
       case 'one-time':
-        return 'Одноразовая';
+        return tr('Одноразовая', 'One-time');
       case 'daily':
-        return 'Ежедневная';
+        return tr('Ежедневная', 'Daily');
       case 'weekly': {
         const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
         if (daysOfWeek.length === 0) {
-          return 'Еженедельная';
+          return tr('Еженедельная', 'Weekly');
         }
-        return `Еженедельная (${daysOfWeek.length} дней)`;
+        return tr(`Еженедельная (${daysOfWeek.length} дней)`, `Weekly (${daysOfWeek.length} days)`);
       }
       default:
-        return 'Одноразовая';
+        return tr('Одноразовая', 'One-time');
     }
   };
 
@@ -208,7 +210,7 @@ export default function TaskDetail() {
     return (
       <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
         <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="task-detail">Задача не найдена</div>
+          <div className="task-detail">{tr('Задача не найдена', 'Task not found')}</div>
         </div>
       </div>
     );
@@ -240,14 +242,14 @@ export default function TaskDetail() {
 
           {/* Название */}
           <div className="task-field">
-            <label className="task-label">Название</label>
+            <label className="task-label">{tr('Название', 'Title')}</label>
             <div className="task-value">{task.title}</div>
           </div>
 
           {/* Описание */}
           {(task as any).description && (
             <div className="task-field">
-              <label className="task-label">Описание</label>
+              <label className="task-label">{tr('Описание', 'Description')}</label>
               <div className="task-value">{(task as any).description}</div>
             </div>
           )}
@@ -255,8 +257,8 @@ export default function TaskDetail() {
           {/* Дедлайн */}
           {deadlineText && (
             <div className="task-field">
-              <label className="task-label">Дедлайн</label>
-              <div className={`task-value ${deadlineText === 'Просрочено' || deadlineText === 'Вчера' ? 'overdue' : ''}`}>
+              <label className="task-label">{tr('Дедлайн', 'Deadline')}</label>
+              <div className={`task-value ${deadlineText === tr('Просрочено', 'Overdue') || deadlineText === tr('Вчера', 'Yesterday') ? 'overdue' : ''}`}>
                 {deadlineText}
               </div>
             </div>
@@ -264,7 +266,7 @@ export default function TaskDetail() {
 
           {/* Важность */}
           <div className="task-field">
-            <label className="task-label">Важность</label>
+            <label className="task-label">{tr('Важность', 'Priority')}</label>
             <div className={`task-value task-importance ${importanceClass}`}>
               {importance}
             </div>
@@ -272,28 +274,28 @@ export default function TaskDetail() {
 
           {/* Тип */}
           <div className="task-field">
-            <label className="task-label">Тип</label>
+            <label className="task-label">{tr('Тип', 'Type')}</label>
             <div className="task-value">{taskType}</div>
           </div>
 
           {/* XP */}
           {task.xp > 0 && (
             <div className="task-field">
-              <label className="task-label">Опыт</label>
+              <label className="task-label">{tr('Опыт', 'XP')}</label>
               <div className="task-value task-xp">+{task.xp} XP</div>
             </div>
           )}
 
           {/* Исполнитель */}
           <div className="task-field">
-            <label className="task-label">Исполнитель</label>
+            <label className="task-label">{tr('Исполнитель', 'Assignee')}</label>
             <select
               className="task-value"
               value={assigneeUserId || ''}
               onChange={(e) => handleAssigneeChange(e.target.value || null)}
               disabled={isAssigning}
             >
-              <option value="">Не назначено</option>
+              <option value="">{tr('Не назначено', 'Unassigned')}</option>
               {members.map((m: any) => (
                 <option key={m.id} value={m.id}>
                   {m.firstName || m.username || m.id}
@@ -316,7 +318,7 @@ export default function TaskDetail() {
                 loading={isCompleting}
                 fullWidth
               >
-                Выполнить
+                {tr('Выполнить', 'Complete')}
               </Button>
             )}
             <Button
@@ -326,7 +328,7 @@ export default function TaskDetail() {
               loading={isDeleting}
               fullWidth
             >
-              Удалить
+              {tr('Удалить', 'Delete')}
             </Button>
           </div>
         </div>

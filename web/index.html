@@ -25,12 +25,10 @@
         min-height: 100dvh;
         z-index: 2147483647;
 
-        background-image:
-          url('/loading-bg.png'),
-          radial-gradient(1200px 800px at 50% 30%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%),
-          linear-gradient(180deg, #a78bfa 0%, #fbcfe8 45%, #c7d2fe 100%);
-        background-size: cover, cover, cover;
-        background-position: center, center, center;
+        background-color: #111019;
+        background-image: url('/loading-bg.png');
+        background-size: cover;
+        background-position: center;
         background-repeat: no-repeat;
       }
 
@@ -93,6 +91,21 @@
         var splash = document.getElementById('boot-splash');
         var bar = document.getElementById('boot-progress');
         if (!splash || !bar) return;
+
+        // Best-effort language for first paint (before React).
+        try {
+          var savedLang = localStorage.getItem('language');
+          var textEl = splash.querySelector('.text');
+          if (savedLang === 'en') {
+            if (textEl) textEl.textContent = 'Loading...';
+            document.documentElement.lang = 'en';
+          } else {
+            if (textEl) textEl.textContent = 'Загрузка...';
+            document.documentElement.lang = 'ru';
+          }
+        } catch (e) {
+          // ignore
+        }
 
         var startedAt = Date.now();
         var minVisibleMs = 650; // чтобы loader было приятно заметно

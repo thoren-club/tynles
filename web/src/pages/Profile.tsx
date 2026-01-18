@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton, SkeletonValue } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Profile.css';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { tr, language } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -39,7 +41,7 @@ export default function Profile() {
       setIsEditing(false);
     } catch (error: any) {
       console.error('Failed to update name:', error);
-      alert(error.message || 'Не удалось обновить имя');
+      alert(error.message || tr('Не удалось обновить имя', 'Failed to update name'));
     } finally {
       setSaving(false);
     }
@@ -73,17 +75,20 @@ export default function Profile() {
     );
   }
 
-  const tgId = user?.tgId || window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'N/A';
+  const tgId = user?.tgId || window.Telegram?.WebApp?.initDataUnsafe?.user?.id || tr('нет', 'N/A');
   const userRole = user?.role || 'обычный';
   
   // Маппинг ролей для отображения
-  const roleDisplayNames: Record<string, string> = {
-    'разработчик': 'Разработчик',
-    'премиум': 'Премиум',
-    'обычный': 'Обычный',
+  const roleDisplayNames: Record<string, { ru: string; en: string }> = {
+    developer: { ru: 'Разработчик', en: 'Developer' },
+    'разработчик': { ru: 'Разработчик', en: 'Developer' },
+    premium: { ru: 'Премиум', en: 'Premium' },
+    'премиум': { ru: 'Премиум', en: 'Premium' },
+    regular: { ru: 'Обычный', en: 'Regular' },
+    'обычный': { ru: 'Обычный', en: 'Regular' },
   };
   
-  const roleDisplayName = roleDisplayNames[userRole] || userRole;
+  const roleDisplayName = (roleDisplayNames[userRole]?.[language] ?? userRole) as string;
 
   return (
     <div className="profile">
@@ -94,7 +99,7 @@ export default function Profile() {
           className="back-icon"
           onClick={() => navigate('/')}
         />
-        <h1 className="profile-title">Профиль</h1>
+        <h1 className="profile-title">{tr('Профиль', 'Profile')}</h1>
         <div style={{ width: 24 }} />
       </div>
 
@@ -107,7 +112,7 @@ export default function Profile() {
         </div>
         <div className="profile-name">
           <SkeletonValue loading={!user} width={160} height={18} radius={10}>
-            {user?.firstName || 'Пользователь'}
+            {user?.firstName || tr('Пользователь', 'User')}
           </SkeletonValue>
         </div>
       </div>
@@ -115,7 +120,7 @@ export default function Profile() {
       {/* Список информации */}
       <div className="profile-info-list">
         <div className="profile-info-item">
-          <div className="info-label">Имя</div>
+          <div className="info-label">{tr('Имя', 'Name')}</div>
           <div className="info-value">
             {isEditing ? (
               <div className="edit-name-container">
@@ -131,7 +136,7 @@ export default function Profile() {
                   onClick={handleSaveName}
                   disabled={saving}
                 >
-                  Сохранить
+                  {tr('Сохранить', 'Save')}
                 </button>
                 <button 
                   className="cancel-btn"
@@ -140,12 +145,12 @@ export default function Profile() {
                     setEditedName(user?.firstName || '');
                   }}
                 >
-                  Отмена
+                  {tr('Отмена', 'Cancel')}
                 </button>
               </div>
             ) : (
               <div className="name-display">
-                <span>{user?.firstName || 'Не указано'}</span>
+                <span>{user?.firstName || tr('Не указано', 'Not set')}</span>
                 <button 
                   className="edit-btn"
                   onClick={() => setIsEditing(true)}
@@ -158,12 +163,12 @@ export default function Profile() {
         </div>
 
         <div className="profile-info-item">
-          <div className="info-label">ID Telegram</div>
+          <div className="info-label">{tr('ID Telegram', 'Telegram ID')}</div>
           <div className="info-value readonly">{tgId}</div>
         </div>
 
         <div className="profile-info-item">
-          <div className="info-label">Роль</div>
+          <div className="info-label">{tr('Роль', 'Role')}</div>
           <div className="info-value readonly">{roleDisplayName}</div>
         </div>
       </div>

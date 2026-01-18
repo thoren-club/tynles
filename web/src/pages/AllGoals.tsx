@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './AllGoals.css';
 
 export default function AllGoals() {
   const navigate = useNavigate();
+  const { tr, locale } = useLanguage();
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'year' | 'month' | 'unlimited'>('all');
@@ -74,7 +76,7 @@ export default function AllGoals() {
 
   const { current, completed } = getFilteredGoals();
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().toLocaleString('ru-RU', { month: 'long' });
+  const currentMonth = new Date().toLocaleString(locale, { month: 'long' });
 
   return (
     <div className="all-goals">
@@ -85,7 +87,7 @@ export default function AllGoals() {
           className="back-icon"
           onClick={() => navigate('/deals')}
         />
-        <h1 className="all-goals-title">Все цели</h1>
+        <h1 className="all-goals-title">{tr('Все цели', 'All goals')}</h1>
         <div style={{ width: 24 }} />
       </div>
 
@@ -95,33 +97,33 @@ export default function AllGoals() {
           className={`filter-button ${filter === 'all' ? 'active' : ''}`}
           onClick={() => setFilter('all')}
         >
-          Все
+          {tr('Все', 'All')}
         </button>
         <button 
           className={`filter-button ${filter === 'year' ? 'active' : ''}`}
           onClick={() => setFilter('year')}
         >
-          На {currentYear} год
+          {tr(`На ${currentYear} год`, `${currentYear} year`)}
         </button>
         <button 
           className={`filter-button ${filter === 'month' ? 'active' : ''}`}
           onClick={() => setFilter('month')}
         >
-          На {currentMonth}
+          {tr(`На ${currentMonth}`, currentMonth)}
         </button>
         <button 
           className={`filter-button ${filter === 'unlimited' ? 'active' : ''}`}
           onClick={() => setFilter('unlimited')}
         >
-          Бессрочные
+          {tr('Бессрочные', 'Unlimited')}
         </button>
       </div>
 
       {/* Текущие цели */}
       <div className="goals-section">
-        <h2 className="section-title">Текущие цели</h2>
+        <h2 className="section-title">{tr('Текущие цели', 'Current goals')}</h2>
         {current.length === 0 ? (
-          <div className="empty-state">Нет текущих целей</div>
+          <div className="empty-state">{tr('Нет текущих целей', 'No current goals')}</div>
         ) : (
           <div className="goals-list">
             {current.map((goal) => (
@@ -139,9 +141,9 @@ export default function AllGoals() {
 
       {/* Выполненные цели */}
       <div className="goals-section">
-        <h2 className="section-title">Выполненные цели</h2>
+        <h2 className="section-title">{tr('Выполненные цели', 'Completed goals')}</h2>
         {completed.length === 0 ? (
-          <div className="empty-state">Нет выполненных целей</div>
+          <div className="empty-state">{tr('Нет выполненных целей', 'No completed goals')}</div>
         ) : (
           <div className="goals-list">
             {completed.map((goal) => (

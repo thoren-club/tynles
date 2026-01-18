@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { IconLink, IconPlus } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './SpaceConnection.css';
 
 export default function SpaceConnection() {
+  const { tr } = useLanguage();
   const [inviteCode, setInviteCode] = useState('');
   const [newSpaceName, setNewSpaceName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -14,7 +16,7 @@ export default function SpaceConnection() {
 
   const handleJoin = async () => {
     if (!inviteCode.trim()) {
-      setError('Введите код приглашения');
+      setError(tr('Введите код приглашения', 'Enter invite code'));
       return;
     }
 
@@ -27,7 +29,7 @@ export default function SpaceConnection() {
       window.location.href = '/';
     } catch (error: any) {
       console.error('Failed to join space:', error);
-      setError(error.message || 'Не удалось подключиться к пространству');
+      setError(error.message || tr('Не удалось подключиться к пространству', 'Failed to join the space'));
     } finally {
       setIsJoining(false);
     }
@@ -35,7 +37,7 @@ export default function SpaceConnection() {
 
   const handleCreate = async () => {
     if (!newSpaceName.trim()) {
-      setError('Введите название пространства');
+      setError(tr('Введите название пространства', 'Enter space name'));
       return;
     }
 
@@ -48,7 +50,7 @@ export default function SpaceConnection() {
       window.location.href = '/';
     } catch (error: any) {
       console.error('Failed to create space:', error);
-      setError(error.message || 'Не удалось создать пространство');
+      setError(error.message || tr('Не удалось создать пространство', 'Failed to create space'));
     } finally {
       setIsCreating(false);
     }
@@ -59,13 +61,20 @@ export default function SpaceConnection() {
       <div className="connection-container">
         <div className="connection-icon">🚀</div>
         <h1 className="connection-title">
-          {mode === 'join' ? 'Подключитесь к пространству' : 'Создайте пространство'}
+          {mode === 'join'
+            ? tr('Подключитесь к пространству', 'Join a space')
+            : tr('Создайте пространство', 'Create a space')}
         </h1>
         <p className="connection-description">
-          {mode === 'join' 
-            ? 'Чтобы начать работу, вам нужно подключиться к пространству или создать новое.'
-            : 'Создайте новое пространство для управления задачами и целями вместе с командой.'
-          }
+          {mode === 'join'
+            ? tr(
+                'Чтобы начать работу, вам нужно подключиться к пространству или создать новое.',
+                'To get started, join a space or create a new one.',
+              )
+            : tr(
+                'Создайте новое пространство для управления задачами и целями вместе с командой.',
+                'Create a new space to manage tasks and goals with your team.',
+              )}
         </p>
 
         {/* Переключатель режима */}
@@ -77,7 +86,7 @@ export default function SpaceConnection() {
               setError(null);
             }}
           >
-            Подключиться
+            {tr('Подключиться', 'Join')}
           </button>
           <button
             className={`mode-button ${mode === 'create' ? 'active' : ''}`}
@@ -86,7 +95,7 @@ export default function SpaceConnection() {
               setError(null);
             }}
           >
-            Создать
+            {tr('Создать', 'Create')}
           </button>
         </div>
 
@@ -94,7 +103,7 @@ export default function SpaceConnection() {
           {mode === 'join' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Код приглашения</label>
+                <label className="form-label">{tr('Код приглашения', 'Invite code')}</label>
                 <div className="input-wrapper">
                   <IconLink size={20} className="input-icon" />
                   <input
@@ -105,7 +114,7 @@ export default function SpaceConnection() {
                       setInviteCode(e.target.value);
                       setError(null);
                     }}
-                    placeholder="Введите код приглашения"
+                    placeholder={tr('Введите код приглашения', 'Enter invite code')}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleJoin();
@@ -122,13 +131,13 @@ export default function SpaceConnection() {
                 disabled={!inviteCode.trim() || isJoining}
                 fullWidth
               >
-                Подключиться
+                {tr('Подключиться', 'Join')}
               </Button>
             </>
           ) : (
             <>
               <div className="form-group">
-                <label className="form-label">Название пространства</label>
+                <label className="form-label">{tr('Название пространства', 'Space name')}</label>
                 <div className="input-wrapper">
                   <IconPlus size={20} className="input-icon" />
                   <input
@@ -139,7 +148,7 @@ export default function SpaceConnection() {
                       setNewSpaceName(e.target.value);
                       setError(null);
                     }}
-                    placeholder="Введите название пространства"
+                    placeholder={tr('Введите название пространства', 'Enter space name')}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleCreate();
@@ -156,7 +165,7 @@ export default function SpaceConnection() {
                 disabled={!newSpaceName.trim() || isCreating}
                 fullWidth
               >
-                Создать пространство
+                {tr('Создать пространство', 'Create space')}
               </Button>
             </>
           )}

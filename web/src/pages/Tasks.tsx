@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Tasks.css';
 
 export default function Tasks() {
+  const { tr } = useLanguage();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -19,7 +21,7 @@ export default function Tasks() {
       setTasks(data.tasks);
     } catch (error) {
       console.error('Failed to load tasks:', error);
-      alert('Failed to load tasks');
+      alert(tr('Не удалось загрузить задачи', 'Failed to load tasks'));
     } finally {
       setLoading(false);
     }
@@ -35,25 +37,30 @@ export default function Tasks() {
       loadTasks();
     } catch (error) {
       console.error('Failed to create task:', error);
-      alert('Failed to create task');
+      alert(tr('Не удалось создать задачу', 'Failed to create task'));
     }
   };
 
   const handleCompleteTask = async (taskId: string) => {
-    if (!confirm('Complete this task?')) return;
+    if (!confirm(tr('Выполнить эту задачу?', 'Complete this task?'))) return;
 
     try {
       const result = await api.completeTask(taskId) as { xpEarned: number; newLevel: number | null };
       loadTasks();
-      alert(`Task completed! You earned ${result.xpEarned} XP${result.newLevel ? ` and reached level ${result.newLevel}!` : '!'}`);
+      alert(
+        tr(
+          `Задача выполнена! Вы получили ${result.xpEarned} XP${result.newLevel ? ` и достигли уровня ${result.newLevel}!` : '!'}`,
+          `Task completed! You earned ${result.xpEarned} XP${result.newLevel ? ` and reached level ${result.newLevel}!` : '!'}`,
+        ),
+      );
     } catch (error) {
       console.error('Failed to complete task:', error);
-      alert('Failed to complete task');
+      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Delete this task?')) return;
+    if (!confirm(tr('Удалить эту задачу?', 'Delete this task?'))) return;
 
     try {
       await api.deleteTask(taskId);
@@ -94,9 +101,9 @@ export default function Tasks() {
   return (
     <div className="tasks">
       <div className="tasks-header">
-        <h1>Tasks</h1>
+        <h1>{tr('Задачи', 'Tasks')}</h1>
         <button className="btn-primary" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? 'Cancel' : '+ Add'}
+          {showCreate ? tr('Отмена', 'Cancel') : tr('+ Добавить', '+ Add')}
         </button>
       </div>
 
@@ -104,7 +111,7 @@ export default function Tasks() {
         <div className="create-task-form">
           <input
             type="text"
-            placeholder="Task title"
+            placeholder={tr('Название задачи', 'Task title')}
             value={newTask.title}
             onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
             className="input"
@@ -112,7 +119,7 @@ export default function Tasks() {
           <div className="form-row">
             <input
               type="number"
-              placeholder="Difficulty"
+              placeholder={tr('Сложность', 'Difficulty')}
               value={newTask.difficulty}
               onChange={(e) => setNewTask({ ...newTask, difficulty: parseInt(e.target.value) || 1 })}
               className="input"
@@ -128,21 +135,21 @@ export default function Tasks() {
             />
           </div>
           <button className="btn-primary" onClick={handleCreateTask}>
-            Create
+            {tr('Создать', 'Create')}
           </button>
         </div>
       )}
 
       <div className="tasks-list">
         {tasks.length === 0 ? (
-          <div className="empty-state">No tasks yet</div>
+          <div className="empty-state">{tr('Пока нет задач', 'No tasks yet')}</div>
         ) : (
           tasks.map((task) => (
             <div key={task.id} className="task-card">
               <div className="task-content">
                 <div className="task-title">{task.title}</div>
                 <div className="task-meta">
-                  <span>Difficulty: {task.difficulty}</span>
+                  <span>{tr('Сложность', 'Difficulty')}: {task.difficulty}</span>
                   <span>XP: {task.xp}</span>
                 </div>
               </div>
@@ -150,7 +157,7 @@ export default function Tasks() {
                 <button
                   className="btn-complete"
                   onClick={() => handleCompleteTask(task.id)}
-                  title="Complete task"
+                  title={tr('Выполнить', 'Complete')}
                 >
                   ✓
                 </button>
@@ -158,7 +165,7 @@ export default function Tasks() {
                   className="btn-delete"
                   onClick={() => handleDeleteTask(task.id)}
                 >
-                  Delete
+                  {tr('Удалить', 'Delete')}
                 </button>
               </div>
             </div>

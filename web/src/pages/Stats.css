@@ -25,8 +25,9 @@
 }
 
 .stat-card {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: var(--border-1);
   padding: 20px;
   text-align: center;
 }
@@ -35,12 +36,12 @@
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 8px;
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary-500);
 }
 
 .stat-label {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .leaderboard {
@@ -50,8 +51,9 @@
 }
 
 .leaderboard-item {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: var(--border-1);
   padding: 16px;
   display: flex;
   align-items: center;
@@ -61,7 +63,7 @@
 .rank {
   font-size: 20px;
   font-weight: bold;
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary-500);
   min-width: 40px;
 }
 
@@ -77,5 +79,5 @@
 
 .user-stats {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }

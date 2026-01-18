@@ -1,5 +1,6 @@
 import React from 'react';
 import './Button.css';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export interface ButtonProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default function Button({
   className = '',
   type = 'button',
 }: ButtonProps) {
+  const { t } = useLanguage();
   const baseClass = 'ui-button';
   const variantClass = `ui-button-${variant}`;
   const widthClass = fullWidth ? 'ui-button-full-width' : '';
@@ -34,7 +36,7 @@ export default function Button({
       onClick={onClick}
       disabled={disabled || loading}
     >
-      {loading ? 'Загрузка...' : children}
+      {loading ? t('common.loading') : children}
     </button>
   );
 }

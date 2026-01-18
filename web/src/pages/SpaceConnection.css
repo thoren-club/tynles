@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg);
 }
 
 .connection-container {
@@ -21,13 +21,13 @@
 .connection-title {
   font-size: 24px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   margin: 0 0 12px 0;
 }
 
 .connection-description {
   font-size: 16px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   margin: 0 0 32px 0;
   line-height: 1.5;
 }
@@ -45,7 +45,7 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   margin-bottom: 8px;
 }
 
@@ -58,30 +58,30 @@
 .input-icon {
   position: absolute;
   left: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   pointer-events: none;
 }
 
 .form-input {
   width: 100%;
   padding: 14px 14px 14px 44px;
-  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border: var(--border-1);
   border-radius: 12px;
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
-  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--color-text);
+  background: var(--color-surface-2);
   transition: border-color 0.2s;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--tg-theme-button-color, #3390ec);
+  border-color: var(--color-primary-500);
 }
 
 .error-message {
   margin-top: 8px;
   font-size: 14px;
-  color: #ff4444;
+  color: var(--color-danger-500);
   text-align: left;
 }
 
@@ -89,7 +89,7 @@
   display: flex;
   align-items: center;
   margin: 24px 0;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
 }
 
 .connection-divider::before,
@@ -97,7 +97,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--tg-theme-hint-color, #e0e0e0);
+  background: var(--color-border);
 }
 
 .connection-divider span {
@@ -107,7 +107,7 @@
 
 .connection-hint {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   line-height: 1.5;
   margin: 0;
 }
@@ -116,9 +116,10 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-surface);
   padding: 4px;
   border-radius: 12px;
+  border: var(--border-1);
 }
 
 .mode-button {
@@ -129,16 +130,16 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .mode-button:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--color-neutral-0) 6%, transparent);
 }
 
 .mode-button.active {
-  background: var(--tg-theme-button-color, #3390ec);
-  color: #ffffff;
+  background: var(--color-primary-500);
+  color: var(--tg-theme-button-text-color, #111019);
 }

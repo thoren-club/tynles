@@ -11,7 +11,7 @@
 .ui-datepicker-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -24,7 +24,7 @@
 .ui-datepicker-icon {
   position: absolute;
   left: var(--spacing-md);
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   pointer-events: none;
   z-index: 1;
 }
@@ -33,11 +33,11 @@
   width: 100%;
   padding: var(--spacing-md);
   padding-left: calc(var(--spacing-md) * 3 + var(--spacing-xs));
-  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  border: var(--border-1);
   border-radius: 12px;
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
-  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--color-text);
+  background: var(--color-surface-2);
   transition: all 0.2s;
   outline: none;
   font-family: inherit;
@@ -55,22 +55,22 @@
 }
 
 .ui-datepicker:focus {
-  border-color: var(--tg-theme-button-color, #3390ec);
-  box-shadow: 0 0 0 3px rgba(51, 144, 236, 0.1);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 18%, transparent);
 }
 
 .ui-datepicker:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-surface);
 }
 
 .ui-datepicker-wrapper.ui-datepicker-error .ui-datepicker {
-  border-color: #ff4444;
+  border-color: var(--color-danger-500);
 }
 
 .ui-datepicker-error-message {
   font-size: 12px;
-  color: #ff4444;
+  color: var(--color-danger-500);
   margin-top: var(--spacing-xs);
 }

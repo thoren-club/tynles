@@ -11,7 +11,7 @@
 .ui-input-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-muted);
   pointer-events: none;
   z-index: 1;
 }
@@ -36,11 +36,11 @@
   width: 100%;
   padding: var(--spacing-md);
   padding-left: var(--spacing-md);
-  border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-  border-radius: 12px;
+  border: var(--border-1);
+  border-radius: var(--radius-md);
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
-  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--color-text);
+  background: var(--color-bg);
   transition: all 0.2s;
   outline: none;
   font-family: inherit;
@@ -51,22 +51,22 @@
 }
 
 .ui-input:focus {
-  border-color: var(--tg-theme-button-color, #3390ec);
-  box-shadow: 0 0 0 3px rgba(51, 144, 236, 0.1);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 18%, transparent);
 }
 
 .ui-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-surface);
 }
 
 .ui-input-wrapper.ui-input-error .ui-input {
-  border-color: #ff4444;
+  border-color: var(--color-danger-500);
 }
 
 .ui-input-error-message {
   font-size: 12px;
-  color: #ff4444;
+  color: var(--color-danger-500);
   margin-top: var(--spacing-xs);
 }

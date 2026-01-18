@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './api';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import Dashboard from './pages/Dashboard';
 import Spaces from './pages/Spaces';
 import Deals from './pages/Deals';
@@ -50,7 +50,8 @@ declare global {
   }
 }
 
-function App() {
+function AppContent() {
+  const { tr } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSpace, setHasSpace] = useState<boolean | null>(null);
@@ -121,7 +122,12 @@ function App() {
         if (!initData || initData === '') {
           // Show alert in Telegram for debugging
           if (typeof (tgWebApp as any).showAlert === 'function') {
-            (tgWebApp as any).showAlert('Ошибка: initData пустой. Проверьте настройки в BotFather.');
+            (tgWebApp as any).showAlert(
+              tr(
+                'Ошибка: initData пустой. Проверьте настройки в BotFather.',
+                'Error: initData is empty. Check BotFather settings.',
+              ),
+            );
           }
           console.error('No Telegram init data available');
           console.error('This usually means:');
@@ -158,7 +164,12 @@ function App() {
           // Show detailed error in Telegram
           const errorMsg = authError.message || 'Authentication failed';
           if (typeof (tgWebApp as any).showAlert === 'function') {
-            (tgWebApp as any).showAlert(`Ошибка аутентификации: ${errorMsg}\n\ninitData длина: ${initData.length}`);
+            (tgWebApp as any).showAlert(
+              tr(
+                `Ошибка аутентификации: ${errorMsg}\n\ninitData длина: ${initData.length}`,
+                `Authentication error: ${errorMsg}\n\ninitData length: ${initData.length}`,
+              ),
+            );
           }
           console.error('Auth verification error:', authError);
           console.error('Auth verification error:', authError);
@@ -185,7 +196,7 @@ function App() {
   }, [loading]);
 
   if (loading) {
-    return <LoadingScreen text="Загрузка..." />;
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
@@ -200,9 +211,12 @@ function App() {
       }}>
         <div>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-          <h2>Authentication Required</h2>
+          <h2>{tr('Требуется авторизация', 'Authentication Required')}</h2>
           <p style={{ color: '#666', maxWidth: '400px' }}>
-            Please open this app from Telegram to continue.
+            {tr(
+              'Пожалуйста, откройте это приложение из Telegram, чтобы продолжить.',
+              'Please open this app from Telegram to continue.',
+            )}
           </p>
         </div>
       </div>
@@ -215,26 +229,30 @@ function App() {
   }
 
   return (
-    <LanguageProvider>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/deals" element={<Deals />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/spaces" element={<Spaces />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/level-progression" element={<LevelProgression />} />
-            <Route path="/goal/:id" element={<GoalDetail />} />
-            <Route path="/task/:id" element={<TaskDetail />} />
-            <Route path="/all-goals" element={<AllGoals />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </LanguageProvider>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/spaces" element={<Spaces />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/level-progression" element={<LevelProgression />} />
+          <Route path="/goal/:id" element={<GoalDetail />} />
+          <Route path="/task/:id" element={<TaskDetail />} />
+          <Route path="/all-goals" element={<AllGoals />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}
