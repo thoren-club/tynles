@@ -2,19 +2,9 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
 import { addXp } from '../../../utils/xp';
-import { sendTelegramMessage } from '../../../utils/telegram';
+import { notifySpaceMembers } from '../../../notifications';
 
 const router = Router();
-
-async function notifySpaceMembers(spaceId: bigint, message: string) {
-  const members = await prisma.spaceMember.findMany({
-    where: { spaceId },
-    include: { user: true },
-  });
-  await Promise.all(
-    members.map((m) => sendTelegramMessage(m.user.tgId, message))
-  );
-}
 
 // Get all goals
 router.get('/', async (req: Request, res: Response) => {

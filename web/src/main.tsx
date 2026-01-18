@@ -3,6 +3,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
+function hideBootSplash() {
+  const el = document.getElementById('boot-splash');
+  if (!el) return;
+  el.classList.add('hide');
+  window.setTimeout(() => el.remove(), 260);
+}
+
 // Initialize Telegram WebApp when it loads
 const initTelegramWebApp = () => {
   if (window.Telegram?.WebApp) {
@@ -27,3 +34,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>
 );
+
+// Once React is mounted, remove the first-paint splash.
+hideBootSplash();

@@ -14,6 +14,7 @@ import TaskDetail from './pages/TaskDetail';
 import AllGoals from './pages/AllGoals';
 import SpaceConnection from './pages/SpaceConnection';
 import Layout from './components/Layout';
+import LoadingScreen from './components/LoadingScreen';
 
 declare global {
   interface Window {
@@ -177,16 +178,7 @@ function App() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh'
-      }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <LoadingScreen text="Загрузка..." />;
   }
 
   if (!isAuthenticated) {

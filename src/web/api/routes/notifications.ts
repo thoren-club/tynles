@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
-import { sendTelegramMessage, generateTaskReminderMessage } from '../../../utils/telegram';
-import { sendTaskReminders } from '../../../utils/reminders';
+import { sendTaskReminders } from '../../../notifications';
 
 const router = Router();
 
@@ -76,12 +75,14 @@ router.put('/settings', async (req: Request, res: Response) => {
 // Проверяет ВСЕ пространства всех пользователей
 router.post('/reminders/send', async (req: Request, res: Response) => {
   try {
-    const remindersSent = await sendTaskReminders();
+    const result = await sendTaskReminders();
 
     res.json({
       success: true,
-      remindersSent,
-      message: `Sent ${remindersSent} reminders`,
+      remindersSent: result.remindersSent,
+      message: `Sent ${result.remindersSent} reminders`,
+      consideredTasks: result.consideredTasks,
+      horizonHours: result.horizonHours,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to send reminders' });

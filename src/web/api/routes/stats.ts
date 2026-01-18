@@ -9,7 +9,7 @@ import {
   LEAGUE_PERIOD_DAYS 
 } from '../../../utils/leagues';
 import { getXpForNextLevel, getTotalXpForLevel } from '../../../types';
-import { sendTelegramMessage } from '../../../utils/telegram';
+import { sendPokeNotification } from '../../../notifications';
 
 const router = Router();
 
@@ -357,16 +357,6 @@ router.post('/leaderboard/:userId/poke', async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Already poked this user today' });
     }
 
-    // Проверяем настройки уведомлений целевого пользователя
-    const notificationSettings = await prisma.userNotificationSettings.findUnique({
-      where: { userId: toUserId },
-    });
-
-    // Если уведомления о пинках выключены, возвращаем ошибку
-    if (notificationSettings && !notificationSettings.pokeEnabled) {
-      return res.status(403).json({ error: 'User has disabled poke notifications' });
-    }
-
     // Создаем запись о пинке
     await prisma.poke.create({
       data: {
@@ -376,15 +366,15 @@ router.post('/leaderboard/:userId/poke', async (req: Request, res: Response) => 
       },
     });
 
-    // Отправляем уведомление через Telegram Bot API
-    const fromUser = await prisma.telegramUser.findUnique({
-      where: { id: authReq.user!.id },
+    const pokeResult = await sendPokeNotification({
+      fromUserId: authReq.user!.id,
+      toUserId,
+      toTgId: toUserMember.user.tgId,
     });
 
-    const fromUserName = fromUser?.firstName || fromUser?.username || 'Кто-то';
-    const message = `Вас пнул <b>${fromUserName}</b>! Не забудьте выполнить задачи! 💪`;
-    
-    await sendTelegramMessage(toUserMember.user.tgId, message);
+    if (pokeResult.reason === 'disabled') {
+      return res.status(403).json({ error: 'User has disabled poke notifications' });
+    }
 
     res.json({
       success: true,

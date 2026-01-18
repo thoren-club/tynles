@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
 import { calculateNextDueDate } from '../../../utils/recurrence';
-import { sendTelegramMessage } from '../../../utils/telegram';
+import { notifyTaskAssigneeChanged } from '../../../notifications';
 
 /**
  * Получает первый доступный день для повторяющейся задачи
@@ -252,27 +252,13 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
 
     const actorName = authReq.user.firstName || authReq.user.username || 'Кто-то';
 
-    // notify previous assignee if removed/reassigned
-    if (prevAssigneeId && (!nextAssigneeId || prevAssigneeId !== nextAssigneeId)) {
-      const prevUser = await prisma.telegramUser.findUnique({ where: { id: prevAssigneeId } });
-      if (prevUser) {
-        await sendTelegramMessage(
-          prevUser.tgId,
-          `Вас открепили от задачи <b>${task.title}</b> в пространстве <b>${spaceName}</b>.\nИнициатор: <b>${actorName}</b>`,
-        );
-      }
-    }
-
-    // notify new assignee
-    if (nextAssigneeId && (!prevAssigneeId || prevAssigneeId !== nextAssigneeId)) {
-      const nextUser = await prisma.telegramUser.findUnique({ where: { id: nextAssigneeId } });
-      if (nextUser) {
-        await sendTelegramMessage(
-          nextUser.tgId,
-          `Вас назначили исполнителем задачи <b>${task.title}</b> в пространстве <b>${spaceName}</b>.\nИнициатор: <b>${actorName}</b>`,
-        );
-      }
-    }
+    await notifyTaskAssigneeChanged({
+      prevAssigneeId,
+      nextAssigneeId,
+      taskTitle: task.title,
+      spaceName,
+      actorName,
+    });
 
     res.json({ success: true, assigneeUserId: nextAssigneeId?.toString() || null });
   } catch (error) {

@@ -5,6 +5,7 @@ import { addXp } from './xp';
 import { calculateNextDueDate } from './recurrence';
 
 export async function sendReminders(bot: Bot<AuthContext>) {
+  // Legacy: kept for backward compatibility. Prefer `src/notifications/sendTaskReminders`.
   const now = new Date();
   const tasks = await prisma.task.findMany({
     where: {
