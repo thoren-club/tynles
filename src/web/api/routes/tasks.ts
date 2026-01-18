@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
 import { calculateNextDueDate } from '../../../utils/recurrence';
+import { sendTelegramMessage } from '../../../utils/telegram';
 
 /**
  * Получает первый доступный день для повторяющейся задачи
@@ -55,6 +56,29 @@ function getFirstAvailableDate(recurrenceType: string | null, payload: any, now:
   return today;
 }
 
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  const raw = payload?.assigneeUserId;
+  if (!raw) return null;
+  try {
+    // stored as string in JSON
+    return BigInt(String(raw));
+  } catch {
+    return null;
+  }
+}
+
 const router = Router();
 
 // Get all tasks
@@ -79,7 +103,8 @@ router.get('/', async (req: Request, res: Response) => {
         dueAt: task.dueAt?.toISOString() || null,
         isPaused: task.isPaused,
         recurrenceType: task.recurrenceType || null,
-        recurrencePayload: task.recurrencePayload as any || null,
+        recurrencePayload: (task.recurrencePayload as any) || null,
+        assigneeUserId: getAssigneeUserIdFromPayload(task.recurrencePayload as any)?.toString() || null,
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString(),
       })),
@@ -137,7 +162,8 @@ router.post('/', async (req: Request, res: Response) => {
         { daysOfWeek },
         now
       );
-      taskDueAt = firstAvailableDate;
+      // Для повторяющихся задач дедлайн = конец доступного дня
+      taskDueAt = endOfDay(startOfDay(firstAvailableDate));
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
       taskDueAt = new Date(dueAt);
@@ -165,6 +191,92 @@ router.post('/', async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// Assign/unassign task to a user within current space
+router.put('/:taskId/assignee', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId || !authReq.user) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    const taskId = BigInt(req.params.taskId);
+    const { userId } = req.body as { userId?: string | null };
+
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || task.spaceId !== authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const space = await prisma.space.findUnique({ where: { id: authReq.currentSpaceId } });
+    const spaceName = space?.name || 'Пространство';
+
+    const payloadRaw = (task.recurrencePayload as any) ?? {};
+    const payload = (payloadRaw && typeof payloadRaw === 'object') ? { ...payloadRaw } : {};
+
+    const prevAssigneeId = getAssigneeUserIdFromPayload(payload);
+
+    let nextAssigneeId: bigint | null = null;
+    if (userId) {
+      try {
+        nextAssigneeId = BigInt(userId);
+      } catch {
+        return res.status(400).json({ error: 'Invalid userId' });
+      }
+
+      // ensure member of this space
+      const member = await prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId: authReq.currentSpaceId, userId: nextAssigneeId } },
+        include: { user: true },
+      });
+      if (!member) {
+        return res.status(404).json({ error: 'User not found in this space' });
+      }
+    }
+
+    if (nextAssigneeId) {
+      payload.assigneeUserId = nextAssigneeId.toString();
+    } else {
+      delete payload.assigneeUserId;
+    }
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        recurrencePayload: payload as any,
+        reminderSent: false,
+      },
+    });
+
+    const actorName = authReq.user.firstName || authReq.user.username || 'Кто-то';
+
+    // notify previous assignee if removed/reassigned
+    if (prevAssigneeId && (!nextAssigneeId || prevAssigneeId !== nextAssigneeId)) {
+      const prevUser = await prisma.telegramUser.findUnique({ where: { id: prevAssigneeId } });
+      if (prevUser) {
+        await sendTelegramMessage(
+          prevUser.tgId,
+          `Вас открепили от задачи <b>${task.title}</b> в пространстве <b>${spaceName}</b>.\nИнициатор: <b>${actorName}</b>`,
+        );
+      }
+    }
+
+    // notify new assignee
+    if (nextAssigneeId && (!prevAssigneeId || prevAssigneeId !== nextAssigneeId)) {
+      const nextUser = await prisma.telegramUser.findUnique({ where: { id: nextAssigneeId } });
+      if (nextUser) {
+        await sendTelegramMessage(
+          nextUser.tgId,
+          `Вас назначили исполнителем задачи <b>${task.title}</b> в пространстве <b>${spaceName}</b>.\nИнициатор: <b>${actorName}</b>`,
+        );
+      }
+    }
+
+    res.json({ success: true, assigneeUserId: nextAssigneeId?.toString() || null });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update assignee' });
   }
 });
 
@@ -213,13 +325,16 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
         payload as any,
         now
       );
+
+      const nextOccurrenceDayStart = startOfDay(nextDueDate);
+      const nextOccurrenceDeadline = endOfDay(nextOccurrenceDayStart);
       
       // Обновляем задачу: updatedAt для отслеживания последнего выполнения и dueAt на следующий день
       await prisma.task.update({
         where: { id: taskId },
         data: {
           updatedAt: now, // Время последнего выполнения
-          dueAt: nextDueDate, // Следующий доступный день для выполнения
+          dueAt: nextOccurrenceDeadline, // Дедлайн следующего окна выполнения
           reminderSent: false, // Сбрасываем флаг напоминания для следующего периода
         },
       });

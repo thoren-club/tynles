@@ -75,9 +75,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
           {entry.firstName || entry.username || 'Unknown'}
         </div>
         <div className="user-stats">
-          {entry.tasksCompleted30Days !== undefined
-            ? `${entry.tasksCompleted30Days} задач`
-            : `Уровень ${entry.level} • ${entry.totalXp} XP`}
+          {`${entry.totalXp ?? 0} XP`}
         </div>
       </div>
       {isSpaceLeaderboard && (

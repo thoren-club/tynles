@@ -2,6 +2,28 @@ import { prisma } from '../db';
 import { logger } from '../logger';
 import { calculateNextDueDate } from './recurrence';
 
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  const raw = payload?.assigneeUserId;
+  if (!raw) return null;
+  try {
+    return BigInt(String(raw));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Проверяет и обрабатывает сгоревшие повторяющиеся задачи
  * Сгоревшая задача - это повторяющаяся задача, у которой прошел dueAt, но она не была выполнена
@@ -36,7 +58,11 @@ export async function processExpiredRecurringTasks() {
 
     for (const task of expiredTasks) {
       try {
-        // Снимаем половину опыта у создателя задачи
+        const payload = task.recurrencePayload as any;
+        const assigneeUserId = getAssigneeUserIdFromPayload(payload);
+        const penaltyUserId = assigneeUserId ?? task.createdBy;
+
+        // Снимаем половину опыта у исполнителя (если назначен), иначе у создателя
         const penaltyXp = Math.floor(task.xp / 2);
         
         if (penaltyXp > 0) {
@@ -45,7 +71,7 @@ export async function processExpiredRecurringTasks() {
             where: {
               spaceId_userId: {
                 spaceId: task.spaceId,
-                userId: task.createdBy,
+                userId: penaltyUserId,
               },
             },
           });
@@ -61,7 +87,7 @@ export async function processExpiredRecurringTasks() {
               where: {
                 spaceId_userId: {
                   spaceId: task.spaceId,
-                  userId: task.createdBy,
+                  userId: penaltyUserId,
                 },
               },
               data: {
@@ -71,7 +97,7 @@ export async function processExpiredRecurringTasks() {
             });
 
             logger.info(
-              `Task ${task.id} expired. Penalty: -${penaltyXp} XP for user ${task.createdBy} in space ${task.spaceId}`
+              `Task ${task.id} expired. Penalty: -${penaltyXp} XP for user ${penaltyUserId} in space ${task.spaceId}`
             );
             expiredCount++;
           }
@@ -96,11 +122,13 @@ export async function processExpiredRecurringTasks() {
           );
 
           if (nextDueAt) {
+            const nextOccurrenceDayStart = startOfDay(nextDueAt);
+            const nextOccurrenceDeadline = endOfDay(nextOccurrenceDayStart);
             // Обновляем задачу на следующий период
             await prisma.task.update({
               where: { id: task.id },
               data: {
-                dueAt: nextDueAt,
+                dueAt: nextOccurrenceDeadline,
                 reminderSent: false, // Сбрасываем флаг напоминания
               },
             });

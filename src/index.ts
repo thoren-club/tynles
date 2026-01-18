@@ -3,22 +3,20 @@ import { config } from './config';
 import { logger } from './logger';
 import { prisma } from './db';
 import { AuthContext, ensureUser } from './middleware/auth';
-import { setupSpaceCommands } from './commands/space';
-import { setupMemberCommands } from './commands/members';
-import { setupTaskCommands } from './commands/tasks';
-import { setupGoalCommands } from './commands/goals';
-import { setupLevelCommands } from './commands/levels';
-import { setupRewardCommands } from './commands/rewards';
-import { setupMenuCommands } from './commands/menu';
 import { sendReminders } from './utils/task-scheduler';
 import { generateWeeklyStories } from './utils/story-generator';
 import { processExpiredRecurringTasks } from './utils/task-expiration';
-import { getMainMenu } from './menu';
 import { getUserLanguage } from './utils/language';
-import { t } from './i18n';
 import { InlineKeyboard } from 'grammy';
 
 const bot = new Bot<AuthContext>(config.botToken);
+
+function getOpenAppKeyboard(lang: 'ru' | 'en') {
+  return new InlineKeyboard().webApp(
+    lang === 'ru' ? '🚀 Открыть приложение' : '🚀 Open app',
+    config.webAppUrl,
+  );
+}
 
 // Start command (register first)
 bot.command('start', ensureUser, async (ctx) => {
@@ -30,37 +28,19 @@ bot.command('start', ensureUser, async (ctx) => {
     const lang = await getUserLanguage(ctx.user.id);
     const firstName = ctx.from?.first_name || '';
     
-    const welcomeText = lang === 'ru'
-      ? `👋 Добро пожаловать${firstName ? `, ${firstName}` : ''}!\n\n` +
-        `Я бот для управления задачами и целями с геймификацией.\n\n` +
-        `✨ *Возможности:*\n` +
-        `📁 Пространства для организации\n` +
-        `✅ Задачи с напоминаниями\n` +
-        `🎯 Цели и достижения\n` +
-        `📊 Статистика и уровни\n` +
-        `🏆 Таблица лидеров\n\n` +
-        `Используйте меню для навигации:`
-      : `👋 Welcome${firstName ? `, ${firstName}` : ''}!\n\n` +
-        `I'm a task and goal management bot with gamification.\n\n` +
-        `✨ *Features:*\n` +
-        `📁 Spaces for organization\n` +
-        `✅ Tasks with reminders\n` +
-        `🎯 Goals and achievements\n` +
-        `📊 Statistics and levels\n` +
-        `🏆 Leaderboard\n\n` +
-        `Use the menu to navigate:`;
-
-    // Create keyboard with Mini App button
-    const keyboard = getMainMenu(lang);
-    
-    // Add Mini App button
-    keyboard.webApp(
-      lang === 'ru' ? '🚀 Открыть приложение' : '🚀 Open App',
-      config.webAppUrl
-    ).row();
+    const welcomeText =
+      lang === 'ru'
+        ? `👋 Привет${firstName ? `, ${firstName}` : ''}!\n\n` +
+          `Нажмите **«Открыть приложение»**.\n` +
+          `Дальше: выберите/создайте пространство → добавьте цели и задачи → выполняйте их, чтобы получать XP, уровни и место в лидерборде.\n\n` +
+          `Если что-то непонятно — напишите /help.`
+        : `👋 Hi${firstName ? `, ${firstName}` : ''}!\n\n` +
+          `Tap **“Open app”**.\n` +
+          `Then: pick/create a space → add goals & tasks → complete them to earn XP, levels and leaderboard position.\n\n` +
+          `If you need help — send /help.`;
 
     await ctx.reply(welcomeText, {
-      reply_markup: keyboard,
+      reply_markup: getOpenAppKeyboard(lang),
       parse_mode: 'Markdown',
     });
   } catch (error) {
@@ -78,52 +58,37 @@ bot.command('help', ensureUser, async (ctx) => {
     
     const lang = await getUserLanguage(ctx.user.id);
     
-    const helpText = lang === 'ru'
-      ? `❓ *Помощь*\n\n` +
-        `*Основные команды:*\n\n` +
-        `📁 *Пространства:*\n` +
-        `/space_create - создать пространство\n` +
-        `/space_list - список пространств\n` +
-        `/space_switch - переключить пространство\n` +
-        `/space_info - информация о пространстве\n\n` +
-        `✅ *Задачи:*\n` +
-        `/task_add - добавить задачу\n` +
-        `/task_list - список задач\n` +
-        `/task_done - отметить выполненной\n\n` +
-        `🎯 *Цели:*\n` +
-        `/goal_add - добавить цель\n` +
-        `/goal_list - список целей\n` +
-        `/goal_done - отметить выполненной\n\n` +
-        `📊 *Статистика:*\n` +
-        `/me - ваша статистика\n` +
-        `/leaderboard - таблица лидеров\n\n` +
-        `⚙️ *Настройки:*\n` +
-        `/language - изменить язык\n\n` +
-        `Используйте меню для удобной навигации!`
-      : `❓ *Help*\n\n` +
-        `*Main commands:*\n\n` +
-        `📁 *Spaces:*\n` +
-        `/space_create - create space\n` +
-        `/space_list - list spaces\n` +
-        `/space_switch - switch space\n` +
-        `/space_info - space info\n\n` +
-        `✅ *Tasks:*\n` +
-        `/task_add - add task\n` +
-        `/task_list - list tasks\n` +
-        `/task_done - mark done\n\n` +
-        `🎯 *Goals:*\n` +
-        `/goal_add - add goal\n` +
-        `/goal_list - list goals\n` +
-        `/goal_done - mark done\n\n` +
-        `📊 *Statistics:*\n` +
-        `/me - your stats\n` +
-        `/leaderboard - leaderboard\n\n` +
-        `⚙️ *Settings:*\n` +
-        `/language - change language\n\n` +
-        `Use the menu for convenient navigation!`;
+    const helpText =
+      lang === 'ru'
+        ? `❓ *Помощь*\n\n` +
+          `Это приложение — **таск-менеджер с геймификацией** внутри Telegram Mini App.\n\n` +
+          `*Что внутри:*\n` +
+          `- **Пространства**: личное или командное (семья/друзья/работа)\n` +
+          `- **Задачи** и **цели**\n` +
+          `- **XP и уровни** за выполнение\n` +
+          `- **Лидерборд** по пространству и глобальный\n` +
+          `- **Напоминания** и **истории** прогресса\n\n` +
+          `*Как пользоваться:*\n` +
+          `1) Откройте приложение\n` +
+          `2) Выберите/создайте пространство\n` +
+          `3) Добавьте задачи/цели и выполняйте их\n\n` +
+          `Команды бота сейчас: /start и /help.`
+        : `❓ *Help*\n\n` +
+          `This is a **gamified task & goal manager** inside a Telegram Mini App.\n\n` +
+          `*What you get:*\n` +
+          `- **Spaces**: personal or team (family/friends/work)\n` +
+          `- **Tasks** and **goals**\n` +
+          `- **XP & levels** for completing\n` +
+          `- **Leaderboards** (space + global)\n` +
+          `- **Reminders** and weekly **stories**\n\n` +
+          `*How to use:*\n` +
+          `1) Open the app\n` +
+          `2) Pick/create a space\n` +
+          `3) Add tasks/goals and complete them\n\n` +
+          `Bot commands for now: /start and /help.`;
 
     await ctx.reply(helpText, {
-      reply_markup: getMainMenu(lang),
+      reply_markup: getOpenAppKeyboard(lang),
       parse_mode: 'Markdown',
     });
   } catch (error) {
@@ -131,15 +96,6 @@ bot.command('help', ensureUser, async (ctx) => {
     await ctx.reply('An error occurred. Please try again later.');
   }
 });
-
-// Setup commands (register after start and help)
-setupSpaceCommands(bot);
-setupMemberCommands(bot);
-setupTaskCommands(bot);
-setupGoalCommands(bot);
-setupLevelCommands(bot);
-setupRewardCommands(bot);
-setupMenuCommands(bot);
 
 // Error handling
 bot.catch((err) => {

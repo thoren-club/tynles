@@ -13,7 +13,7 @@ export async function sendTaskReminders() {
     const now = new Date();
     const defaultReminderHoursBefore = 2;
 
-    // Получаем всех пользователей с включенными напоминаниями
+    // Получаем всех пользователей с настройками (нужны tgId + настройки)
     const usersWithSettings = await prisma.telegramUser.findMany({
       include: {
         notificationSettings: true,
@@ -25,123 +25,61 @@ export async function sendTaskReminders() {
       },
     });
 
+    const userById = new Map<bigint, typeof usersWithSettings[number]>();
+    for (const u of usersWithSettings) userById.set(u.id, u);
+
+    // Берём все задачи с дедлайном и без паузы, и отправляем напоминание ТОЛЬКО назначенному (или создателю, если не назначено)
+    const tasksWithDueDate = await prisma.task.findMany({
+      where: {
+        dueAt: { not: null },
+        isPaused: false,
+      },
+    });
+
     let remindersSent = 0;
-    const processedTasks = new Set<string>();
 
-    for (const user of usersWithSettings) {
-      try {
-        const settings = user.notificationSettings;
-        
-        // Пропускаем если напоминания выключены
-        if (settings && !settings.taskRemindersEnabled) {
-          continue;
+    for (const task of tasksWithDueDate) {
+      if (!task.dueAt) continue;
+      if (task.reminderSent) continue;
+
+      const dueDate = new Date(task.dueAt);
+      const diffMs = dueDate.getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      const isOverdue = diffMs < 0;
+
+      // определяем получателя: assigneeUserId из recurrencePayload или createdBy
+      const payload = task.recurrencePayload as any;
+      let recipientUserId: bigint = task.createdBy;
+      if (payload?.assigneeUserId) {
+        try {
+          recipientUserId = BigInt(String(payload.assigneeUserId));
+        } catch {
+          recipientUserId = task.createdBy;
         }
-
-        const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
-        
-        // Получаем задачи пользователя во ВСЕХ его пространствах
-        const userSpaces = user.spaceMembers.map(m => m.spaceId);
-        
-        if (userSpaces.length === 0) continue;
-
-        // Получаем задачи пользователя - включаем задачи с дедлайном и без него
-        const tasksWithDueDate = await prisma.task.findMany({
-          where: {
-            spaceId: { in: userSpaces },
-            createdBy: user.id,
-            dueAt: { not: null },
-            isPaused: false,
-          },
-        });
-
-        // Задачи без дедлайна (повторяющиеся задачи без установленного dueAt или одноразовые)
-        const tasksWithoutDueDate = await prisma.task.findMany({
-          where: {
-            spaceId: { in: userSpaces },
-            createdBy: user.id,
-            dueAt: null,
-            isPaused: false,
-          },
-        });
-
-        // Обрабатываем задачи с дедлайном
-        for (const task of tasksWithDueDate) {
-          if (!task.dueAt || processedTasks.has(task.id.toString())) continue;
-
-          const dueDate = new Date(task.dueAt);
-          const diffMs = dueDate.getTime() - now.getTime();
-          const diffHours = diffMs / (1000 * 60 * 60);
-
-          // Проверяем, нужно ли отправлять напоминание
-          const isOverdue = diffMs < 0;
-          const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
-
-          // Проверяем, не отправляли ли уже напоминание
-          if ((isOverdue || shouldRemind) && !task.reminderSent) {
-            const message = generateTaskReminderMessage(task.title, isOverdue);
-            
-            const sent = await sendTelegramMessage(user.tgId, message);
-            
-            if (sent) {
-              // Отмечаем, что напоминание отправлено
-              await prisma.task.update({
-                where: { id: task.id },
-                data: { reminderSent: true },
-              });
-              
-              processedTasks.add(task.id.toString());
-              remindersSent++;
-              
-              logger.info({
-                userId: user.id.toString(),
-                taskId: task.id.toString(),
-                taskTitle: task.title,
-                isOverdue,
-              }, 'Task reminder sent');
-            }
-          }
-        }
-
-        // Обрабатываем задачи без дедлайна (напоминания для повторяющихся задач, которые не выполнялись долго)
-        for (const task of tasksWithoutDueDate) {
-          if (processedTasks.has(task.id.toString())) continue;
-
-          // Для повторяющихся задач без дедлайна: напоминаем, если не выполнялись более 24 часов
-          const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-          
-          if (isRecurring && task.updatedAt) {
-            const lastCompleted = new Date(task.updatedAt);
-            const hoursSinceCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-            
-            // Напоминаем о ежедневной задаче, если не выполнялась более 24 часов
-            if (task.recurrenceType === 'daily' && hoursSinceCompletion >= 24 && !task.reminderSent) {
-              const message = generateTaskReminderMessage(task.title, false);
-              
-              const sent = await sendTelegramMessage(user.tgId, message);
-              
-              if (sent) {
-                // Отмечаем, что напоминание отправлено
-                await prisma.task.update({
-                  where: { id: task.id },
-                  data: { reminderSent: true },
-                });
-                
-                processedTasks.add(task.id.toString());
-                remindersSent++;
-                
-                logger.info({
-                  userId: user.id.toString(),
-                  taskId: task.id.toString(),
-                  taskTitle: task.title,
-                  hoursSinceCompletion,
-                }, 'Task reminder sent (no due date)');
-              }
-            }
-          }
-        }
-      } catch (error) {
-        logger.error({ error, userId: user.id.toString() }, 'Error processing reminders for user');
       }
+
+      const recipient = userById.get(recipientUserId);
+      if (!recipient) continue;
+
+      const settings = recipient.notificationSettings;
+      if (settings && !settings.taskRemindersEnabled) continue;
+      const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
+
+      const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+      if (!isOverdue && !shouldRemind) continue;
+
+      const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
+      const message = generateTaskReminderMessage(task.title, isOverdue, { isRecurring });
+
+      const sent = await sendTelegramMessage(recipient.tgId, message);
+      if (!sent) continue;
+
+      await prisma.task.update({
+        where: { id: task.id },
+        data: { reminderSent: true },
+      });
+      remindersSent++;
     }
 
     logger.info({ remindersSent }, 'Task reminders check completed');

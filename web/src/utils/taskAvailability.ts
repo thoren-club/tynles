@@ -28,10 +28,20 @@ export function isTaskAvailable(task: any): boolean {
   
   const dueDate = new Date(task.dueAt);
   
-  // Проверяем, наступил ли следующий доступный день
-  if (dueDate > now) {
-    // Следующий доступный день еще не наступил
-    return false;
+  // Для повторяющихся: dueAt = дедлайн окна выполнения (конец дня)
+  const windowStart = new Date(dueDate);
+  windowStart.setHours(0, 0, 0, 0);
+
+  // Окно выполнения ещё не наступило
+  if (now < windowStart) return false;
+
+  // Окно выполнения уже прошло
+  if (now > dueDate) return false;
+
+  // Если задача уже выполнена в текущем окне — недоступна
+  if (task.updatedAt) {
+    const lastUpdate = new Date(task.updatedAt);
+    if (lastUpdate >= windowStart) return false;
   }
   
   // Проверяем, входит ли текущий день недели в дни повторения (для еженедельных)
@@ -61,7 +71,27 @@ export function getNextAvailableDate(task: any): Date | null {
   
   const now = new Date();
   const dueDate = new Date(task.dueAt);
+  const windowStart = new Date(dueDate);
+  windowStart.setHours(0, 0, 0, 0);
   const daysOfWeek = task.recurrencePayload?.daysOfWeek as number[] | undefined;
+
+  // Если окно ещё не наступило — следующее доступное время это начало окна
+  if (now < windowStart) {
+    return windowStart;
+  }
+  
+  // Если сейчас в окне, но задача выполнена — следующее окно (будет выставлено сервером в dueAt)
+  if (now >= windowStart && now <= dueDate && task.updatedAt) {
+    const lastUpdate = new Date(task.updatedAt);
+    if (lastUpdate >= windowStart) {
+      // сервер после выполнения уже переведёт dueAt на следующий день,
+      // но если фронт ещё не обновился — покажем начало следующего дня
+      const next = new Date(windowStart);
+      next.setDate(next.getDate() + 1);
+      next.setHours(0, 0, 0, 0);
+      return next;
+    }
+  }
   
   // Если есть дни недели и их меньше 7 - это еженедельная задача
   if (daysOfWeek && daysOfWeek.length > 0 && daysOfWeek.length < 7) {
@@ -87,15 +117,10 @@ export function getNextAvailableDate(task: any): Date | null {
   }
   
   // Ежедневная задача (7 дней или daily) - следующий день = dueAt (если в будущем) или завтра
-  if (dueDate > now) {
-    return dueDate;
-  } else {
-    // dueAt уже прошел, следующий доступный день = завтра
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    return tomorrow;
-  }
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
 }
 
 /**

@@ -120,18 +120,26 @@ router.get('/leaderboard/global', async (req: Request, res: Response) => {
       orderBy: { totalXp: 'desc' },
     });
 
-    // Группируем по пользователям и берем максимальный totalXp
+    // Группируем по пользователям и берем СУММУ totalXp по всем пространствам (глобальный XP)
     const userStatsMap = new Map<bigint, { totalXp: number; level: number; userId: bigint; user: any }>();
     
     for (const stat of allUserStats) {
       const existing = userStatsMap.get(stat.userId);
-      if (!existing || stat.totalXp > existing.totalXp) {
+      if (!existing) {
         userStatsMap.set(stat.userId, {
           totalXp: stat.totalXp,
           level: stat.level,
           userId: stat.userId,
           user: stat.user,
         });
+        continue;
+      }
+
+      existing.totalXp += stat.totalXp;
+      // level для глобального отображения сейчас вторичен (UI показывает только XP),
+      // но оставим максимальный уровень как ориентир.
+      if (stat.level > existing.level) {
+        existing.level = stat.level;
       }
     }
 

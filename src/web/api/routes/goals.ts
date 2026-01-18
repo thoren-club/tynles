@@ -2,8 +2,19 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
 import { addXp } from '../../../utils/xp';
+import { sendTelegramMessage } from '../../../utils/telegram';
 
 const router = Router();
+
+async function notifySpaceMembers(spaceId: bigint, message: string) {
+  const members = await prisma.spaceMember.findMany({
+    where: { spaceId },
+    include: { user: true },
+  });
+  await Promise.all(
+    members.map((m) => sendTelegramMessage(m.user.tgId, message))
+  );
+}
 
 // Get all goals
 router.get('/', async (req: Request, res: Response) => {
@@ -57,6 +68,12 @@ router.post('/', async (req: Request, res: Response) => {
       },
     });
 
+    const actorName = authReq.user?.firstName || authReq.user?.username || 'Кто-то';
+    await notifySpaceMembers(
+      authReq.currentSpaceId,
+      `🎯 В пространстве появилась новая цель: <b>${goal.title}</b>\nИнициатор: <b>${actorName}</b>`,
+    );
+
     res.json({
       id: goal.id.toString(),
       title: goal.title,
@@ -100,6 +117,14 @@ router.post('/:goalId/toggle', async (req: Request, res: Response) => {
       data: { isDone: newIsDone },
     });
 
+    const actorName = authReq.user?.firstName || authReq.user?.username || 'Кто-то';
+    await notifySpaceMembers(
+      authReq.currentSpaceId,
+      updatedGoal.isDone
+        ? `✅ Цель выполнена: <b>${updatedGoal.title}</b>\nИнициатор: <b>${actorName}</b>`
+        : `↩️ Выполнение цели отменено: <b>${updatedGoal.title}</b>\nИнициатор: <b>${actorName}</b>`,
+    );
+
     res.json({
       id: updatedGoal.id.toString(),
       title: updatedGoal.title,
@@ -133,6 +158,12 @@ router.delete('/:goalId', async (req: Request, res: Response) => {
     await prisma.goal.delete({
       where: { id: goalId },
     });
+
+    const actorName = authReq.user?.firstName || authReq.user?.username || 'Кто-то';
+    await notifySpaceMembers(
+      authReq.currentSpaceId,
+      `🗑️ Цель удалена: <b>${goal.title}</b>\nИнициатор: <b>${actorName}</b>`,
+    );
 
     res.json({ success: true });
   } catch (error) {

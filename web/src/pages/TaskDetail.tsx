@@ -9,9 +9,12 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<any>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [assigneeUserId, setAssigneeUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -21,11 +24,16 @@ export default function TaskDetail() {
 
   const loadTask = async () => {
     try {
-      const tasksData = await api.getTasks();
+      const [tasksData, membersData] = await Promise.all([
+        api.getTasks(),
+        api.getMembers().catch(() => ({ members: [] })),
+      ]);
       const foundTask = tasksData.tasks.find((t: any) => t.id === id);
       if (foundTask) {
         setTask(foundTask);
+        setAssigneeUserId(foundTask.assigneeUserId || null);
       }
+      setMembers(membersData.members || []);
     } catch (error) {
       console.error('Failed to load task:', error);
     } finally {
@@ -65,6 +73,21 @@ export default function TaskDetail() {
       alert('Не удалось выполнить задачу');
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleAssigneeChange = async (nextUserId: string | null) => {
+    if (!id) return;
+    setIsAssigning(true);
+    try {
+      await api.setTaskAssignee(id, nextUserId);
+      setAssigneeUserId(nextUserId);
+      await loadTask();
+    } catch (error) {
+      console.error('Failed to set assignee:', error);
+      alert('Не удалось назначить исполнителя');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -236,6 +259,24 @@ export default function TaskDetail() {
               <div className="task-value task-xp">+{task.xp} XP</div>
             </div>
           )}
+
+          {/* Исполнитель */}
+          <div className="task-field">
+            <label className="task-label">Исполнитель</label>
+            <select
+              className="task-value"
+              value={assigneeUserId || ''}
+              onChange={(e) => handleAssigneeChange(e.target.value || null)}
+              disabled={isAssigning}
+            >
+              <option value="">Не назначено</option>
+              {members.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.firstName || m.username || m.id}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Кнопки действий */}
           <div className="task-actions">

@@ -25,6 +25,7 @@ export interface TasksResponse {
     isPaused: boolean;
     recurrenceType: string | null;
     recurrencePayload: { daysOfWeek?: number[] } | null;
+    assigneeUserId?: string | null;
     createdAt: string;
   }>;
 }
@@ -75,10 +76,13 @@ export interface SpaceLeaderboardResponse {
     userId: string;
     username: string | null;
     firstName: string | null;
-    level: number;
     totalXp: number;
-    tasksCompleted30Days: number;
-    position: number;
+    photoUrl?: string | null;
+    league?: number;
+    leagueName?: string;
+    leaguePosition?: number;
+    canPoke?: boolean;
+    isPokedToday?: boolean;
   }>;
   periodDays: number;
   note?: string;
@@ -216,6 +220,13 @@ export const api = {
     return this.request(`/tasks/${taskId}`, { method: 'DELETE' });
   },
 
+  async setTaskAssignee(taskId: string, userId: string | null) {
+    return this.request(`/tasks/${taskId}/assignee`, {
+      method: 'PUT',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
   // Goals
   async getGoals(): Promise<GoalsResponse> {
     return this.request<GoalsResponse>('/goals');
@@ -264,7 +275,9 @@ export const api = {
 
   // Space leaderboard (based on completed tasks in last 30 days)
   async getSpaceLeaderboard(): Promise<SpaceLeaderboardResponse> {
-    return this.request<SpaceLeaderboardResponse>('/spaces/current/leaderboard');
+    // Space leaderboard (with poke flags) lives in /stats/leaderboard
+    // NOTE: /spaces/current/leaderboard is a legacy endpoint.
+    return this.request<SpaceLeaderboardResponse>('/stats/leaderboard');
   },
 
   // Members
