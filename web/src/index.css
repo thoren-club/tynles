@@ -6,6 +6,26 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Fixed app palette */
+  --app-bg: #111019;
+  --app-primary: #ff8d00;
+  --app-text: #f4f2ff;
+  --app-hint: #a09abf;
+  --app-surface: #1a1930;
+
+  /*
+    Map to Telegram theme variables so existing styles keep working
+    while we enforce the app branding.
+  */
+  --tg-theme-bg-color: var(--app-bg);
+  --tg-theme-text-color: var(--app-text);
+  --tg-theme-hint-color: var(--app-hint);
+  --tg-theme-secondary-bg-color: var(--app-surface);
+  --tg-theme-button-color: var(--app-primary);
+  --tg-theme-button-text-color: var(--app-bg);
+}
+
 @supports (scrollbar-gutter: stable) {
   html {
     scrollbar-gutter: stable;
@@ -27,8 +47,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--tg-theme-bg-color, #ffffff);
-  color: var(--tg-theme-text-color, #000000);
+  background: var(--app-bg);
+  color: var(--app-text);
   min-height: 100vh;
 }
 
