@@ -52,24 +52,36 @@ export function generateTaskReminderMessage(
   isOverdue: boolean,
   opts?: { isRecurring?: boolean; recipientName?: string; isDayBefore?: boolean; timeLeft?: string }
 ): string {
-  const namePrefix = opts?.recipientName ? `${opts.recipientName}! ` : '';
+  const namePrefix = opts?.recipientName ? `${opts.recipientName}, ` : '';
   const recurringSuffix = opts?.isRecurring ? ' (повторяется)' : '';
-  const dayBeforePrefix = opts?.isDayBefore ? 'Завтра у тебя ' : 'У тебя ';
   const timeLeftSuffix = opts?.timeLeft && !isOverdue && !opts?.isDayBefore
-    ? `\n⏳ До дедлайна осталось ${opts.timeLeft}`
+    ? `\n⏳ Осталось ${opts.timeLeft}`
     : '';
 
-  const messages = isOverdue
-    ? [
-        `${namePrefix}ну ты где? Задача <b>${taskTitle}</b> уже просрочена 😬${recurringSuffix}`,
-        `${namePrefix}напоминаю по‑дружески: <b>${taskTitle}</b> уже просрочена. Давай закроем?`,
-        `${namePrefix}эй! <b>${taskTitle}</b> уже просрочена. Не тяни 🙏`,
-      ]
-    : [
-        `${namePrefix}${dayBeforePrefix}<b>${taskTitle}</b>. Не забудь 💛${recurringSuffix}${timeLeftSuffix}`,
-        `${namePrefix}маленький пинг: <b>${taskTitle}</b> ждёт тебя ⏰${recurringSuffix}${timeLeftSuffix}`,
-        `${namePrefix}напоминалка: <b>${taskTitle}</b> скоро дедлайн. Давай без стресса ✨${timeLeftSuffix}`,
-      ];
+  const pick = (variants: string[]) => variants[Math.floor(Math.random() * variants.length)];
 
-  return messages[Math.floor(Math.random() * messages.length)];
+  const overdueVariants = [
+    `${namePrefix}ну всё, время пошло мимо. <b>${taskTitle}</b> уже просрочена 😈${recurringSuffix}`,
+    `${namePrefix}эй, чемпион, просрочка — это не стиль. <b>${taskTitle}</b> ждёт тебя.`,
+    `${namePrefix}ты можешь лучше, чем это. <b>${taskTitle}</b> уже просрочена. Давай соберёмся.`,
+    `${namePrefix}не прячься! <b>${taskTitle}</b> просрочена. Жми и закрывай.`,
+  ];
+
+  const dayBeforeVariants = [
+    `${namePrefix}завтра дедлайн по <b>${taskTitle}</b>. Спокойно и уверенно — ты справишься${recurringSuffix}.`,
+    `${namePrefix}напоминалка: завтра <b>${taskTitle}</b>. Давай без паники, ты умеешь${recurringSuffix}.`,
+    `${namePrefix}завтра важный день для <b>${taskTitle}</b>. Подготовься красиво ✨${recurringSuffix}`,
+    `${namePrefix}<b>${taskTitle}</b> завтра. Я верю в тебя, не подведи${recurringSuffix}.`,
+  ];
+
+  const soonVariants = [
+    `${namePrefix}маленький пинг: <b>${taskTitle}</b> скоро. Двигаем?${recurringSuffix}${timeLeftSuffix}`,
+    `${namePrefix}<b>${taskTitle}</b> уже на горизонте. Я бы не откладывал${recurringSuffix}${timeLeftSuffix}.`,
+    `${namePrefix}ты классный, давай добьём <b>${taskTitle}</b> вовремя.${recurringSuffix}${timeLeftSuffix}`,
+    `${namePrefix}<b>${taskTitle}</b> ждёт твоего решения. Пора сиять 🌟${recurringSuffix}${timeLeftSuffix}`,
+  ];
+
+  if (isOverdue) return pick(overdueVariants);
+  if (opts?.isDayBefore) return pick(dayBeforeVariants);
+  return pick(soonVariants);
 }

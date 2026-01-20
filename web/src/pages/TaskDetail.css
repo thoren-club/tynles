@@ -200,13 +200,15 @@
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-md);
 }
 
 .form-label {
-  font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
-  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .form-textarea {

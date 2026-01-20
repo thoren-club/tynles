@@ -72,10 +72,12 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
+    const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+    const isPlaceholderTitle = ['цель', 'goal'].includes(trimmedTitle.toLowerCase());
     const goal = await prisma.goal.create({
       data: {
         spaceId: authReq.currentSpaceId,
-        title: title || 'Цель',
+        title: trimmedTitle || 'Цель',
         difficulty: difficulty || 1,
         xp: xp || 0,
         assigneeUserId: resolvedAssigneeId,
@@ -87,11 +89,13 @@ router.post('/', async (req: Request, res: Response) => {
       },
     });
 
-    const actorName = authReq.user?.firstName || authReq.user?.username || 'Кто-то';
-    await notifySpaceMembers(
-      authReq.currentSpaceId,
-      `🎯 В пространстве появилась новая цель: <b>${goal.title}</b>\nИнициатор: <b>${actorName}</b>`,
-    );
+    if (trimmedTitle && !isPlaceholderTitle) {
+      const actorName = authReq.user?.firstName || authReq.user?.username || 'Кто-то';
+      await notifySpaceMembers(
+        authReq.currentSpaceId,
+        `🎯 В пространстве появилась новая цель: <b>${goal.title}</b>\nИнициатор: <b>${actorName}</b>`,
+      );
+    }
 
     res.json({
       id: goal.id.toString(),
@@ -200,6 +204,14 @@ router.post('/:goalId/toggle', async (req: Request, res: Response) => {
     if (newIsDone && !goal.isDone) {
       // Update user stats with XP using the utility function
       await addXp(authReq.currentSpaceId, authReq.user.id, goal.xp);
+      await prisma.taskCompletion.create({
+        data: {
+          taskId: goal.id,
+          spaceId: authReq.currentSpaceId,
+          userId: authReq.user.id,
+          xp: goal.xp,
+        },
+      });
     }
 
     const updatedGoal = await prisma.goal.update({

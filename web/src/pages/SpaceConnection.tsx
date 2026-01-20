@@ -25,8 +25,7 @@ export default function SpaceConnection() {
 
     try {
       await api.useInviteCode(inviteCode.trim());
-      // После успешного подключения перезагружаем страницу
-      window.location.reload();
+      window.dispatchEvent(new Event('space:changed'));
     } catch (error: any) {
       console.error('Failed to join space:', error);
       setError(error.message || tr('Не удалось подключиться к пространству', 'Failed to join the space'));
@@ -46,8 +45,7 @@ export default function SpaceConnection() {
 
     try {
       await api.createSpace(newSpaceName.trim());
-      // После успешного создания перезагружаем страницу
-      window.location.reload();
+      window.dispatchEvent(new Event('space:changed'));
     } catch (error: any) {
       console.error('Failed to create space:', error);
       setError(error.message || tr('Не удалось создать пространство', 'Failed to create space'));

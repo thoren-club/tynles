@@ -190,6 +190,19 @@ function AppContent() {
     initAuth();
   }, []);
 
+  useEffect(() => {
+    const handleSpaceChanged = async () => {
+      try {
+        const spaces = await api.getSpaces();
+        setHasSpace(spaces.spaces && spaces.spaces.length > 0);
+      } catch {
+        setHasSpace(false);
+      }
+    };
+    window.addEventListener('space:changed', handleSpaceChanged);
+    return () => window.removeEventListener('space:changed', handleSpaceChanged);
+  }, []);
+
   // When the app finished its initial auth/bootstrap, hide the first-paint splash.
   useEffect(() => {
     if (!loading) {

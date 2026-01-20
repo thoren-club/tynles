@@ -81,7 +81,7 @@ router.get('/weekly-xp', async (req: Request, res: Response) => {
     const startDate = addDaysInTimeZone(getStartOfDayInTimeZone(today, timeZone), -6, timeZone);
     const endDate = addDaysInTimeZone(startDate, 7, timeZone);
 
-    const members = await prisma.spaceMember.findMany({
+    const statsUsers = await prisma.userSpaceStats.findMany({
       where: { spaceId: authReq.currentSpaceId },
       include: {
         user: {
@@ -94,6 +94,21 @@ router.get('/weekly-xp', async (req: Request, res: Response) => {
         },
       },
     });
+    const members = statsUsers.length > 0
+      ? statsUsers.map((row) => ({ userId: row.userId, user: row.user }))
+      : await prisma.spaceMember.findMany({
+          where: { spaceId: authReq.currentSpaceId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                username: true,
+                photoUrl: true,
+              },
+            },
+          },
+        });
 
     const memberIds = members.map((member) => member.userId);
 

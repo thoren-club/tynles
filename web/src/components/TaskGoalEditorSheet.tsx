@@ -113,6 +113,15 @@ export default function TaskGoalEditorSheet({
 
   const isDirty = useMemo(() => initialSnapshot && initialSnapshot !== buildSnapshot(), [initialSnapshot, scheduleMode, deadlineDate, deadlineTime, deadlineHasTime, recurringHasTime, recurringTime, formData, type, entityId]);
 
+  const normalizeTitle = (value: string) => {
+    const trimmed = value.trim();
+    const normalized = trimmed.toLowerCase();
+    if (normalized === 'задача' || normalized === 'task' || normalized === 'цель' || normalized === 'goal') {
+      return '';
+    }
+    return trimmed;
+  };
+
   useEffect(() => {
     if (!isOpen || !type || !entityId) return;
     const loadData = async () => {
@@ -135,7 +144,7 @@ export default function TaskGoalEditorSheet({
           const recurrenceTimeOfDay = foundTask.recurrencePayload?.timeOfDay;
           const isRecurringTask = !!foundTask.recurrenceType && foundTask.recurrenceType !== 'none';
           setFormData({
-            title: foundTask.title || '',
+            title: normalizeTitle(foundTask.title || ''),
             description: foundTask.description || '',
             importance: foundTask.difficulty || 1,
             assigneeUserId: foundTask.assigneeUserId || '',
@@ -178,7 +187,7 @@ export default function TaskGoalEditorSheet({
           const foundGoal: any = goalsData.goals.find((g) => g.id === entityId);
           if (!foundGoal) return;
           setFormData({
-            title: foundGoal.title || '',
+            title: normalizeTitle(foundGoal.title || ''),
             description: foundGoal.description || '',
             importance: foundGoal.difficulty || 1,
             assigneeUserId: foundGoal.assigneeUserId || '',
@@ -391,11 +400,6 @@ export default function TaskGoalEditorSheet({
       size="high"
     >
       <div className="create-modal">
-        <div className="create-modal-title">
-          {type === 'goal'
-            ? tr('Цель', 'Goal')
-            : tr('Задача', 'Task')}
-        </div>
         <div className="create-form">
           {isLoading ? (
             <>
@@ -430,7 +434,7 @@ export default function TaskGoalEditorSheet({
               className="form-input"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder={type === 'goal' ? tr('Цель', 'Goal') : tr('Задача', 'Task')}
+              placeholder={tr('Введите название', 'Enter title')}
             />
           </div>
 
