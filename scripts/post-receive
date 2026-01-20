@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-$HOME/tynles}"
+LOG_FILE="${LOG_FILE:-$APP_DIR/deploy.log}"
+
+export APP_DIR
+export LOG_FILE
+
+if [ ! -x "$APP_DIR/scripts/server-deploy.sh" ]; then
+  echo "Deploy script not found or not executable: $APP_DIR/scripts/server-deploy.sh"
+  exit 1
+fi
+
+echo "Triggering deploy..."
+"$APP_DIR/scripts/server-deploy.sh"
