@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { isHapticsEnabled, setHapticsEnabled } from '../utils/haptics';
+import { isHapticsEnabled, setHapticsEnabled, triggerLightHaptic } from '../utils/haptics';
 import { api } from '../api';
 import './Settings.css';
 
@@ -104,6 +104,7 @@ export default function Settings() {
     
     const newValue = !notificationSettings.taskRemindersEnabled;
     try {
+      triggerLightHaptic();
       await api.updateNotificationSettings({ taskRemindersEnabled: newValue });
       setNotificationSettings({ ...notificationSettings, taskRemindersEnabled: newValue });
     } catch (error) {
@@ -117,6 +118,7 @@ export default function Settings() {
     
     const newValue = !notificationSettings.pokeEnabled;
     try {
+      triggerLightHaptic();
       await api.updateNotificationSettings({ pokeEnabled: newValue });
       setNotificationSettings({ ...notificationSettings, pokeEnabled: newValue });
     } catch (error) {
@@ -129,6 +131,7 @@ export default function Settings() {
     if (!notificationSettings) return;
     
     try {
+      triggerLightHaptic();
       await api.updateNotificationSettings({ reminderHoursBefore: hours });
       setNotificationSettings({ ...notificationSettings, reminderHoursBefore: hours });
     } catch (error) {
@@ -150,6 +153,7 @@ export default function Settings() {
   };
 
   const handleToggleHaptics = () => {
+    triggerLightHaptic();
     const next = !hapticsEnabled;
     setHapticsEnabled(next);
     setHapticsEnabledState(next);
@@ -172,13 +176,23 @@ export default function Settings() {
               <div className="language-switcher">
                 <button
                   className={`language-button ${language === 'ru' ? 'active' : ''}`}
-                  onClick={() => setLanguage('ru')}
+                  onClick={() => {
+                    if (language !== 'ru') {
+                      triggerLightHaptic();
+                      setLanguage('ru');
+                    }
+                  }}
                 >
                   Русский
                 </button>
                 <button
                   className={`language-button ${language === 'en' ? 'active' : ''}`}
-                  onClick={() => setLanguage('en')}
+                  onClick={() => {
+                    if (language !== 'en') {
+                      triggerLightHaptic();
+                      setLanguage('en');
+                    }
+                  }}
                 >
                   English
                 </button>

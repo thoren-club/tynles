@@ -4,6 +4,34 @@ console.log('API_BASE configured as:', API_BASE, 'PROD:', import.meta.env?.PROD)
 
 let authHeader: string | null = null;
 
+const AVATAR_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const buildAvatarKey = (kind: 'user' | 'space', id: string) => `avatar:${kind}:${id}`;
+
+const getCachedAvatar = (kind: 'user' | 'space', id: string): string | null => {
+  try {
+    const raw = localStorage.getItem(buildAvatarKey(kind, id));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { url?: string; ts?: number };
+    if (!parsed?.url || !parsed?.ts) return null;
+    if (Date.now() - parsed.ts > AVATAR_CACHE_TTL_MS) {
+      localStorage.removeItem(buildAvatarKey(kind, id));
+      return null;
+    }
+    return parsed.url;
+  } catch {
+    return null;
+  }
+};
+
+const setCachedAvatar = (kind: 'user' | 'space', id: string, url?: string | null) => {
+  if (!url) return;
+  try {
+    localStorage.setItem(buildAvatarKey(kind, id), JSON.stringify({ url, ts: Date.now() }));
+  } catch {
+    // ignore cache errors
+  }
+};
+
 // Типы для API ответов
 // Экспортируем типы для использования в компонентах
 export interface SpacesResponse {
@@ -173,7 +201,18 @@ export const api = {
 
   // Auth
   async getUser() {
-    return this.request('/auth/me');
+    const user = await this.request<any>('/auth/me');
+    if (user?.id) {
+      if (user.photoUrl) {
+        setCachedAvatar('user', String(user.id), user.photoUrl);
+      } else {
+        const cached = getCachedAvatar('user', String(user.id));
+        if (cached) {
+          user.photoUrl = cached;
+        }
+      }
+    }
+    return user;
   },
 
   async updateUserName(firstName: string) {
@@ -184,7 +223,16 @@ export const api = {
   },
 
   async getSpaces(): Promise<SpacesResponse> {
-    return this.request<SpacesResponse>('/auth/spaces');
+    const result = await this.request<SpacesResponse>('/auth/spaces');
+    result.spaces = result.spaces.map((space) => {
+      if (space.avatarUrl) {
+        setCachedAvatar('space', space.id, space.avatarUrl);
+        return space;
+      }
+      const cached = getCachedAvatar('space', space.id);
+      return cached ? { ...space, avatarUrl: cached } : space;
+    });
+    return result;
   },
 
   async switchSpace(spaceId: string) {
@@ -205,7 +253,18 @@ export const api = {
 
   // Spaces
   async getCurrentSpace() {
-    return this.request('/spaces/current');
+    const space = await this.request<any>('/spaces/current');
+    if (space?.id) {
+      if (space.avatarUrl) {
+        setCachedAvatar('space', String(space.id), space.avatarUrl);
+      } else {
+        const cached = getCachedAvatar('space', String(space.id));
+        if (cached) {
+          space.avatarUrl = cached;
+        }
+      }
+    }
+    return space;
   },
 
   async createSpace(name: string) {
@@ -363,7 +422,16 @@ export const api = {
   // Members
   async getMembers(spaceId?: string): Promise<MembersResponse> {
     const url = spaceId ? `/members?spaceId=${spaceId}` : '/members';
-    return this.request<MembersResponse>(url);
+    const result = await this.request<MembersResponse>(url);
+    result.members = result.members.map((member) => {
+      if (member.photoUrl) {
+        setCachedAvatar('user', member.id, member.photoUrl);
+        return member;
+      }
+      const cached = getCachedAvatar('user', member.id);
+      return cached ? { ...member, photoUrl: cached } : member;
+    });
+    return result;
   },
 
   async createInvite(role: 'Admin' | 'Editor' | 'Viewer', spaceId?: string): Promise<InviteResponse> {
@@ -389,7 +457,18 @@ export const api = {
   },
   
   async getSpaceInfo(spaceId: string) {
-    return this.request<{ id: string; name: string; role: string; isOwner: boolean; avatarUrl?: string | null }>(`/spaces/${spaceId}/info`);
+    const space = await this.request<{ id: string; name: string; role: string; isOwner: boolean; avatarUrl?: string | null }>(`/spaces/${spaceId}/info`);
+    if (space?.id) {
+      if (space.avatarUrl) {
+        setCachedAvatar('space', space.id, space.avatarUrl);
+      } else {
+        const cached = getCachedAvatar('space', space.id);
+        if (cached) {
+          space.avatarUrl = cached;
+        }
+      }
+    }
+    return space;
   },
 
   async updateSpaceName(spaceId: string, name: string) {

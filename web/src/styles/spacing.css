@@ -11,7 +11,7 @@
   --spacing-4xl: 32px;
   
   /* Отступы от краев экрана */
-  --screen-padding: var(--spacing-md); /* 8px */
+  --screen-padding: 16px;
   
   /* Максимальная ширина контента */
   --content-max-width: 680px;

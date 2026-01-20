@@ -64,14 +64,74 @@ router.get('/weekly-xp', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
+    const space = await prisma.space.findUnique({
+      where: { id: authReq.currentSpaceId },
+      select: { timezone: true },
+    });
+    const timeZone = space?.timezone || 'UTC';
+
+    const formatDateKey = (date: Date) => {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+      const get = (type: string) => parts.find((p) => p.type === type)?.value || '';
+      return `${get('year')}-${get('month')}-${get('day')}`;
+    };
+
+    const getTimeZoneOffsetMinutes = (date: Date) => {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).formatToParts(date);
+      const get = (type: string) => parts.find((p) => p.type === type)?.value || '00';
+      const asUTC = Date.UTC(
+        Number(get('year')),
+        Number(get('month')) - 1,
+        Number(get('day')),
+        Number(get('hour')),
+        Number(get('minute')),
+        Number(get('second')),
+      );
+      return (asUTC - date.getTime()) / 60000;
+    };
+
+    const getStartOfDayInTimeZone = (date: Date) => {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+      const get = (type: string) => parts.find((p) => p.type === type)?.value || '01';
+      const utcMidnight = new Date(Date.UTC(
+        Number(get('year')),
+        Number(get('month')) - 1,
+        Number(get('day')),
+        0,
+        0,
+        0,
+      ));
+      const offsetMinutes = getTimeZoneOffsetMinutes(utcMidnight);
+      return new Date(utcMidnight.getTime() - offsetMinutes * 60000);
+    };
+
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 6);
-    startDate.setHours(0, 0, 0, 0);
+    const startDate = getStartOfDayInTimeZone(today);
+    startDate.setDate(startDate.getDate() - 6);
 
     const completions = await prisma.taskCompletion.findMany({
       where: {
         spaceId: authReq.currentSpaceId,
+        userId: authReq.user!.id,
         completedAt: { gte: startDate },
       },
       select: {
@@ -81,18 +141,17 @@ router.get('/weekly-xp', async (req: Request, res: Response) => {
     });
 
     const xpByDate = new Map<string, number>();
-    const normalizeDate = (date: Date) => date.toISOString().slice(0, 10);
     for (const row of completions) {
       const date = new Date(row.completedAt);
       if (Number.isNaN(date.getTime())) continue;
-      const key = normalizeDate(date);
+      const key = formatDateKey(date);
       xpByDate.set(key, (xpByDate.get(key) || 0) + (row.xp || 0));
     }
 
     const days = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(startDate);
       day.setDate(startDate.getDate() + i);
-      const key = normalizeDate(day);
+      const key = formatDateKey(day);
       return { date: key, xp: xpByDate.get(key) || 0 };
     });
 

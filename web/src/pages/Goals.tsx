@@ -262,6 +262,7 @@ export default function Goals() {
                   onToggle={() => handleToggleGoal(goal.id)}
                   dateLabel={timeframeLabel}
                   showCalendarIcon={false}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goal.id } }))}
                 />
                 <button className="btn-delete" onClick={() => handleDeleteGoal(goal.id)}>
                   {tr('Удалить', 'Delete')}

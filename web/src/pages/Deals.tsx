@@ -64,7 +64,8 @@ export default function Deals() {
   };
 
   const handleGoalClick = (goalId: string) => {
-    navigate(`/goal/${goalId}`);
+    triggerLightHaptic();
+    window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goalId } }));
   };
 
   const handleGoalToggle = async (goalId: string) => {
@@ -79,7 +80,8 @@ export default function Deals() {
   };
 
   const handleTaskClick = (taskId: string) => {
-    navigate(`/task/${taskId}`);
+    triggerLightHaptic();
+    window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'task', id: taskId } }));
   };
 
   const handleRecurringComplete = async (taskId: string) => {
@@ -260,7 +262,7 @@ export default function Deals() {
               <div className="tasks-list">
                 {sortTasksByDue(tasksForSection).map((task) => {
                   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-                  const taskAvailable = !isRecurring || isTaskAvailable(task);
+                  const taskAvailable = isRecurring ? true : isTaskAvailable(task);
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const dateParts = getTaskDateParts(task.dueAt, locale, tr);
                   const assigneeId = task.assigneeUserId;
@@ -288,11 +290,11 @@ export default function Deals() {
                       isRecurring={isRecurring}
                       onClick={() => handleTaskClick(task.id)}
                       onToggle={() => {
-                        if (!taskAvailable) return;
                         if (isRecurring) {
                           handleRecurringComplete(task.id);
                           return;
                         }
+                        if (!taskAvailable) return;
                         if (isChecked) {
                           handleTaskUndo();
                           return;

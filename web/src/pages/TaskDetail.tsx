@@ -42,6 +42,7 @@ export default function TaskDetail() {
   const [deadlineHasTime, setDeadlineHasTime] = useState(false);
   const [recurringHasTime, setRecurringHasTime] = useState(false);
   const [recurringTime, setRecurringTime] = useState('23:59');
+  const [scheduleMode, setScheduleMode] = useState<'none' | 'deadline' | 'recurring'>('none');
   
   // Form data
   const [formData, setFormData] = useState({
@@ -143,19 +144,20 @@ export default function TaskDetail() {
         setOriginalTask(foundTask);
         const daysOfWeek = foundTask.recurrencePayload?.daysOfWeek || [];
         const recurrenceTimeOfDay = foundTask.recurrencePayload?.timeOfDay;
+        const isRecurringTask = !!foundTask.recurrenceType && foundTask.recurrenceType !== 'none';
         setFormData({
           title: foundTask.title || '',
           description: foundTask.description || '',
-          dueAt: foundTask.dueAt || '',
+          dueAt: isRecurringTask ? '' : foundTask.dueAt || '',
           importance: foundTask.difficulty || 1,
           assigneeUserId: foundTask.assigneeUserId || '',
           assigneeScope: foundTask.assigneeScope === 'space' || !foundTask.assigneeUserId ? 'space' : 'user',
-          isRecurring: !!foundTask.recurrenceType && foundTask.recurrenceType !== 'none',
+          isRecurring: isRecurringTask,
           daysOfWeek: daysOfWeek,
           xp: foundTask.xp || 0,
         });
         const parsed = parseDueAtToLocal(foundTask.dueAt);
-        if (parsed.date) {
+        if (!isRecurringTask && parsed.date) {
           setDeadlineEnabled(true);
           setDeadlineDate(parsed.date);
           setDeadlineTime(parsed.time);
@@ -172,6 +174,13 @@ export default function TaskDetail() {
         } else {
           setRecurringHasTime(false);
           setRecurringTime('23:59');
+        }
+        if (isRecurringTask) {
+          setScheduleMode('recurring');
+        } else if (parsed.date) {
+          setScheduleMode('deadline');
+        } else {
+          setScheduleMode('none');
         }
       }
       setMembers(membersData.members || []);
@@ -196,12 +205,12 @@ export default function TaskDetail() {
         title: formData.title.trim(),
         difficulty: formData.importance,
         description: formData.description.trim() || undefined,
-        dueAt: formData.dueAt || undefined,
+        dueAt: scheduleMode === 'deadline' ? formData.dueAt || undefined : undefined,
         assigneeUserId: safeAssigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
         assigneeScope: safeAssigneeScope,
       };
 
-      if (formData.isRecurring && formData.daysOfWeek.length > 0) {
+      if (scheduleMode === 'recurring' && formData.daysOfWeek.length > 0) {
         taskData.isRecurring = true;
         taskData.daysOfWeek = formData.daysOfWeek;
         if (recurringHasTime && recurringTime) {
@@ -292,26 +301,36 @@ export default function TaskDetail() {
     label: currentSpace?.name || tr('Пространство', 'Space'),
   };
 
-  const handleRecurringToggle = (checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      isRecurring: checked,
-      daysOfWeek: checked ? prev.daysOfWeek : [],
-    }));
-    if (!checked) {
+  const handleScheduleModeChange = (mode: 'none' | 'deadline' | 'recurring') => {
+    if (mode !== scheduleMode) {
+      triggerLightHaptic();
+    }
+    setScheduleMode(mode);
+    if (mode === 'deadline') {
+      setDeadlineEnabled(true);
+      setFormData((prev) => ({ ...prev, isRecurring: false, daysOfWeek: [] }));
       setRecurringHasTime(false);
       setRecurringTime('23:59');
+      if (!deadlineDate) {
+        setDeadlineDate(formatLocalDate(new Date()));
+      }
+      return;
     }
-  };
-
-  const handleDeadlineToggle = (checked: boolean) => {
-    setDeadlineEnabled(checked);
-    if (checked && !deadlineDate) {
-      setDeadlineDate(formatLocalDate(new Date()));
+    if (mode === 'recurring') {
+      setDeadlineEnabled(false);
+      setDeadlineHasTime(false);
+      setFormData((prev) => ({ ...prev, dueAt: '', isRecurring: true }));
+      return;
     }
+    setDeadlineEnabled(false);
+    setDeadlineHasTime(false);
+    setFormData((prev) => ({ ...prev, dueAt: '', isRecurring: false, daysOfWeek: [] }));
+    setRecurringHasTime(false);
+    setRecurringTime('23:59');
   };
 
   const handleDeadlineTimeToggle = (checked: boolean) => {
+    if (scheduleMode !== 'deadline') return;
     setDeadlineHasTime(checked);
     if (checked && !deadlineDate) {
       setDeadlineDate(formatLocalDate(new Date()));
@@ -322,7 +341,7 @@ export default function TaskDetail() {
   };
 
   const handleRecurringTimeToggle = (checked: boolean) => {
-    if (!formData.isRecurring) return;
+    if (scheduleMode !== 'recurring') return;
     setRecurringHasTime(checked);
     if (!checked) {
       setRecurringTime('23:59');
@@ -448,21 +467,35 @@ export default function TaskDetail() {
               />
             </div>
 
-            {/* Дедлайн */}
-            <div className="deadline-section">
-              <div className="deadline-header">
-                <div className="deadline-title">{tr('Дедлайн', 'Deadline')}</div>
-                <label className="form-checkbox-label form-switch deadline-toggle">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox form-switch-input"
-                    checked={deadlineEnabled}
-                    onChange={(e) => handleDeadlineToggle(e.target.checked)}
-                  />
-                </label>
+            {/* Сроки / повтор */}
+            <div className="detail-block">
+              <div className="detail-block-title">{tr('Сроки', 'Schedule')}</div>
+              <div className="schedule-tabs">
+                <button
+                  type="button"
+                  className={`schedule-tab${scheduleMode === 'deadline' ? ' active' : ''}`}
+                  onClick={() => handleScheduleModeChange('deadline')}
+                >
+                  {tr('Дедлайн', 'Deadline')}
+                </button>
+                <button
+                  type="button"
+                  className={`schedule-tab${scheduleMode === 'recurring' ? ' active' : ''}`}
+                  onClick={() => handleScheduleModeChange('recurring')}
+                >
+                  {tr('Повтор', 'Recurring')}
+                </button>
+                <button
+                  type="button"
+                  className={`schedule-tab${scheduleMode === 'none' ? ' active' : ''}`}
+                  onClick={() => handleScheduleModeChange('none')}
+                >
+                  {tr('Без срока', 'No deadline')}
+                </button>
               </div>
-              {deadlineEnabled && (
-                <div className="deadline-body">
+
+              {scheduleMode === 'deadline' && (
+                <div className="schedule-panel">
                   <DateTimePickerWithPresets
                     label={tr('Дата', 'Date')}
                     value={deadlineHasTime ? `${deadlineDate}T${deadlineTime}` : deadlineDate}
@@ -483,52 +516,9 @@ export default function TaskDetail() {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Важность */}
-            <div className="detail-block">
-              <div className="detail-block-title">{tr('Важность', 'Priority')}</div>
-              <ImportanceSelector
-                value={formData.importance}
-                onChange={(value) => setFormData({ ...formData, importance: value })}
-                fullWidth
-              />
-            </div>
-
-            {/* Исполнитель */}
-            <Dropdown
-              label={tr('Исполнитель', 'Assignee')}
-              value={assigneeValue}
-              onChange={(value: string | number) => {
-                const nextValue = String(value);
-                if (nextValue === 'space') {
-                  setFormData({ ...formData, assigneeScope: 'space', assigneeUserId: '' });
-                  return;
-                }
-                const userId = nextValue.replace('user:', '');
-                setFormData({ ...formData, assigneeScope: 'user', assigneeUserId: userId });
-              }}
-              options={assigneeOptions}
-              fullWidth
-            />
-            <div className="form-separator" />
-
-            {/* Повторяющаяся задача */}
-            <div className="detail-block">
-              <div className="detail-block-header">
-                <div className="detail-block-title">{tr('Повторяющаяся задача', 'Recurring task')}</div>
-                <label className="form-checkbox-label form-switch">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox form-switch-input"
-                    checked={formData.isRecurring}
-                    onChange={(e) => handleRecurringToggle(e.target.checked)}
-                  />
-                </label>
-              </div>
-
-              {formData.isRecurring && (
-                <div className="detail-block-body">
+              {scheduleMode === 'recurring' && (
+                <div className="schedule-panel">
                   <RecurringPresets
                     label={tr('Дни недели', 'Days of week')}
                     selectedDays={formData.daysOfWeek}
@@ -560,6 +550,32 @@ export default function TaskDetail() {
               )}
             </div>
 
+            {/* Важность */}
+            <div className="detail-block">
+              <div className="detail-block-title">{tr('Важность', 'Priority')}</div>
+              <ImportanceSelector
+                value={formData.importance}
+                onChange={(value) => setFormData({ ...formData, importance: value })}
+                fullWidth
+              />
+            </div>
+
+            {/* Исполнитель */}
+            <Dropdown
+              label={tr('Исполнитель', 'Assignee')}
+              value={assigneeValue}
+              onChange={(value: string | number) => {
+                const nextValue = String(value);
+                if (nextValue === 'space') {
+                  setFormData({ ...formData, assigneeScope: 'space', assigneeUserId: '' });
+                  return;
+                }
+                const userId = nextValue.replace('user:', '');
+                setFormData({ ...formData, assigneeScope: 'user', assigneeUserId: userId });
+              }}
+              options={assigneeOptions}
+              fullWidth
+            />
             {/* Кнопки действий */}
             <div className="task-actions">
               {isRecurring && !taskAvailable && nextAvailableTime ? (

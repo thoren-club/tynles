@@ -154,10 +154,10 @@ export default function AllGoals() {
                   isChecked={goal.isDone}
                   isDisabled={false}
                   isDimmed={goal.isDone}
-                  onToggle={() => navigate(`/goal/${goal.id}`)}
+                  onToggle={() => window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goal.id } }))}
                   dateLabel={timeframeLabel}
                   showCalendarIcon={false}
-                  onClick={() => navigate(`/goal/${goal.id}`)}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goal.id } }))}
                 />
               );
             })}
@@ -190,10 +190,10 @@ export default function AllGoals() {
                   isChecked={goal.isDone}
                   isDisabled={false}
                   isDimmed={goal.isDone}
-                  onToggle={() => navigate(`/goal/${goal.id}`)}
+                  onToggle={() => window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goal.id } }))}
                   dateLabel={timeframeLabel}
                   showCalendarIcon={false}
-                  onClick={() => navigate(`/goal/${goal.id}`)}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'goal', id: goal.id } }))}
                 />
               );
             })}

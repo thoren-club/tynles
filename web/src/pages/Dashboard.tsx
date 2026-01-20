@@ -314,7 +314,7 @@ export default function Dashboard() {
               <div className="tasks-list">
                 {sortTasksByDue(tasksForSection).map((task: any) => {
                   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-                  const taskAvailable = !isRecurring || isTaskAvailable(task);
+                  const taskAvailable = isRecurring ? true : isTaskAvailable(task);
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const dateParts = getTaskDateParts(task.dueAt, locale, tr);
                   const assigneeId = task.assigneeUserId;
@@ -340,13 +340,16 @@ export default function Dashboard() {
                       timeLabel={dateParts?.time}
                       isOverdue={dateParts?.isOverdue}
                       isRecurring={isRecurring}
-                      onClick={() => navigate(`/task/${task.id}`)}
+                      onClick={() => {
+                        triggerLightHaptic();
+                        window.dispatchEvent(new CustomEvent('open-editor', { detail: { type: 'task', id: task.id } }));
+                      }}
                       onToggle={() => {
-                        if (!taskAvailable) return;
                         if (isRecurring) {
                           handleRecurringComplete(task.id);
                           return;
                         }
+                        if (!taskAvailable) return;
                         if (isChecked) {
                           handleTaskUndo();
                           return;

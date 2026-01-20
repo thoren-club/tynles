@@ -1,6 +1,5 @@
 .leaderboard {
   padding: var(--screen-padding);
-  min-height: 100vh;
   padding-bottom: 80px;
 }
 

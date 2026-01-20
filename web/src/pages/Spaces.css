@@ -1,6 +1,5 @@
 .spaces {
   padding: var(--spacing-lg);
-  min-height: 100vh;
   padding-bottom: 80px;
 }
 

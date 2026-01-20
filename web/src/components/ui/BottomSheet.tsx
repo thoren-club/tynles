@@ -33,10 +33,14 @@ export default function BottomSheet({
 }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
   const [swipeStartY, setSwipeStartY] = useState<number | null>(null);
   const [swipeCurrentY, setSwipeCurrentY] = useState<number | null>(null);
   const [sheetTransform, setSheetTransform] = useState(0);
   const [canSwipe, setCanSwipe] = useState(false);
+  const [isVisible, setIsVisible] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
+  const closeDurationMs = 200;
 
   // Закрытие по Escape
   useEffect(() => {
@@ -57,13 +61,37 @@ export default function BottomSheet({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (!isOpen) {
-      setSwipeStartY(null);
-      setSwipeCurrentY(null);
-      setSheetTransform(0);
-      setCanSwipe(false);
+    if (isOpen) {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      setIsVisible(true);
+      setIsClosing(false);
+      return;
     }
-  }, [isOpen]);
+
+    if (isVisible) {
+      setIsClosing(true);
+      closeTimerRef.current = window.setTimeout(() => {
+        setIsVisible(false);
+        setIsClosing(false);
+        closeTimerRef.current = null;
+      }, closeDurationMs);
+    }
+    setSwipeStartY(null);
+    setSwipeCurrentY(null);
+    setSheetTransform(0);
+    setCanSwipe(false);
+  }, [isOpen, isVisible]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const checkCanSwipe = (target: HTMLElement): boolean => {
     if (target.closest('.bottom-sheet-handle') || target.closest('.bottom-sheet-header')) {
@@ -150,18 +178,18 @@ export default function BottomSheet({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   return (
     <div 
-      className="bottom-sheet-overlay" 
+      className={`bottom-sheet-overlay${isClosing ? ' is-closing' : ''}`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div 
         ref={sheetRef}
-        className={`bottom-sheet bottom-sheet--${size} ${className}`.trim()}
+        className={`bottom-sheet bottom-sheet--${size}${isClosing ? ' is-closing' : ''} ${className}`.trim()}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
