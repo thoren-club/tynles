@@ -26,7 +26,7 @@ export interface TasksResponse {
     dueAt: string | null;
     isPaused: boolean;
     recurrenceType: string | null;
-    recurrencePayload: { daysOfWeek?: number[] } | null;
+    recurrencePayload: { daysOfWeek?: number[]; timeOfDay?: string } | null;
     assigneeUserId?: string | null;
     assigneeScope?: 'user' | 'space';
     createdAt: string;

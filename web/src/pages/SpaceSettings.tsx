@@ -157,7 +157,7 @@ export default function SpaceSettings() {
     if (editingRewardLevel === null || !selectedSpace) return;
     try {
       const normalizedXp = editingRewardXp ? Number(editingRewardXp) : undefined;
-      if (editingRewardXp && (!Number.isFinite(normalizedXp) || normalizedXp <= 0)) {
+      if (editingRewardXp && (!Number.isFinite(normalizedXp ?? NaN) || (normalizedXp ?? 0) <= 0)) {
         alert(tr('Введите корректное значение XP', 'Enter a valid XP value'));
         return;
       }
