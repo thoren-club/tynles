@@ -31,7 +31,7 @@
   background: var(--color-primary-500);
   color: var(--color-neutral-0);
   border: none;
-  box-shadow: 0 4px 0 #7b4a1b;
+  box-shadow: 0 4px 0 var(--color-primary-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,7 +40,7 @@
 
 .create-fab:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #7b4a1b;
+  box-shadow: 0 2px 0 var(--color-primary-shadow);
 }
 
 .create-fab-dropdown {

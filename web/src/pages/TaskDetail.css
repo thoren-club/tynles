@@ -7,13 +7,13 @@
 .task-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--stack-gap-section);
 }
 
 .task-detail-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--stack-gap-section);
 }
 
 .deadline-section {
@@ -41,7 +41,7 @@
 .deadline-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--stack-gap-default);
 }
 
 .deadline-time-row {
@@ -62,7 +62,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--stack-gap-default);
 }
 
 .detail-block-header {
@@ -80,7 +80,7 @@
 .detail-block-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--stack-gap-default);
 }
 
 .schedule-tabs {
@@ -105,12 +105,12 @@
 .schedule-tab.active {
   background: var(--color-primary-500);
   color: var(--color-neutral-0);
-  box-shadow: 0 4px 0 #7b4a1b;
+  box-shadow: 0 4px 0 var(--color-primary-shadow);
 }
 
 .schedule-tab:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #7b4a1b;
+  box-shadow: 0 2px 0 var(--color-primary-shadow);
 }
 
 .schedule-panel {
@@ -429,7 +429,7 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
-  box-shadow: 0 4px 0 color-mix(in srgb, var(--color-danger-500) 70%, #000);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--color-danger-500) 70%, var(--color-neutral-950));
 }
 
 @media (hover: hover) and (pointer: fine) {

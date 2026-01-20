@@ -12,6 +12,13 @@
   
   /* Отступы от краев экрана */
   --screen-padding: 8px;
+
+  /* Vertical rhythm */
+  --baseline-unit: 4px;
+  --stack-gap-tight: 8px;
+  --stack-gap-default: 12px;
+  --stack-gap-loose: 16px;
+  --stack-gap-section: 24px;
   
   /* Максимальная ширина контента */
   --content-max-width: 680px;

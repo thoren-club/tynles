@@ -328,6 +328,15 @@ export default function SpaceSettings() {
 
                 return (
                   <div key={member.id} className="member-item">
+                    <div className="member-avatar">
+                      {member.photoUrl ? (
+                        <img src={member.photoUrl} alt={member.firstName || member.username || 'User'} />
+                      ) : (
+                        <span className="member-avatar-placeholder">
+                          {(member.firstName || member.username || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
                     <div className="member-info">
                       <div className="member-name">
                         {member.firstName || member.username || tr('Неизвестно', 'Unknown')}
@@ -427,7 +436,8 @@ export default function SpaceSettings() {
         title={editingRewardLevel !== null ? `${tr('Награда за уровень', 'Level reward')} ${editingRewardLevel}` : undefined}
         showHeader={true}
         showCloseButton={true}
-        size="low"
+        size="high"
+        contentClassName="reward-sheet-content"
       >
         <div className="reward-sheet-body">
           <input

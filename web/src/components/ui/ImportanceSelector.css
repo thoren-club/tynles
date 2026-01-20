@@ -41,7 +41,7 @@
   color: var(--color-neutral-0);
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
-  box-shadow: 0 4px 0 color-mix(in srgb, currentColor 25%, #000);
+  box-shadow: 0 4px 0 color-mix(in srgb, currentColor 25%, var(--color-neutral-950));
   opacity: 0.55;
   flex: 0 0 auto;
   white-space: nowrap;
@@ -76,7 +76,7 @@
 
 .importance-button:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 color-mix(in srgb, currentColor 25%, #000);
+  box-shadow: 0 2px 0 color-mix(in srgb, currentColor 25%, var(--color-neutral-950));
 }
 
 .importance-button.active {

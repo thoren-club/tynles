@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isHapticsEnabled, setHapticsEnabled, triggerLightHaptic } from '../utils/haptics';
+import { applyTheme, getTheme, setTheme, ThemeName } from '../utils/theme';
 import { api } from '../api';
 import './Settings.css';
 
@@ -16,10 +17,14 @@ export default function Settings() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [hapticsEnabled, setHapticsEnabledState] = useState(true);
+  const [theme, setThemeState] = useState<ThemeName>('orange');
 
   useEffect(() => {
     loadNotificationSettings();
     setHapticsEnabledState(isHapticsEnabled());
+    const currentTheme = getTheme();
+    setThemeState(currentTheme);
+    applyTheme(currentTheme);
   }, []);
 
   useEffect(() => {
@@ -159,6 +164,13 @@ export default function Settings() {
     setHapticsEnabledState(next);
   };
 
+  const handleThemeChange = (next: ThemeName) => {
+    if (next === theme) return;
+    triggerLightHaptic();
+    setTheme(next);
+    setThemeState(next);
+  };
+
   return (
     <div className="settings">
       {/* Хедер */}
@@ -195,6 +207,29 @@ export default function Settings() {
                   }}
                 >
                   English
+                </button>
+              </div>
+            </div>
+            <div className="settings-item">
+              <div className="settings-item-label">{tr('Тема', 'Theme')}</div>
+              <div className="theme-switcher">
+                <button
+                  className={`theme-button ${theme === 'orange' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('orange')}
+                >
+                  {tr('Оранжевая', 'Orange')}
+                </button>
+                <button
+                  className={`theme-button ${theme === 'green' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('green')}
+                >
+                  {tr('Зелёная', 'Green')}
+                </button>
+                <button
+                  className={`theme-button ${theme === 'blue' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('blue')}
+                >
+                  {tr('Голубая', 'Blue')}
                 </button>
               </div>
             </div>

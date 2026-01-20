@@ -28,10 +28,12 @@
   --color-primary-700: #b86200;
   --color-primary-800: #8f4c00;
   --color-primary-900: #663600;
+  --color-primary-shadow: #7b4a1b;
 
   /* Semantic */
   --color-danger-500: #ff4d4f;
   --color-success-500: #22c55e;
+  --color-warning-500: #ffc038;
 
   /* =========
      Roles
@@ -93,5 +95,33 @@
   --tg-theme-secondary-bg-color: var(--color-surface);
   --tg-theme-button-color: var(--color-primary-500);
   --tg-theme-button-text-color: var(--color-neutral-950);
+}
+
+:root[data-theme='green'] {
+  --color-primary-50:  #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  --color-primary-shadow: #0f6b33;
+}
+
+:root[data-theme='blue'] {
+  --color-primary-50:  #e0f2fe;
+  --color-primary-100: #bae6fd;
+  --color-primary-200: #7dd3fc;
+  --color-primary-300: #38bdf8;
+  --color-primary-400: #0ea5e9;
+  --color-primary-500: #0284c7;
+  --color-primary-600: #0369a1;
+  --color-primary-700: #075985;
+  --color-primary-800: #0c4a6e;
+  --color-primary-900: #0a3b55;
+  --color-primary-shadow: #075985;
 }
 

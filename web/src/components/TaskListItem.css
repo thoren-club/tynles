@@ -112,7 +112,7 @@
 }
 
 .task-meta-row.task-meta-soon {
-  color: var(--color-warning-500, #ffc038);
+  color: var(--color-warning-500);
 }
 
 .task-meta-row.task-meta-far {
@@ -133,7 +133,7 @@
   align-items: center;
   gap: 6px;
   font-weight: 700;
-  color: var(--color-warning-500, #ffc038);
+  color: var(--color-warning-500);
 }
 
 .task-xp.task-xp-alone {
@@ -144,7 +144,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-warning-500, #ffc038) 22%, transparent);
+  background: color-mix(in srgb, var(--color-warning-500) 22%, transparent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -180,10 +180,10 @@
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
-  box-shadow: 0 4px 0 #7b4a1b;
+  box-shadow: 0 4px 0 var(--color-primary-shadow);
 }
 
 .task-undo-button:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #7b4a1b;
+  box-shadow: 0 2px 0 var(--color-primary-shadow);
 }

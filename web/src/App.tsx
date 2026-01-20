@@ -16,6 +16,7 @@ import AllGoals from './pages/AllGoals';
 import SpaceConnection from './pages/SpaceConnection';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
+import { applyTheme, getTheme } from './utils/theme';
 
 declare global {
   interface Window {
@@ -56,6 +57,10 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSpace, setHasSpace] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    applyTheme(getTheme());
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
