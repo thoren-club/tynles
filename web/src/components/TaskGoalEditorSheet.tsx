@@ -383,7 +383,6 @@ export default function TaskGoalEditorSheet({
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder={type === 'goal' ? tr('Цель', 'Goal') : tr('Задача', 'Task')}
-              autoFocus
             />
           </div>
 
@@ -587,15 +586,17 @@ export default function TaskGoalEditorSheet({
                 {tr('Выполнить', 'Complete')}
               </Button>
             )}
-            <Button
-              variant="primary"
-              onClick={() => handleSave(false)}
-              disabled={isSaving || !formData.title.trim()}
-              loading={isSaving}
-              fullWidth
-            >
-              {tr('Сохранить', 'Save')}
-            </Button>
+            {type === 'task' && (
+              <Button
+                variant="primary"
+                onClick={() => handleSave(true)}
+                disabled={isSaving || !formData.title.trim()}
+                loading={isSaving}
+                fullWidth
+              >
+                {tr('Сохранить', 'Save')}
+              </Button>
+            )}
             <Button
               variant="danger"
               onClick={handleDelete}
@@ -605,9 +606,17 @@ export default function TaskGoalEditorSheet({
             >
               {tr('Удалить', 'Delete')}
             </Button>
-            <button className="btn-cancel" onClick={handleClose} disabled={isSaving}>
-              {tr('Закрыть', 'Close')}
-            </button>
+            {type === 'goal' && (
+              <Button
+                variant="primary"
+                onClick={() => handleSave(true)}
+                disabled={isSaving || !formData.title.trim()}
+                loading={isSaving}
+                fullWidth
+              >
+                {tr('Сохранить', 'Save')}
+              </Button>
+            )}
           </div>
         </div>
       </div>

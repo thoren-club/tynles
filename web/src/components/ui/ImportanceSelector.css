@@ -22,6 +22,8 @@
   overflow-x: auto;
   padding-bottom: 4px;
   scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .importance-button {
@@ -40,14 +42,14 @@
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
   box-shadow: 0 4px 0 color-mix(in srgb, currentColor 25%, #000);
-  opacity: 1;
+  opacity: 0.55;
   flex: 0 0 auto;
   white-space: nowrap;
   scroll-snap-align: start;
 }
 
 .importance-buttons::-webkit-scrollbar {
-  height: 6px;
+  display: none;
 }
 
 .importance-buttons::-webkit-scrollbar-track {

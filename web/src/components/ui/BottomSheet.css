@@ -59,7 +59,7 @@
 }
 
 .bottom-sheet--high {
-  max-height: 92dvh;
+  max-height: 80dvh;
 }
 
 @keyframes slideUp {

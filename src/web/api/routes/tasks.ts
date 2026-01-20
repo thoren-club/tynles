@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
 import { calculateNextDueDate } from '../../../utils/recurrence';
-import { notifyTaskAssigneeChanged, notifyUser } from '../../../notifications';
+import { notifySpaceMembers, notifyTaskAssigneeChanged, notifyUser } from '../../../notifications';
 
 /**
  * Получает первый доступный день для повторяющейся задачи
@@ -466,17 +466,10 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    // Update user stats with XP using the utility function
-    const result = await addXp(authReq.currentSpaceId, authReq.user.id, task.xp);
-
-    await prisma.taskCompletion.create({
-      data: {
-        taskId: task.id,
-        spaceId: task.spaceId,
-        userId: authReq.user.id,
-        xp: task.xp,
-      },
-    });
+    const payload = task.recurrencePayload as any;
+    const assigneeScope = getAssigneeScopeFromPayload(payload);
+    const assigneeUserId = getAssigneeUserIdFromPayload(payload) ?? task.createdBy ?? authReq.user.id;
+    let requesterResult: { levelUp: boolean; newLevel: number } | null = null;
 
     // Для повторяющихся задач не удаляем, а обновляем updatedAt и dueAt на следующий доступный день
     // Для одноразовых задач удаляем
@@ -525,18 +518,80 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
     }
 
     const completionMessage = `✅ Задача выполнена: <b>${task.title}</b>\n+${task.xp} XP`;
-    await notifyUser({ userId: authReq.user.id, message: completionMessage });
-    if (result.levelUp) {
-      await notifyUser({
-        userId: authReq.user.id,
-        message: `🎉 Поздравляем! Ты достиг уровня ${result.newLevel}.`,
+
+    if (assigneeScope === 'space') {
+      const members = await prisma.spaceMember.findMany({
+        where: { spaceId: task.spaceId },
+        select: { userId: true },
       });
+
+      if (members.length === 0) {
+        const result = await addXp(task.spaceId, authReq.user.id, task.xp);
+        requesterResult = result;
+        await prisma.taskCompletion.create({
+          data: {
+            taskId: task.id,
+            spaceId: task.spaceId,
+            userId: authReq.user.id,
+            xp: task.xp,
+          },
+        });
+        await notifyUser({ userId: authReq.user.id, message: completionMessage });
+        if (result.levelUp) {
+          await notifyUser({
+            userId: authReq.user.id,
+            message: `🎉 Поздравляем! Ты достиг уровня ${result.newLevel}.`,
+          });
+        }
+      } else {
+        const completionRows = [];
+        for (const member of members) {
+          const result = await addXp(task.spaceId, member.userId, task.xp);
+          completionRows.push({
+            taskId: task.id,
+            spaceId: task.spaceId,
+            userId: member.userId,
+            xp: task.xp,
+          });
+          if (member.userId === authReq.user.id) {
+            requesterResult = result;
+          }
+          if (result.levelUp) {
+            await notifyUser({
+              userId: member.userId,
+              message: `🎉 Поздравляем! Ты достиг уровня ${result.newLevel}.`,
+            });
+          }
+        }
+        await prisma.taskCompletion.createMany({ data: completionRows });
+        await notifySpaceMembers(task.spaceId, completionMessage);
+      }
+    } else {
+      const result = await addXp(task.spaceId, assigneeUserId, task.xp);
+      if (assigneeUserId === authReq.user.id) {
+        requesterResult = result;
+      }
+      await prisma.taskCompletion.create({
+        data: {
+          taskId: task.id,
+          spaceId: task.spaceId,
+          userId: assigneeUserId,
+          xp: task.xp,
+        },
+      });
+      await notifyUser({ userId: assigneeUserId, message: completionMessage });
+      if (result.levelUp) {
+        await notifyUser({
+          userId: assigneeUserId,
+          message: `🎉 Поздравляем! Ты достиг уровня ${result.newLevel}.`,
+        });
+      }
     }
 
     res.json({ 
       success: true,
-      xpEarned: task.xp,
-      newLevel: result.levelUp ? result.newLevel : null,
+      xpEarned: assigneeScope === 'space' || assigneeUserId === authReq.user.id ? task.xp : 0,
+      newLevel: requesterResult?.levelUp ? requesterResult.newLevel : null,
       isRecurring: !!(task.recurrenceType && task.recurrenceType !== 'none'),
     });
   } catch (error) {

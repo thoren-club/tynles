@@ -4,6 +4,23 @@ import { AuthContext } from '../middleware/auth';
 import { addXp } from './xp';
 import { calculateNextDueDate } from './recurrence';
 
+function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
+  return payload?.assigneeScope === 'space' ? 'space' : 'user';
+}
+
+function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  if (getAssigneeScopeFromPayload(payload) === 'space') {
+    return null;
+  }
+  const raw = payload?.assigneeUserId;
+  if (!raw) return null;
+  try {
+    return BigInt(String(raw));
+  } catch {
+    return null;
+  }
+}
+
 export async function sendReminders(bot: Bot<AuthContext>) {
   // Legacy: kept for backward compatibility. Prefer `src/notifications/sendTaskReminders`.
   const now = new Date();
@@ -60,17 +77,82 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
     throw new Error('Task not found');
   }
 
-  // Add XP
-  const xpResult = await addXp(task.spaceId, userId, task.xp);
+  const payload = task.recurrencePayload as any;
+  const assigneeScope = getAssigneeScopeFromPayload(payload);
+  const assigneeUserId = getAssigneeUserIdFromPayload(payload) ?? task.createdBy ?? userId;
+  let requesterResult: { levelUp: boolean; newLevel: number } | null = null;
 
-  await prisma.taskCompletion.create({
-    data: {
-      taskId: task.id,
-      spaceId: task.spaceId,
-      userId,
-      xp: task.xp,
-    },
-  });
+  const handleUserCompletion = async (targetUserId: bigint) => {
+    const xpResult = await addXp(task.spaceId, targetUserId, task.xp);
+
+    await prisma.taskCompletion.create({
+      data: {
+        taskId: task.id,
+        spaceId: task.spaceId,
+        userId: targetUserId,
+        xp: task.xp,
+      },
+    });
+
+    const user = await prisma.telegramUser.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (user) {
+      try {
+        await bot.api.sendMessage(
+          Number(user.tgId),
+          `✅ Задача выполнена: ${task.title}\n+${task.xp} XP`,
+        );
+      } catch (error) {
+        console.error('Failed to send task completion message:', error);
+      }
+    }
+
+    if (xpResult.levelUp && user) {
+      const reward = await prisma.reward.findUnique({
+        where: {
+          spaceId_level: {
+            spaceId: task.spaceId,
+            level: xpResult.newLevel,
+          },
+        },
+      });
+
+      let message = `🎉 Level up! You reached level ${xpResult.newLevel}!`;
+      if (reward) {
+        message += `\n\n🎁 Reward: ${reward.text}`;
+      }
+
+      try {
+        await bot.api.sendMessage(Number(user.tgId), message);
+      } catch (error) {
+        console.error('Failed to send level up message:', error);
+      }
+    }
+
+    return xpResult;
+  };
+
+  if (assigneeScope === 'space') {
+    const members = await prisma.spaceMember.findMany({
+      where: { spaceId: task.spaceId },
+      select: { userId: true },
+    });
+
+    if (members.length === 0) {
+      requesterResult = await handleUserCompletion(userId);
+    } else {
+      for (const member of members) {
+        const xpResult = await handleUserCompletion(member.userId);
+        if (member.userId === userId) {
+          requesterResult = xpResult;
+        }
+      }
+    }
+  } else {
+    requesterResult = await handleUserCompletion(assigneeUserId);
+  }
 
   // Handle recurrence
   if (task.recurrenceType && task.recurrenceType !== 'none') {
@@ -95,43 +177,5 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
     });
   }
 
-  // Notify completion
-  const user = await prisma.telegramUser.findUnique({
-    where: { id: userId },
-  });
-
-  if (user) {
-    try {
-      await bot.api.sendMessage(Number(user.tgId), `✅ Задача выполнена: ${task.title}\n+${task.xp} XP`);
-    } catch (error) {
-      console.error('Failed to send task completion message:', error);
-    }
-  }
-
-  // Check for level up and rewards
-  if (xpResult.levelUp) {
-    const reward = await prisma.reward.findUnique({
-      where: {
-        spaceId_level: {
-          spaceId: task.spaceId,
-          level: xpResult.newLevel,
-        },
-      },
-    });
-
-    if (user) {
-      let message = `🎉 Level up! You reached level ${xpResult.newLevel}!`;
-      if (reward) {
-        message += `\n\n🎁 Reward: ${reward.text}`;
-      }
-
-      try {
-        await bot.api.sendMessage(Number(user.tgId), message);
-      } catch (error) {
-        console.error('Failed to send level up message:', error);
-      }
-    }
-  }
-
-  return xpResult;
+  return requesterResult ?? { levelUp: false, newLevel: 0 };
 }
