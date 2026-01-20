@@ -1,5 +1,5 @@
 .spaces {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   padding-bottom: 80px;
 }
 

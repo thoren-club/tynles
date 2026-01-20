@@ -40,7 +40,7 @@ export default function BottomSheet({
   const [canSwipe, setCanSwipe] = useState(false);
   const [isVisible, setIsVisible] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
-  const closeDurationMs = 200;
+  const closeDurationMs = 300;
 
   // Закрытие по Escape
   useEffect(() => {

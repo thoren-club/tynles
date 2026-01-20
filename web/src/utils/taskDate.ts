@@ -49,7 +49,8 @@ export const getTaskDateParts = (
     label = capitalize(date.toLocaleDateString(locale, { weekday: 'long' }));
   }
 
-  const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
+  const isNoTime = date.getHours() === 23 && date.getMinutes() === 59;
+  const hasTime = !isNoTime && (date.getHours() !== 0 || date.getMinutes() !== 0);
   const time = hasTime
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : null;

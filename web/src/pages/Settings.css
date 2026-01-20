@@ -1,5 +1,5 @@
 .settings {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   min-height: 100vh;
   background: var(--color-bg);
 }

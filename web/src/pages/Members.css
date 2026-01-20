@@ -1,5 +1,5 @@
 .members {
-  padding: 16px;
+  padding: var(--screen-padding);
 }
 
 .members-header {

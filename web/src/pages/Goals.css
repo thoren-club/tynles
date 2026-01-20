@@ -1,5 +1,5 @@
 .goals {
-  padding: 16px;
+  padding: var(--screen-padding);
 }
 
 .goals-header {

@@ -1,6 +1,6 @@
 /* Аналог GoalDetail.css */
 .task-detail-page {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   min-height: 100vh;
 }
 
