@@ -28,6 +28,7 @@ export default function Layout({ children }: LayoutProps) {
   const [editorType, setEditorType] = useState<'task' | 'goal' | null>(null);
   const [editorId, setEditorId] = useState<string | null>(null);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const [isNavAnimating, setIsNavAnimating] = useState(false);
   const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
   const { t, tr } = useLanguage();
   const navItems = ['/', '/deals', '/leaderboard', '/spaces'];
@@ -39,6 +40,12 @@ export default function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     setShowCreateMenu(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setIsNavAnimating(true);
+    const timer = setTimeout(() => setIsNavAnimating(false), 280);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -174,7 +181,9 @@ export default function Layout({ children }: LayoutProps) {
               ['--nav-items' as any]: navItems.length,
             }}
           >
-            <span className="nav-indicator" aria-hidden="true" />
+            <span className={`nav-indicator${isNavAnimating ? ' is-animating' : ''}`} aria-hidden="true">
+              <span className="nav-indicator-inner" />
+            </span>
             <Link
               to="/"
               className={location.pathname === '/' ? 'active' : ''}

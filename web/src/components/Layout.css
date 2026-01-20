@@ -181,12 +181,39 @@
   bottom: 6px;
   left: calc(6px + var(--nav-safe-left));
   width: calc((100% - var(--nav-safe-left) - var(--nav-safe-right) - 12px) / var(--nav-items));
-  background: var(--color-primary-500);
-  box-shadow: 0 4px 0 #7b4a1b;
   border-radius: 14px;
   transform: translateX(calc(var(--active-index) * 100%));
   transition: transform 0.25s ease-out;
   z-index: 0;
+}
+
+.nav-indicator-inner {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--color-primary-500);
+  box-shadow: 0 4px 0 #7b4a1b;
+  border-radius: inherit;
+  transform-origin: center;
+}
+
+.nav-indicator.is-animating .nav-indicator-inner {
+  animation: navIndicatorBounce 0.28s ease-out;
+}
+
+@keyframes navIndicatorBounce {
+  0% {
+    transform: scaleY(1) scaleX(1);
+  }
+  40% {
+    transform: scaleY(0.82) scaleX(1.04);
+  }
+  70% {
+    transform: scaleY(1.06) scaleX(0.98);
+  }
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
 }
 
 .bottom-nav a {
