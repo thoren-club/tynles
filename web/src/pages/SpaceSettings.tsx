@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Spaces.css';
@@ -21,6 +20,8 @@ export default function SpaceSettings() {
   const [editingMemberRole, setEditingMemberRole] = useState<{ userId: string; role: string } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [spaceName, setSpaceName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const spacesDropdownRef = useRef<HTMLDivElement>(null);
@@ -50,6 +51,52 @@ export default function SpaceSettings() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+
+    let tracking = false;
+    let startX = 0;
+    let startY = 0;
+    const edgeThreshold = 24;
+    const swipeThreshold = 80;
+    const maxVerticalDrift = 50;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch || touch.clientX > edgeThreshold) return;
+      tracking = true;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+      if (deltaX > swipeThreshold && deltaY < maxVerticalDrift) {
+        tracking = false;
+        navigate(-1);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      tracking = false;
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [navigate]);
+
   const loadData = async (spaceId: string) => {
     try {
       const [membersData, userData, spaceInfo, inviteData, rewardsData] = await Promise.all([
@@ -70,6 +117,7 @@ export default function SpaceSettings() {
       setInviteCode(inviteData?.code || '');
       setLevelRewards(rewardsData.rewards || []);
       setSelectedSpace(spaceInfo || { id: spaceId, name: '' });
+      setSpaceName(spaceInfo?.name || '');
       setAvatarPreview(spaceInfo?.avatarUrl || null);
     } catch (error) {
       console.error('Failed to load space settings:', error);
@@ -96,12 +144,16 @@ export default function SpaceSettings() {
     setEditingRewardText(currentText || '');
   };
 
+  const closeRewardSheet = () => {
+    setEditingRewardLevel(null);
+    setEditingRewardText('');
+  };
+
   const handleRewardSave = async () => {
     if (editingRewardLevel === null || !selectedSpace) return;
     try {
       await api.updateLevelReward(editingRewardLevel, editingRewardText, selectedSpace.id);
-      setEditingRewardLevel(null);
-      setEditingRewardText('');
+      closeRewardSheet();
       await loadData(selectedSpace.id);
     } catch (error) {
       console.error('Failed to update reward:', error);
@@ -135,6 +187,26 @@ export default function SpaceSettings() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSpaceNameSave = async () => {
+    if (!selectedSpace) return;
+    const trimmedName = spaceName.trim();
+    if (!trimmedName) {
+      alert(tr('Название обязательно', 'Name is required'));
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      const result = await api.updateSpaceName(selectedSpace.id, trimmedName);
+      setSelectedSpace((prev: any) => ({ ...prev, name: result.name || trimmedName }));
+      setSpaceName(result.name || trimmedName);
+    } catch (error: any) {
+      console.error('Failed to update space name:', error);
+      alert(error.message || tr('Не удалось обновить название', 'Failed to update name'));
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const handleDeleteSpace = async () => {
@@ -190,14 +262,29 @@ export default function SpaceSettings() {
 
   return (
     <div className="space-settings-page" ref={spacesDropdownRef}>
-      <div className="space-settings-header-row">
-        <button type="button" className="back-button" onClick={() => navigate('/spaces')}>
-          <IconChevronLeft size={20} />
-        </button>
-        <h2 className="space-settings-title">{selectedSpace.name}</h2>
-      </div>
-
       <div className="space-settings">
+        {isAdmin && (
+          <div className="settings-section">
+            <h3 className="section-title">{tr('Название пространства', 'Space name')}</h3>
+            <div className="space-name-editor">
+              <input
+                type="text"
+                className="space-name-input"
+                value={spaceName}
+                onChange={(e) => setSpaceName(e.target.value)}
+                disabled={isSavingName}
+                placeholder={tr('Название пространства', 'Space name')}
+              />
+              <button
+                className="btn-primary space-name-save"
+                onClick={handleSpaceNameSave}
+                disabled={isSavingName || !spaceName.trim()}
+              >
+                {isSavingName ? tr('Сохранение...', 'Saving...') : tr('Сохранить', 'Save')}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="settings-section">
           <h3 className="section-title">{tr('Аватар пространства', 'Space avatar')}</h3>
           <div className="space-avatar-editor">
@@ -281,35 +368,16 @@ export default function SpaceSettings() {
             <div className="rewards-list">
               {Array.from({ length: 80 }, (_, i) => i + 1).map((level) => {
                 const reward = levelRewards.find((r) => r.level === level);
-                const isEditing = editingRewardLevel === level;
 
                 return (
                   <div key={level} className="reward-item">
                     <div className="reward-level">{tr('Уровень', 'Level')} {level}</div>
-                    {isEditing ? (
-                      <div className="reward-edit">
-                        <input
-                          type="text"
-                          className="reward-input"
-                          value={editingRewardText}
-                          onChange={(e) => setEditingRewardText(e.target.value)}
-                          placeholder={tr('Награда за уровень', 'Reward text')}
-                          autoFocus
-                        />
-                        <button className="save-button" onClick={handleRewardSave}>{tr('Сохранить', 'Save')}</button>
-                        <button className="cancel-button" onClick={() => {
-                          setEditingRewardLevel(null);
-                          setEditingRewardText('');
-                        }}>{tr('Отмена', 'Cancel')}</button>
-                      </div>
-                    ) : (
-                      <div className="reward-content">
-                        <div className="reward-text">{reward?.text || tr('Нет награды', 'No reward')}</div>
-                        <button className="edit-reward-button" onClick={() => handleRewardEdit(level, reward?.text || '')}>
-                          {reward ? tr('Изменить', 'Edit') : tr('Добавить', 'Add')}
-                        </button>
-                      </div>
-                    )}
+                    <div className="reward-content">
+                      <div className="reward-text">{reward?.text || tr('Нет награды', 'No reward')}</div>
+                      <button className="edit-reward-button" onClick={() => handleRewardEdit(level, reward?.text || '')}>
+                        {reward ? tr('Изменить', 'Edit') : tr('Добавить', 'Add')}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -335,6 +403,31 @@ export default function SpaceSettings() {
           </div>
         )}
       </div>
+      {editingRewardLevel !== null && (
+        <div className="reward-sheet-overlay" onClick={closeRewardSheet}>
+          <div className="reward-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="reward-sheet-title">
+              {tr('Награда за уровень', 'Level reward')} {editingRewardLevel}
+            </div>
+            <input
+              type="text"
+              className="reward-sheet-input"
+              value={editingRewardText}
+              onChange={(e) => setEditingRewardText(e.target.value)}
+              placeholder={tr('Введите награду', 'Enter reward text')}
+              autoFocus
+            />
+            <div className="reward-sheet-actions">
+              <button className="btn-secondary" onClick={closeRewardSheet}>
+                {tr('Отмена', 'Cancel')}
+              </button>
+              <button className="btn-primary" onClick={handleRewardSave}>
+                {tr('Сохранить', 'Save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

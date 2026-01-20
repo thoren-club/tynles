@@ -40,6 +40,8 @@ export default function TaskDetail() {
   const [deadlineDate, setDeadlineDate] = useState('');
   const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [deadlineHasTime, setDeadlineHasTime] = useState(false);
+  const [recurringHasTime, setRecurringHasTime] = useState(false);
+  const [recurringTime, setRecurringTime] = useState('23:59');
   
   // Form data
   const [formData, setFormData] = useState({
@@ -82,6 +84,52 @@ export default function TaskDetail() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+
+    let tracking = false;
+    let startX = 0;
+    let startY = 0;
+    const edgeThreshold = 24;
+    const swipeThreshold = 80;
+    const maxVerticalDrift = 50;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch || touch.clientX > edgeThreshold) return;
+      tracking = true;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+      if (deltaX > swipeThreshold && deltaY < maxVerticalDrift) {
+        tracking = false;
+        navigate(-1);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      tracking = false;
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [navigate]);
+
   const loadTask = async () => {
     try {
       const [tasksData, membersData, spaceInfo] = await Promise.all([
@@ -94,6 +142,7 @@ export default function TaskDetail() {
       if (foundTask) {
         setOriginalTask(foundTask);
         const daysOfWeek = foundTask.recurrencePayload?.daysOfWeek || [];
+        const recurrenceTimeOfDay = foundTask.recurrencePayload?.timeOfDay;
         setFormData({
           title: foundTask.title || '',
           description: foundTask.description || '',
@@ -116,6 +165,13 @@ export default function TaskDetail() {
           setDeadlineDate('');
           setDeadlineTime('23:59');
           setDeadlineHasTime(false);
+        }
+        if (recurrenceTimeOfDay) {
+          setRecurringHasTime(true);
+          setRecurringTime(String(recurrenceTimeOfDay).slice(0, 5));
+        } else {
+          setRecurringHasTime(false);
+          setRecurringTime('23:59');
         }
       }
       setMembers(membersData.members || []);
@@ -148,13 +204,20 @@ export default function TaskDetail() {
       if (formData.isRecurring && formData.daysOfWeek.length > 0) {
         taskData.isRecurring = true;
         taskData.daysOfWeek = formData.daysOfWeek;
+        if (recurringHasTime && recurringTime) {
+          taskData.timeOfDay = recurringTime;
+        }
       }
 
       await api.updateTask(id!, taskData);
       navigate('/deals');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update task:', error);
-      alert(tr('Не удалось обновить задачу', 'Failed to update task'));
+      alert(
+        error?.message
+          ? `${tr('Не удалось обновить задачу', 'Failed to update task')}: ${error.message}`
+          : tr('Не удалось обновить задачу', 'Failed to update task'),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -186,9 +249,13 @@ export default function TaskDetail() {
       } else {
         navigate('/deals');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to complete task:', error);
-      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
+      alert(
+        error?.message
+          ? `${tr('Не удалось выполнить задачу', 'Failed to complete task')}: ${error.message}`
+          : tr('Не удалось выполнить задачу', 'Failed to complete task'),
+      );
     } finally {
       setIsCompleting(false);
     }
@@ -201,9 +268,13 @@ export default function TaskDetail() {
     try {
       await api.completeTask(id!);
       navigate('/deals');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to complete task:', error);
-      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
+      alert(
+        error?.message
+          ? `${tr('Не удалось выполнить задачу', 'Failed to complete task')}: ${error.message}`
+          : tr('Не удалось выполнить задачу', 'Failed to complete task'),
+      );
     } finally {
       setIsCompleting(false);
     }
@@ -222,7 +293,15 @@ export default function TaskDetail() {
   };
 
   const handleRecurringToggle = (checked: boolean) => {
-    setFormData({ ...formData, isRecurring: checked });
+    setFormData((prev) => ({
+      ...prev,
+      isRecurring: checked,
+      daysOfWeek: checked ? prev.daysOfWeek : [],
+    }));
+    if (!checked) {
+      setRecurringHasTime(false);
+      setRecurringTime('23:59');
+    }
   };
 
   const handleDeadlineToggle = (checked: boolean) => {
@@ -239,6 +318,14 @@ export default function TaskDetail() {
     }
     if (!checked) {
       setDeadlineTime('23:59');
+    }
+  };
+
+  const handleRecurringTimeToggle = (checked: boolean) => {
+    if (!formData.isRecurring) return;
+    setRecurringHasTime(checked);
+    if (!checked) {
+      setRecurringTime('23:59');
     }
   };
 
@@ -399,12 +486,14 @@ export default function TaskDetail() {
             </div>
 
             {/* Важность */}
-            <ImportanceSelector
-              label={tr('Важность', 'Priority')}
-              value={formData.importance}
-              onChange={(value) => setFormData({ ...formData, importance: value })}
-              fullWidth
-            />
+            <div className="detail-block">
+              <div className="detail-block-title">{tr('Важность', 'Priority')}</div>
+              <ImportanceSelector
+                value={formData.importance}
+                onChange={(value) => setFormData({ ...formData, importance: value })}
+                fullWidth
+              />
+            </div>
 
             {/* Исполнитель */}
             <Dropdown
@@ -425,41 +514,51 @@ export default function TaskDetail() {
             <div className="form-separator" />
 
             {/* Повторяющаяся задача */}
-            <div className="form-field">
-              <label className="form-checkbox-label form-switch">
-                <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
-                <input
-                  type="checkbox"
-                  className="form-checkbox form-switch-input"
-                  checked={formData.isRecurring}
-                  onChange={(e) => handleRecurringToggle(e.target.checked)}
-                />
-              </label>
-            </div>
-
-            {/* Дни недели */}
-            {formData.isRecurring && (
-              <RecurringPresets
-                label={tr('Дни недели', 'Days of week')}
-                selectedDays={formData.daysOfWeek}
-                onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
-                fullWidth
-              />
-            )}
-
-            {formData.isRecurring && (
-              <div className="form-field switch-section">
+            <div className="detail-block">
+              <div className="detail-block-header">
+                <div className="detail-block-title">{tr('Повторяющаяся задача', 'Recurring task')}</div>
                 <label className="form-checkbox-label form-switch">
-                  <span>{tr('Время', 'Time')}</span>
                   <input
                     type="checkbox"
                     className="form-checkbox form-switch-input"
-                    checked={deadlineHasTime}
-                    onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                    checked={formData.isRecurring}
+                    onChange={(e) => handleRecurringToggle(e.target.checked)}
                   />
                 </label>
               </div>
-            )}
+
+              {formData.isRecurring && (
+                <div className="detail-block-body">
+                  <RecurringPresets
+                    label={tr('Дни недели', 'Days of week')}
+                    selectedDays={formData.daysOfWeek}
+                    onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
+                    fullWidth
+                  />
+
+                  <div className="deadline-time-row">
+                    <span className="deadline-time-label">{tr('Время', 'Time')}</span>
+                    <label className="form-checkbox-label form-switch">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox form-switch-input"
+                        checked={recurringHasTime}
+                        onChange={(e) => handleRecurringTimeToggle(e.target.checked)}
+                      />
+                    </label>
+                  </div>
+
+                  {recurringHasTime && (
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={recurringTime}
+                      onChange={(e) => setRecurringTime(e.target.value)}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Кнопки действий */}
             <div className="task-actions">
@@ -469,7 +568,7 @@ export default function TaskDetail() {
                 </div>
               ) : (
                 <Button
-                  variant="primary"
+                  variant="success"
                   onClick={handleComplete}
                   disabled={isCompleting || !taskAvailable}
                   loading={isCompleting}

@@ -55,6 +55,34 @@
   color: var(--color-text);
 }
 
+.detail-block {
+  background: var(--color-wrapper-1);
+  box-shadow: var(--shadow-wrapper);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-block-title {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.detail-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .detail-title {
   font-size: var(--text-xl);
   font-weight: var(--fw-semibold);

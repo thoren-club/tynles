@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isHapticsEnabled, setHapticsEnabled } from '../utils/haptics';
 import { api } from '../api';
 import './Settings.css';
 
@@ -13,9 +14,11 @@ export default function Settings() {
     pokeEnabled: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hapticsEnabled, setHapticsEnabledState] = useState(true);
 
   useEffect(() => {
     loadNotificationSettings();
+    setHapticsEnabledState(isHapticsEnabled());
   }, []);
 
   useEffect(() => {
@@ -35,6 +38,52 @@ export default function Settings() {
       } catch {
         // no-op
       }
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+
+    let tracking = false;
+    let startX = 0;
+    let startY = 0;
+    const edgeThreshold = 24;
+    const swipeThreshold = 80;
+    const maxVerticalDrift = 50;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch || touch.clientX > edgeThreshold) return;
+      tracking = true;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+      if (deltaX > swipeThreshold && deltaY < maxVerticalDrift) {
+        tracking = false;
+        navigate(-1);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      tracking = false;
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [navigate]);
 
@@ -87,6 +136,12 @@ export default function Settings() {
     }
   };
 
+  const handleToggleHaptics = () => {
+    const next = !hapticsEnabled;
+    setHapticsEnabled(next);
+    setHapticsEnabledState(next);
+  };
+
   return (
     <div className="settings">
       {/* Хедер */}
@@ -115,6 +170,15 @@ export default function Settings() {
                   English
                 </button>
               </div>
+            </div>
+            <div className="settings-item">
+              <div className="settings-item-label">{tr('Тактильный отклик', 'Haptic feedback')}</div>
+              <button
+                className={`toggle-button ${hapticsEnabled ? 'active' : ''}`}
+                onClick={handleToggleHaptics}
+              >
+                {hapticsEnabled ? tr('Включено', 'On') : tr('Выключено', 'Off')}
+              </button>
             </div>
           </div>
         </div>

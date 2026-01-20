@@ -394,6 +394,43 @@ router.get('/:spaceId/info', async (req: Request, res: Response) => {
   }
 });
 
+// Update space name (Admin only)
+router.put('/:spaceId/name', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+    const { name } = req.body as { name?: string };
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    const member = await prisma.spaceMember.findUnique({
+      where: { spaceId_userId: { spaceId, userId: authReq.user.id } },
+    });
+    if (!member || member.role !== 'Admin') {
+      return res.status(403).json({ error: 'Admin role required' });
+    }
+
+    const trimmedName = name.trim();
+    if (trimmedName.length > 80) {
+      return res.status(400).json({ error: 'Name is too long' });
+    }
+
+    const updatedSpace = await prisma.space.update({
+      where: { id: spaceId },
+      data: { name: trimmedName },
+    });
+
+    res.json({ success: true, name: updatedSpace.name });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update space name' });
+  }
+});
+
 // Update space avatar
 router.put('/:spaceId/avatar', async (req: Request, res: Response) => {
   try {

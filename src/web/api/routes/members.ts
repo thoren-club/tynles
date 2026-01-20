@@ -42,6 +42,7 @@ router.get('/', async (req: Request, res: Response) => {
         id: m.user.id.toString(),
         username: m.user.username,
         firstName: m.user.firstName,
+        photoUrl: m.user.photoUrl,
         role: m.role,
         joinedAt: m.joinedAt.toISOString(),
       })),
@@ -159,6 +160,7 @@ router.put('/:userId/role', async (req: Request, res: Response) => {
       id: updatedMember.user.id.toString(),
       username: updatedMember.user.username,
       firstName: updatedMember.user.firstName,
+      photoUrl: updatedMember.user.photoUrl,
       role: updatedMember.role,
       joinedAt: updatedMember.joinedAt.toISOString(),
     });

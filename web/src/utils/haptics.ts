@@ -1,4 +1,25 @@
+const HAPTICS_KEY = 'hapticsEnabled';
+
+export function isHapticsEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem(HAPTICS_KEY);
+    if (raw === null) return true;
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setHapticsEnabled(enabled: boolean) {
+  try {
+    localStorage.setItem(HAPTICS_KEY, String(enabled));
+  } catch {
+    // ignore
+  }
+}
+
 export function triggerLightHaptic() {
+  if (!isHapticsEnabled()) return;
   try {
     const telegram = (window as any)?.Telegram?.WebApp;
     if (telegram?.HapticFeedback?.impactOccurred) {
@@ -15,6 +36,7 @@ export function triggerLightHaptic() {
 }
 
 export function triggerMediumHaptic() {
+  if (!isHapticsEnabled()) return;
   try {
     const telegram = (window as any)?.Telegram?.WebApp;
     if (telegram?.HapticFeedback?.impactOccurred) {

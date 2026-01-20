@@ -5,8 +5,9 @@
 }
 
 .space-settings-page {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   min-height: 100vh;
+  padding-bottom: 80px;
 }
 
 .space-settings-header-row {
@@ -21,6 +22,109 @@
   border: none;
   color: var(--color-text);
   padding: 4px;
+}
+
+.space-name-editor {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.space-name-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 14px;
+  border: var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.space-name-input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+}
+
+.space-name-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.space-name-save {
+  white-space: nowrap;
+}
+
+.reward-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.reward-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-surface);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 18px 16px 20px;
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.35);
+  animation: rewardSheetSlideUp 0.2s ease-out;
+}
+
+.reward-sheet-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.reward-sheet-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.reward-sheet-input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+}
+
+.reward-sheet-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: 16px;
+}
+
+.reward-sheet-actions .btn-secondary,
+.reward-sheet-actions .btn-primary {
+  flex: 1;
+}
+
+@keyframes rewardSheetSlideUp {
+  from {
+    transform: translateY(12px);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .spaces-header {

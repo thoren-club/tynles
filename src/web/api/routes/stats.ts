@@ -56,6 +56,52 @@ router.get('/me', async (req: Request, res: Response) => {
   }
 });
 
+// Weekly XP (last 7 days, current space)
+router.get('/weekly-xp', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    const completions = await prisma.taskCompletion.findMany({
+      where: {
+        spaceId: authReq.currentSpaceId,
+        completedAt: { gte: startDate },
+      },
+      select: {
+        completedAt: true,
+        xp: true,
+      },
+    });
+
+    const xpByDate = new Map<string, number>();
+    const normalizeDate = (date: Date) => date.toISOString().slice(0, 10);
+    for (const row of completions) {
+      const date = new Date(row.completedAt);
+      if (Number.isNaN(date.getTime())) continue;
+      const key = normalizeDate(date);
+      xpByDate.set(key, (xpByDate.get(key) || 0) + (row.xp || 0));
+    }
+
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      const key = normalizeDate(day);
+      return { date: key, xp: xpByDate.get(key) || 0 };
+    });
+
+    res.json({ days });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get weekly xp' });
+  }
+});
+
 /**
  * Простой детерминированный генератор случайных чисел на основе seed
  */

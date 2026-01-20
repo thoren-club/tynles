@@ -55,6 +55,7 @@ export interface MembersResponse {
     id: string;
     username: string | null;
     firstName: string | null;
+    photoUrl?: string | null;
     role: string;
     joinedAt: string;
   }>;
@@ -217,6 +218,7 @@ export const api = {
     difficulty?: number; 
     xp?: number; 
     dueAt?: string;
+    timeOfDay?: string;
     description?: string;
     isRecurring?: boolean;
     daysOfWeek?: number[];
@@ -238,6 +240,7 @@ export const api = {
     difficulty?: number;
     xp?: number;
     dueAt?: string;
+    timeOfDay?: string;
     description?: string;
     isRecurring?: boolean;
     daysOfWeek?: number[];
@@ -313,6 +316,10 @@ export const api = {
     return this.request('/stats/me');
   },
 
+  async getWeeklyXp(): Promise<{ days: Array<{ date: string; xp: number }> }> {
+    return this.request('/stats/weekly-xp');
+  },
+
   async getLeaderboard(): Promise<LeaderboardResponse> {
     return this.request<LeaderboardResponse>('/stats/leaderboard');
   },
@@ -364,6 +371,13 @@ export const api = {
   
   async getSpaceInfo(spaceId: string) {
     return this.request<{ id: string; name: string; role: string; isOwner: boolean; avatarUrl?: string | null }>(`/spaces/${spaceId}/info`);
+  },
+
+  async updateSpaceName(spaceId: string, name: string) {
+    return this.request<{ success: boolean; name?: string }>(`/spaces/${spaceId}/name`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    });
   },
 
   async updateSpaceAvatar(spaceId: string, avatarData: string) {

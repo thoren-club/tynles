@@ -141,7 +141,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek, assigneeUserId, assigneeScope } = req.body;
+    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay } = req.body;
 
     if (!title || typeof title !== 'string') {
       return res.status(400).json({ error: 'Title is required' });
@@ -180,7 +180,9 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const dueAtDate = dueAt ? new Date(dueAt) : null;
-    const timeOfDay = dueAtDate
+    const derivedTimeOfDay = typeof timeOfDay === 'string'
+      ? timeOfDay
+      : dueAtDate
       ? `${dueAtDate.getHours().toString().padStart(2, '0')}:${dueAtDate.getMinutes().toString().padStart(2, '0')}`
       : undefined;
 
@@ -194,8 +196,8 @@ router.post('/', async (req: Request, res: Response) => {
     if (resolvedAssigneeId) {
       payload.assigneeUserId = resolvedAssigneeId.toString();
     }
-    if (timeOfDay) {
-      payload.timeOfDay = timeOfDay;
+    if (derivedTimeOfDay) {
+      payload.timeOfDay = derivedTimeOfDay;
     }
 
     if (Object.keys(payload).length > 0) {
@@ -223,7 +225,7 @@ router.post('/', async (req: Request, res: Response) => {
         referenceDate
       );
       const baseDate = startOfDay(firstAvailableDate);
-      taskDueAt = timeOfDay ? applyTimeOfDay(baseDate, timeOfDay) : endOfDay(baseDate);
+      taskDueAt = derivedTimeOfDay ? applyTimeOfDay(baseDate, derivedTimeOfDay) : endOfDay(baseDate);
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
       taskDueAt = new Date(dueAt);
@@ -352,7 +354,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const { title, difficulty, description, dueAt, isRecurring, daysOfWeek, assigneeUserId, assigneeScope } = req.body;
+    const { title, difficulty, description, dueAt, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay } = req.body;
 
     let recurrenceType: string | null = null;
     let recurrencePayload: Prisma.InputJsonValue | Prisma.JsonNullValueInput | null = Prisma.JsonNull;
@@ -381,7 +383,9 @@ router.put('/:taskId', async (req: Request, res: Response) => {
     }
 
     const dueAtDate = dueAt ? new Date(dueAt) : null;
-    const timeOfDay = dueAtDate
+    const derivedTimeOfDay = typeof timeOfDay === 'string'
+      ? timeOfDay
+      : dueAtDate
       ? `${dueAtDate.getHours().toString().padStart(2, '0')}:${dueAtDate.getMinutes().toString().padStart(2, '0')}`
       : undefined;
 
@@ -395,8 +399,8 @@ router.put('/:taskId', async (req: Request, res: Response) => {
     if (resolvedAssigneeId) {
       payload.assigneeUserId = resolvedAssigneeId.toString();
     }
-    if (timeOfDay) {
-      payload.timeOfDay = timeOfDay;
+    if (derivedTimeOfDay) {
+      payload.timeOfDay = derivedTimeOfDay;
     }
     if (Object.keys(payload).length > 0) {
       recurrencePayload = payload;
@@ -410,7 +414,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
         dueAtDate || new Date(),
       );
       const baseDate = startOfDay(firstAvailableDate);
-      taskDueAt = timeOfDay ? applyTimeOfDay(baseDate, timeOfDay) : endOfDay(baseDate);
+      taskDueAt = derivedTimeOfDay ? applyTimeOfDay(baseDate, derivedTimeOfDay) : endOfDay(baseDate);
     } else if (dueAt) {
       taskDueAt = new Date(dueAt);
     }

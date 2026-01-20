@@ -40,13 +40,14 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, statsData, tasksData, leaderboardData, membersData, spaceInfo] = await Promise.all([
+      const [userData, statsData, tasksData, leaderboardData, membersData, spaceInfo, weeklyXp] = await Promise.all([
         api.getUser(),
         api.getMyStats(),
         api.getTasks(),
         api.getSpaceLeaderboard().catch(() => ({ leaderboard: [] })),
         api.getMembers().catch(() => ({ members: [] })),
         api.getCurrentSpace().catch(() => null),
+        api.getWeeklyXp().catch(() => ({ days: [] })),
       ]);
       
       setUser(userData);
@@ -61,7 +62,7 @@ export default function Dashboard() {
       // Для актуальных задач показываем все невыполненные задачи
       setDailyTasks(allTasks);
 
-      generateWeeklyXpData(allTasks);
+      generateWeeklyXpData(weeklyXp.days || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -69,7 +70,7 @@ export default function Dashboard() {
     }
   };
 
-  const generateWeeklyXpData = (tasks: any[]) => {
+  const generateWeeklyXpData = (days: Array<{ date: string; xp: number }>) => {
     const today = new Date();
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - 6);
@@ -78,16 +79,9 @@ export default function Dashboard() {
     const xpByDate = new Map<string, number>();
     const normalizeDate = (date: Date) => date.toISOString().slice(0, 10);
 
-    tasks.forEach((task) => {
-      if (!task.isCompleted) return;
-      const completedAt = task.completedAt || task.updatedAt;
-      if (!completedAt) return;
-      const completedDate = new Date(completedAt);
-      if (Number.isNaN(completedDate.getTime())) return;
-      if (completedDate < startDate) return;
-      const key = normalizeDate(completedDate);
-      const current = xpByDate.get(key) || 0;
-      xpByDate.set(key, current + (task.xp || 0));
+    days.forEach((day) => {
+      if (!day?.date) return;
+      xpByDate.set(day.date, day.xp || 0);
     });
 
     const weekData = Array.from({ length: 7 }, (_, i) => {
@@ -293,9 +287,6 @@ export default function Dashboard() {
         <WeeklyXpChart data={weeklyXpData} loading={loading} />
         {spaceLeaderboard.length > 0 && (
           <div className="space-leaderboard-mini">
-            <h3 className="mini-leaderboard-title">
-              {tr('Лидеры пространства', 'Space leaders')}
-            </h3>
             <div className="mini-leaderboard-table">
               {spaceLeaderboard.slice(0, 5).map((entry, index) => (
                 <div key={entry.userId || index} className="mini-leaderboard-row">

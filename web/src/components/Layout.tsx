@@ -94,7 +94,11 @@ export default function Layout({ children }: LayoutProps) {
           <Link
             to="/"
             className={location.pathname === '/' ? 'active' : ''}
-            onClick={() => triggerLightHaptic()}
+            onClick={() => {
+              if (location.pathname !== '/') {
+                triggerLightHaptic();
+              }
+            }}
           >
             <IconDashboard size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.dashboard')}</span>
@@ -102,7 +106,11 @@ export default function Layout({ children }: LayoutProps) {
           <Link
             to="/deals"
             className={location.pathname === '/deals' ? 'active' : ''}
-            onClick={() => triggerLightHaptic()}
+            onClick={() => {
+              if (location.pathname !== '/deals') {
+                triggerLightHaptic();
+              }
+            }}
           >
             <IconListCheck size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.deals')}</span>
@@ -110,7 +118,11 @@ export default function Layout({ children }: LayoutProps) {
           <Link
             to="/leaderboard"
             className={location.pathname === '/leaderboard' ? 'active' : ''}
-            onClick={() => triggerLightHaptic()}
+            onClick={() => {
+              if (location.pathname !== '/leaderboard') {
+                triggerLightHaptic();
+              }
+            }}
           >
             <IconTrophy size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.leaderboard')}</span>
@@ -118,7 +130,11 @@ export default function Layout({ children }: LayoutProps) {
           <Link
             to="/spaces"
             className={location.pathname === '/spaces' ? 'active' : ''}
-            onClick={() => triggerLightHaptic()}
+            onClick={() => {
+              if (location.pathname !== '/spaces') {
+                triggerLightHaptic();
+              }
+            }}
           >
             <IconFolder size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.spaces')}</span>

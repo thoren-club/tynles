@@ -58,6 +58,52 @@ export default function GoalDetail() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+
+    let tracking = false;
+    let startX = 0;
+    let startY = 0;
+    const edgeThreshold = 24;
+    const swipeThreshold = 80;
+    const maxVerticalDrift = 50;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch || touch.clientX > edgeThreshold) return;
+      tracking = true;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+      if (deltaX > swipeThreshold && deltaY < maxVerticalDrift) {
+        tracking = false;
+        navigate(-1);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      tracking = false;
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [navigate]);
+
   const loadGoal = async () => {
     try {
       const [goals, membersData, spaceInfo] = await Promise.all([
