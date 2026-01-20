@@ -4,7 +4,7 @@
 }
 
 .space-settings-page {
-  padding: var(--screen-padding);
+  padding: 4px;
   min-height: 100vh;
   padding-bottom: 80px;
 }
@@ -97,10 +97,12 @@
   align-items: center;
   margin-bottom: 24px;
   position: relative;
+  z-index: 1301;
 }
 
 .spaces-actions {
   position: relative;
+  z-index: 1302;
 }
 
 .spaces-dropdown-overlay {
@@ -123,10 +125,7 @@
 }
 
 .spaces-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
+  position: relative;
   background: transparent;
   border: none;
   border-radius: 0;
