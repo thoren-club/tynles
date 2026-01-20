@@ -4,6 +4,7 @@ import { api } from '../api';
 import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { triggerLightHaptic } from '../utils/haptics';
 import './Spaces.css';
 
 export default function Spaces() {
@@ -149,40 +150,53 @@ export default function Spaces() {
             {(canCreateSpace || true) && (
               <button 
                 className="btn-primary spaces-dropdown-button"
-                onClick={() => setShowSpacesDropdown(!showSpacesDropdown)}
+                onClick={() => {
+                  triggerLightHaptic();
+                  setShowSpacesDropdown(!showSpacesDropdown);
+                }}
               >
                 <IconPlus size={18} />
                 <span>{tr('Действия', 'Actions')}</span>
               </button>
             )}
-            {showSpacesDropdown && (
-              <div className="spaces-dropdown">
-                {canCreateSpace && (
-                  <button 
-                    className="dropdown-item"
-                    onClick={() => {
-                      setShowCreate(!showCreate);
-                      setShowSpacesDropdown(false);
-                    }}
-                  >
-                    <IconPlus size={18} />
-                    <span>{tr('Создать пространство', 'Create space')}</span>
-                  </button>
-                )}
+          </div>
+        </div>
+        {showSpacesDropdown && (
+          <div
+            className="spaces-dropdown-overlay"
+            onClick={() => {
+              triggerLightHaptic();
+              setShowSpacesDropdown(false);
+            }}
+          >
+            <div className="spaces-dropdown" onClick={(e) => e.stopPropagation()}>
+              {canCreateSpace && (
                 <button 
                   className="dropdown-item"
                   onClick={() => {
-                    setShowJoinForm(!showJoinForm);
+                    triggerLightHaptic();
+                    setShowCreate(!showCreate);
                     setShowSpacesDropdown(false);
                   }}
                 >
-                  <IconLink size={18} />
-                  <span>{tr('Подключиться', 'Join')}</span>
+                  <IconPlus size={18} />
+                  <span>{tr('Создать пространство', 'Create space')}</span>
                 </button>
-              </div>
-            )}
+              )}
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  triggerLightHaptic();
+                  setShowJoinForm(!showJoinForm);
+                  setShowSpacesDropdown(false);
+                }}
+              >
+                <IconLink size={18} />
+                <span>{tr('Подключиться', 'Join')}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Форма подключения */}
         {showJoinForm && (
