@@ -15,7 +15,6 @@ interface TaskListItemProps {
   dateLabel?: string | null;
   timeLabel?: string | null;
   xp?: number | null;
-  isOverdue?: boolean;
   dueStatus?: 'overdue' | 'soon' | 'far' | null;
   isRecurring?: boolean;
   showCalendarIcon?: boolean;
@@ -32,7 +31,6 @@ export default function TaskListItem({
   dateLabel,
   timeLabel,
   xp,
-  isOverdue = false,
   dueStatus = null,
   isRecurring = false,
   showCalendarIcon = true,

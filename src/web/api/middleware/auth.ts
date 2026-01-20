@@ -168,7 +168,6 @@ export async function authMiddleware(
     hasQueryAuth: !!req.query._auth,
     hasQueryTgData: !!req.query.tgWebAppData,
     queryKeys: Object.keys(req.query),
-    headerKeys: Object.keys(req.headers).filter(k => k.toLowerCase().includes('telegram') || k.toLowerCase().includes('auth')),
   }, 'Auth middleware called');
   
   try {
@@ -202,14 +201,12 @@ export async function authMiddleware(
       hasHash: rawInitData.includes('hash='),
       hasUser: rawInitData.includes('user='),
       source: req.headers['x-telegram-init-data'] ? 'header' : 'query',
-      initDataPreview: rawInitData.substring(0, 100),
     }, 'Verifying Telegram initData');
     
     const isValid = verifyTelegramWebAppData(rawInitData, config.botToken, logger);
     if (!isValid) {
       logger.warn({
         initDataLength: rawInitData.length,
-        initDataPreview: rawInitData.substring(0, 200),
         hasHash: rawInitData.includes('hash='),
         hasUser: rawInitData.includes('user='),
         hasAuthDate: rawInitData.includes('auth_date='),

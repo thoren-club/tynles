@@ -302,7 +302,6 @@ export default function Deals() {
                       isDimmed={isChecked}
                       dateLabel={dateParts?.label}
                       timeLabel={dateParts?.time}
-                      isOverdue={dateParts?.isOverdue}
                       dueStatus={dateParts?.dueStatus}
                       isRecurring={isRecurring}
                       onClick={() => handleTaskClick(task.id)}

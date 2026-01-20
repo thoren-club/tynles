@@ -85,21 +85,21 @@ export function startAppScheduler(opts: AppSchedulerOptions = {}): AppScheduler 
   // Process at midnight (00:00) to check tasks that expired during the day
   if (taskExpiration) {
     let inFlight = false;
+    let lastRunAt = 0;
 
     const tick = async () => {
       if (inFlight) return;
       inFlight = true;
       try {
         const now = new Date();
-        const minute = now.getMinutes();
+        const shouldRun = now.getTime() - lastRunAt >= 60 * 60 * 1000;
+        if (!shouldRun) return;
 
-        // Проверяем сгоревшие задачи каждый час в начале часа (00 минут)
-        if (minute === 0) {
-          logger.info('Checking for expired recurring tasks...');
-          const result = await processExpiredRecurringTasks();
-          if (result.expired > 0) {
-            logger.info(`Processed ${result.expired} expired tasks, updated ${result.processed} tasks`);
-          }
+        logger.info('Checking for expired recurring tasks...');
+        const result = await processExpiredRecurringTasks();
+        lastRunAt = now.getTime();
+        if (result.expired > 0) {
+          logger.info(`Processed ${result.expired} expired tasks, updated ${result.processed} tasks`);
         }
       } catch (error) {
         logger.error(error, 'Task expiration check error');

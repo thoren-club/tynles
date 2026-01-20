@@ -106,6 +106,7 @@ model Task {
 
   @@index([spaceId, dueAt])
   @@index([spaceId, isPaused])
+  @@index([spaceId, createdAt])
   @@map("tasks")
 }
 
@@ -155,6 +156,7 @@ model TaskCompletion {
   completedAt DateTime @default(now()) @map("completed_at")
 
   @@index([spaceId, userId, completedAt])
+  @@index([spaceId, completedAt])
   @@index([taskId])
   @@map("task_completions")
 }

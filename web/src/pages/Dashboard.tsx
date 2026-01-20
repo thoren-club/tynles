@@ -370,7 +370,6 @@ export default function Dashboard() {
                       isDimmed={isChecked}
                       dateLabel={dateParts?.label}
                       timeLabel={dateParts?.time}
-                      isOverdue={dateParts?.isOverdue}
                       dueStatus={dateParts?.dueStatus}
                       isRecurring={isRecurring}
                       onClick={() => {

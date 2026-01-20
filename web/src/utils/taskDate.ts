@@ -1,5 +1,14 @@
 type TranslateFn = (ru: string, en: string) => string;
 
+export type DueStatus = 'overdue' | 'soon' | 'far';
+
+export type TaskDateParts = {
+  label: string;
+  time: string | null;
+  isOverdue: boolean;
+  dueStatus: DueStatus;
+};
+
 const DAY_AFTER_TOMORROW = {
   ru: 'Послезавтра',
   en: 'Day after tomorrow',
@@ -15,7 +24,7 @@ export const getTaskDateParts = (
   locale: string,
   tr: TranslateFn,
   options?: { hideTime?: boolean },
-) => {
+): TaskDateParts | null => {
   if (!dueAt) return null;
   const date = new Date(dueAt);
   if (Number.isNaN(date.getTime())) return null;
@@ -60,7 +69,7 @@ export const getTaskDateParts = (
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  const dueStatus = isOverdue ? 'overdue' : diffDays <= 1 ? 'soon' : 'far';
+  const dueStatus: DueStatus = isOverdue ? 'overdue' : diffDays <= 1 ? 'soon' : 'far';
 
   return { label, time, isOverdue, dueStatus };
 };

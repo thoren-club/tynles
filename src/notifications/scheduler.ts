@@ -35,17 +35,38 @@ export function startNotificationsScheduler(
   let inFlight = false;
   let lastEngagementRun = 0;
 
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
   const tick = async () => {
     if (stopped) return;
     if (inFlight) return;
     inFlight = true;
 
     try {
-      await sendTaskReminders(telegramTransport);
+      try {
+        await withTimeout(sendTaskReminders(telegramTransport), 25_000, 'sendTaskReminders');
+      } catch (error) {
+        logger.error(error, 'Task reminders failed');
+      }
+
       const now = Date.now();
       if (now - lastEngagementRun > 6 * 60 * 60 * 1000) {
-        await sendEngagementNotifications(telegramTransport);
-        lastEngagementRun = now;
+        try {
+          await withTimeout(sendEngagementNotifications(telegramTransport), 25_000, 'sendEngagementNotifications');
+          lastEngagementRun = now;
+        } catch (error) {
+          logger.error(error, 'Engagement notifications failed');
+        }
       }
     } catch (error) {
       logger.error(error, 'Notifications scheduler error');
