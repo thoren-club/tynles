@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import { getTaskDateParts } from '../utils/taskDate';
 import { triggerLightHaptic } from '../utils/haptics';
+import { emitLevelUp } from '../utils/levelUp';
 import { applyRecurringCompletion, getTaskSections, groupTasksByDue, sortTasksByDue } from '../utils/taskList';
 import WeeklyXpChart from '../components/WeeklyXpChart';
 import TaskListItem from '../components/TaskListItem';
@@ -118,7 +119,11 @@ export default function Dashboard() {
     setDailyTasks(updatedTasks);
 
     try {
-      await api.completeTask(taskId);
+      const result = await api.completeTask(taskId);
+      const newLevel = (result as any)?.newLevel;
+      if (newLevel) {
+        emitLevelUp(newLevel);
+      }
     } catch (error) {
       console.error('Failed to complete task:', error);
       setDailyTasks(previousTasks);
@@ -144,7 +149,11 @@ export default function Dashboard() {
       // Создаем таймер для отмены (5 секунд)
       const timer = setTimeout(async () => {
         try {
-          await api.completeTask(taskId);
+          const result = await api.completeTask(taskId);
+          const newLevel = (result as any)?.newLevel;
+          if (newLevel) {
+            emitLevelUp(newLevel);
+          }
           // Перезагружаем данные
           loadData();
           setCompletedTaskId(null);

@@ -27,6 +27,7 @@ export default function Layout({ children }: LayoutProps) {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [editorType, setEditorType] = useState<'task' | 'goal' | null>(null);
   const [editorId, setEditorId] = useState<string | null>(null);
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
   const { t, tr } = useLanguage();
   const navItems = ['/', '/deals', '/leaderboard', '/spaces'];
@@ -39,6 +40,17 @@ export default function Layout({ children }: LayoutProps) {
   useEffect(() => {
     setShowCreateMenu(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleLevelUp = (event: Event) => {
+      const detail = (event as CustomEvent<{ level: number }>).detail;
+      if (detail?.level) {
+        setLevelUpLevel(detail.level);
+      }
+    };
+    window.addEventListener('level-up', handleLevelUp as EventListener);
+    return () => window.removeEventListener('level-up', handleLevelUp as EventListener);
+  }, []);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -137,6 +149,22 @@ export default function Layout({ children }: LayoutProps) {
         }}
         onChanged={() => window.dispatchEvent(new Event('app-data-changed'))}
       />
+      {levelUpLevel !== null && (
+        <div className="levelup-overlay" onClick={() => setLevelUpLevel(null)}>
+          <div className="levelup-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="levelup-close"
+              onClick={() => setLevelUpLevel(null)}
+              aria-label={tr('Закрыть', 'Close')}
+            >
+              ×
+            </button>
+            <div className="levelup-title">{tr('Новый уровень!', 'New level!')}</div>
+            <div className="levelup-level">{tr('Уровень', 'Level')} {levelUpLevel}</div>
+          </div>
+        </div>
+      )}
       {!shouldHideNavbar && (
         <nav className="bottom-nav">
           <div

@@ -6,6 +6,7 @@ import { isTaskAvailable } from '../utils/taskAvailability';
 import { getTaskDateParts } from '../utils/taskDate';
 import { getGoalTimeframeLabel } from '../utils/goalTimeframe';
 import { triggerLightHaptic } from '../utils/haptics';
+import { emitLevelUp } from '../utils/levelUp';
 import { applyRecurringCompletion, getTaskSections, groupTasksByDue, sortTasksByDue } from '../utils/taskList';
 import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -95,7 +96,11 @@ export default function Deals() {
     setTasks(updatedTasks);
 
     try {
-      await api.completeTask(taskId);
+      const result = await api.completeTask(taskId);
+      const newLevel = (result as any)?.newLevel;
+      if (newLevel) {
+        emitLevelUp(newLevel);
+      }
     } catch (error) {
       console.error('Failed to complete task:', error);
       setTasks(previousTasks);
@@ -117,7 +122,11 @@ export default function Deals() {
     if (taskToComplete) {
       const timer = setTimeout(async () => {
         try {
-          await api.completeTask(taskId);
+          const result = await api.completeTask(taskId);
+          const newLevel = (result as any)?.newLevel;
+          if (newLevel) {
+            emitLevelUp(newLevel);
+          }
           await loadData();
           setCompletedTaskId(null);
           setUndoTimer(null);

@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown, BottomSheet, Button } from './ui';
 import { triggerLightHaptic } from '../utils/haptics';
+import { emitLevelUp } from '../utils/levelUp';
 import './CreateTaskGoalSheet.css';
 
 type EditorType = 'task' | 'goal';
@@ -356,6 +357,10 @@ export default function TaskGoalEditorSheet({
     setIsCompleting(true);
     try {
       const result = await api.completeTask(entityId);
+      const newLevel = (result as any)?.newLevel;
+      if (newLevel) {
+        emitLevelUp(newLevel);
+      }
       if (result && (result as any).isRecurring) {
         await handleSave(false);
       } else {

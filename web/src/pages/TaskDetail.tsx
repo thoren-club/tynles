@@ -5,6 +5,7 @@ import { Button, Dropdown, DateTimePickerWithPresets, ImportanceSelector, Recurr
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
 import { useLanguage } from '../contexts/LanguageContext';
 import { triggerLightHaptic } from '../utils/haptics';
+import { emitLevelUp } from '../utils/levelUp';
 import './TaskDetail.css';
 
 export default function TaskDetail() {
@@ -268,6 +269,10 @@ export default function TaskDetail() {
     setIsCompleting(true);
     try {
       const result = await api.completeTask(id!);
+      const newLevel = (result as any)?.newLevel;
+      if (newLevel) {
+        emitLevelUp(newLevel);
+      }
       if (result && (result as any).isRecurring) {
         await loadTask();
       } else {
@@ -290,7 +295,11 @@ export default function TaskDetail() {
     triggerLightHaptic();
     setIsCompleting(true);
     try {
-      await api.completeTask(id!);
+      const result = await api.completeTask(id!);
+      const newLevel = (result as any)?.newLevel;
+      if (newLevel) {
+        emitLevelUp(newLevel);
+      }
       navigate('/deals');
     } catch (error: any) {
       console.error('Failed to complete task:', error);

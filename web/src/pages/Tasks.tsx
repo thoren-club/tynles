@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
+import { emitLevelUp } from '../utils/levelUp';
 import './Tasks.css';
 
 export default function Tasks() {
@@ -46,6 +47,9 @@ export default function Tasks() {
 
     try {
       const result = await api.completeTask(taskId) as { xpEarned: number; newLevel: number | null };
+      if (result?.newLevel) {
+        emitLevelUp(result.newLevel);
+      }
       loadTasks();
       alert(
         tr(
