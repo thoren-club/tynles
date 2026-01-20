@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconDashboard, IconListCheck, IconTrophy, IconFolder } from '@tabler/icons-react';
+import { IconDashboard, IconListCheck, IconTrophy, IconFolder, IconTarget, IconCheckbox } from '@tabler/icons-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { triggerLightHaptic } from '../utils/haptics';
 import { api } from '../api';
@@ -84,13 +84,23 @@ export default function Layout({ children }: LayoutProps) {
         <button
           className="global-create-fab"
           type="button"
-          onClick={() => setShowCreateMenu((prev) => !prev)}
+          onClick={() => {
+            triggerLightHaptic();
+            setShowCreateMenu((prev) => !prev);
+          }}
+          aria-label={showCreateMenu ? tr('Закрыть', 'Close') : tr('Создать', 'Create')}
         >
-          +
+          {showCreateMenu ? '×' : '+'}
         </button>
       )}
       {showCreateMenu && (
-        <div className="global-create-menu-overlay" onClick={() => setShowCreateMenu(false)}>
+        <div
+          className="global-create-menu-overlay"
+          onClick={() => {
+            triggerLightHaptic();
+            setShowCreateMenu(false);
+          }}
+        >
           <div className="global-create-menu" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -100,6 +110,7 @@ export default function Layout({ children }: LayoutProps) {
                 handleCreate('goal');
               }}
             >
+              <IconTarget size={18} />
               {tr('Цель', 'Goal')}
             </button>
             <button
@@ -110,6 +121,7 @@ export default function Layout({ children }: LayoutProps) {
                 handleCreate('task');
               }}
             >
+              <IconCheckbox size={18} />
               {tr('Задача', 'Task')}
             </button>
           </div>

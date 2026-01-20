@@ -81,6 +81,7 @@ function AppContent() {
         tgWebApp.ready();
         tgWebApp.expand();
 
+
         // Debug: Log all available data
         console.log('Telegram WebApp object:', {
           initData: tgWebApp.initData,

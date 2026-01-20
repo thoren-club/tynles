@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  --fab-size: 56px;
+  --fab-offset: 84px;
 }
 
 .main-content {
@@ -31,17 +33,17 @@
   position: relative;
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: stretch;
   gap: 4px;
-  padding: 8px calc(8px + var(--nav-safe-right)) 0 calc(8px + var(--nav-safe-left));
+  padding: 6px calc(8px + var(--nav-safe-right)) 6px calc(8px + var(--nav-safe-left));
 }
 
 .global-create-fab {
   position: fixed;
   right: calc(16px + env(safe-area-inset-right, 0px));
-  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  width: 56px;
-  height: 56px;
+  bottom: calc(var(--fab-offset) + env(safe-area-inset-bottom, 0px));
+  width: var(--fab-size);
+  height: var(--fab-size);
   border-radius: 50%;
   background: var(--color-primary-500);
   color: var(--color-neutral-0);
@@ -71,16 +73,19 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  padding: 0 calc(16px + env(safe-area-inset-right, 0px)) calc(90px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  padding: 0 calc(16px + env(safe-area-inset-right, 0px)) calc(var(--fab-offset) + var(--fab-size) + 8px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   animation: fadeIn 0.2s ease;
 }
 
 .global-create-menu {
-  min-width: 160px;
-  background: var(--color-surface);
-  border-radius: 14px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
-  overflow: hidden;
+  min-width: 180px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   transform: translateY(10px) scale(0.98);
   opacity: 0;
   animation: menuPop 0.18s ease forwards;
@@ -95,17 +100,29 @@
 
 .global-create-menu-item {
   width: 100%;
-  padding: 12px 16px;
-  background: none;
+  padding: 14px 16px;
+  background: var(--color-wrapper-1);
   border: none;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text);
   cursor: pointer;
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .global-create-menu-item:hover {
-  background: var(--color-surface-2);
+  background: color-mix(in srgb, var(--color-wrapper-1) 85%, var(--color-text-muted));
+}
+
+.global-create-menu-item:active {
+  transform: translateY(2px);
 }
 
 .nav-indicator {
@@ -127,17 +144,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   text-decoration: none;
   color: var(--color-text-muted);
-  padding: 8px 0;
+  padding: 0;
   border-radius: 14px;
   transition: color 0.2s;
   flex: 1;
   min-width: 0;
   line-height: 1;
   z-index: 1;
-  min-height: 44px;
+  min-height: 52px;
 }
 
 .bottom-nav a.active {
@@ -171,4 +188,5 @@
 .nav-label {
   font-size: 12px;
   line-height: 1;
+  margin-top: 1px;
 }

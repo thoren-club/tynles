@@ -86,6 +86,42 @@ export default function BottomSheet({
   }, [isOpen, isVisible]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const tgWebApp = (window as any)?.Telegram?.WebApp;
+    const enableVerticalSwipes = (tgWebApp as any)?.enableVerticalSwipes;
+    const disableVerticalSwipes = (tgWebApp as any)?.disableVerticalSwipes;
+
+    if (typeof disableVerticalSwipes === 'function') {
+      disableVerticalSwipes();
+    } else if (typeof (tgWebApp as any)?.setSwipeBehavior === 'function') {
+      (tgWebApp as any).setSwipeBehavior({ allow_vertical_swipe: false });
+    }
+
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehaviorY;
+    const prevBodyOverscroll = document.body.style.overscrollBehaviorY;
+    document.documentElement.style.overscrollBehaviorY = 'contain';
+    document.body.style.overscrollBehaviorY = 'contain';
+
+    const preventCloseSwipe = () => {
+      if (window.scrollY === 0) {
+        window.scrollTo(0, 1);
+      }
+    };
+    window.addEventListener('touchstart', preventCloseSwipe, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', preventCloseSwipe);
+      document.documentElement.style.overscrollBehaviorY = prevHtmlOverscroll;
+      document.body.style.overscrollBehaviorY = prevBodyOverscroll;
+      if (typeof enableVerticalSwipes === 'function') {
+        enableVerticalSwipes();
+      } else if (typeof (tgWebApp as any)?.setSwipeBehavior === 'function') {
+        (tgWebApp as any).setSwipeBehavior({ allow_vertical_swipe: true });
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     return () => {
       if (closeTimerRef.current) {
         window.clearTimeout(closeTimerRef.current);

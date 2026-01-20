@@ -38,7 +38,7 @@ export default function TaskListItem({
 }: TaskListItemProps) {
   const assigneeName = assignee?.firstName || assignee?.username || 'U';
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
-  const showMeta = Boolean(dateLabel) || isRecurring;
+  const showMeta = Boolean(dateLabel) || isRecurring || typeof xp === 'number';
 
   return (
     <div

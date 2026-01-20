@@ -161,31 +161,35 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="dashboard" aria-busy="true">
-        <div className="dashboard-top-bar">
-          <div className="level-zone">
-            <div className="level-icon">
+        <div className="dashboard-header">
+          <button className="dashboard-level-card" type="button">
+            <div className="dashboard-level-icon">
               <Skeleton width={28} height={28} radius={10} />
             </div>
-            <div className="level-progress-container" style={{ width: '100%' }}>
-              <div className="level-progress-bar">
-                <div className="level-progress-fill" style={{ width: '35%' }} />
+            <div className="dashboard-level-info" style={{ width: '100%' }}>
+              <div className="dashboard-level-bar">
+                <div className="dashboard-level-fill" style={{ width: '35%' }} />
               </div>
-              <div className="level-xp-info">
+              <div className="dashboard-level-xp">
                 <Skeleton width={120} height={14} radius={8} />
               </div>
             </div>
-            <IconChevronRight size={20} className="level-chevron" />
-          </div>
+            <IconChevronRight size={20} className="dashboard-level-chevron" />
+          </button>
 
-          <div className="top-bar-right">
-            <div className="avatar-container">
+          <div className="dashboard-actions">
+            <button className="dashboard-avatar-button" type="button">
               <div className="avatar avatar-image" style={{ display: 'none' }} />
               <div className="avatar" style={{ display: 'flex' }}>
                 <Skeleton width={36} height={36} radius={999} />
               </div>
-            </div>
-            <IconSettings size={24} className="settings-icon" />
-            <IconBell size={24} className="notifications-icon" />
+            </button>
+            <button className="dashboard-icon-button" type="button">
+              <IconSettings size={20} />
+            </button>
+            <button className="dashboard-icon-button" type="button">
+              <IconBell size={20} />
+            </button>
           </div>
         </div>
 
@@ -224,32 +228,34 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       {/* Верхняя зона Dashboard */}
-      <div className="dashboard-top-bar">
-        <div 
-          className="level-zone"
+      <div className="dashboard-header">
+        <button
+          className="dashboard-level-card"
+          type="button"
           onClick={() => navigate('/level-progression')}
         >
-          <div className="level-icon">{level}</div>
-          <div className="level-progress-container">
-            <div className="level-progress-bar">
+          <div className="dashboard-level-icon">{level}</div>
+          <div className="dashboard-level-info">
+            <div className="dashboard-level-bar">
               <div 
-                className="level-progress-fill" 
+                className="dashboard-level-fill" 
                 style={{ width: `${levelProgress}%` }}
               />
             </div>
-            <div className="level-xp-info">
-              <span className="level-xp-current">{currentXp}</span>
-              <span className="level-xp-separator"> / </span>
-              <span className="level-xp-total">{xpToNextLevel}</span>
-              <span className="level-xp-label"> XP</span>
+            <div className="dashboard-level-xp">
+              <span className="dashboard-level-current">{currentXp}</span>
+              <span className="dashboard-level-separator"> / </span>
+              <span className="dashboard-level-total">{xpToNextLevel}</span>
+              <span className="dashboard-level-label"> XP</span>
             </div>
           </div>
-          <IconChevronRight size={20} className="level-chevron" />
-        </div>
+          <IconChevronRight size={20} className="dashboard-level-chevron" />
+        </button>
 
-        <div className="top-bar-right">
-          <div 
-            className="avatar-container"
+        <div className="dashboard-actions">
+          <button
+            className="dashboard-avatar-button"
+            type="button"
             onClick={() => navigate('/profile')}
           >
             {user?.photoUrl ? (
@@ -269,17 +275,21 @@ export default function Dashboard() {
             <div className="avatar" style={{ display: user?.photoUrl ? 'none' : 'flex' }}>
               {user?.firstName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
             </div>
-          </div>
-          <IconSettings 
-            size={24} 
-            className="settings-icon"
+          </button>
+          <button
+            className="dashboard-icon-button"
+            type="button"
             onClick={() => navigate('/settings')}
-          />
-          <IconBell 
-            size={24} 
-            className="notifications-icon"
+          >
+            <IconSettings size={20} />
+          </button>
+          <button
+            className="dashboard-icon-button"
+            type="button"
             onClick={() => {/* TODO: открыть уведомления */}}
-          />
+          >
+            <IconBell size={20} />
+          </button>
         </div>
       </div>
 
