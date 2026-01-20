@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown, BottomSheet, Button } from './ui';
+import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown, BottomSheet, Button, Skeleton } from './ui';
 import { triggerLightHaptic } from '../utils/haptics';
 import { emitLevelUp } from '../utils/levelUp';
 import './CreateTaskGoalSheet.css';
@@ -63,7 +63,6 @@ export default function TaskGoalEditorSheet({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    dueAt: '',
     importance: 1,
     assigneeUserId: '',
     assigneeScope: 'space' as 'space' | 'user',
@@ -138,7 +137,6 @@ export default function TaskGoalEditorSheet({
           setFormData({
             title: foundTask.title || '',
             description: foundTask.description || '',
-            dueAt: isRecurringTask ? '' : foundTask.dueAt || '',
             importance: foundTask.difficulty || 1,
             assigneeUserId: foundTask.assigneeUserId || '',
             assigneeScope: foundTask.assigneeScope === 'space' || !foundTask.assigneeUserId ? 'space' : 'user',
@@ -182,7 +180,6 @@ export default function TaskGoalEditorSheet({
           setFormData({
             title: foundGoal.title || '',
             description: foundGoal.description || '',
-            dueAt: '',
             importance: foundGoal.difficulty || 1,
             assigneeUserId: foundGoal.assigneeUserId || '',
             assigneeScope: foundGoal.assigneeScope === 'space' || !foundGoal.assigneeUserId ? 'space' : 'user',
@@ -209,25 +206,24 @@ export default function TaskGoalEditorSheet({
     setInitialSnapshot(buildSnapshot());
   }, [isOpen, isLoading, hasLoaded, initialSnapshot]);
 
-  useEffect(() => {
-    if (scheduleMode !== 'deadline') {
-      setFormData((prev) => ({ ...prev, dueAt: '' }));
-      return;
-    }
-    if (!deadlineDate) return;
-    const nextValue = buildDeadlineIso(deadlineDate, deadlineTime, deadlineHasTime);
-    if (nextValue && nextValue !== formData.dueAt) {
-      setFormData((prev) => ({ ...prev, dueAt: nextValue }));
-    }
-  }, [scheduleMode, deadlineDate, deadlineTime, deadlineHasTime, formData.dueAt]);
-
   const handleScheduleModeChange = (mode: 'none' | 'deadline' | 'recurring') => {
     if (mode !== scheduleMode) {
       triggerLightHaptic();
     }
     setScheduleMode(mode);
+    setFormData((prev) => {
+      if (mode === 'deadline') {
+        if (!prev.isRecurring && prev.daysOfWeek.length === 0) return prev;
+        return { ...prev, isRecurring: false, daysOfWeek: [] };
+      }
+      if (mode === 'recurring') {
+        if (prev.isRecurring) return prev;
+        return { ...prev, isRecurring: true };
+      }
+      if (!prev.isRecurring && prev.daysOfWeek.length === 0) return prev;
+      return { ...prev, isRecurring: false, daysOfWeek: [] };
+    });
     if (mode === 'deadline') {
-      setFormData((prev) => ({ ...prev, isRecurring: false, daysOfWeek: [] }));
       setRecurringHasTime(false);
       setRecurringTime('11:59');
       if (!deadlineDate) {
@@ -237,11 +233,9 @@ export default function TaskGoalEditorSheet({
     }
     if (mode === 'recurring') {
       setDeadlineHasTime(false);
-      setFormData((prev) => ({ ...prev, dueAt: '', isRecurring: true }));
       return;
     }
     setDeadlineHasTime(false);
-    setFormData((prev) => ({ ...prev, dueAt: '', isRecurring: false, daysOfWeek: [] }));
     setRecurringHasTime(false);
     setRecurringTime('11:59');
   };
@@ -283,12 +277,15 @@ export default function TaskGoalEditorSheet({
     setIsSaving(true);
     try {
       const safeAssigneeScope = formData.assigneeUserId ? formData.assigneeScope : 'space';
+      const deadlineValue = scheduleMode === 'deadline'
+        ? buildDeadlineIso(deadlineDate, deadlineTime, deadlineHasTime)
+        : '';
       if (type === 'task') {
         const taskData: any = {
           title: formData.title.trim(),
           difficulty: formData.importance,
           description: formData.description.trim() || undefined,
-          dueAt: scheduleMode === 'deadline' ? formData.dueAt || undefined : undefined,
+          dueAt: scheduleMode === 'deadline' ? deadlineValue || undefined : undefined,
           dueHasTime: scheduleMode === 'deadline' ? deadlineHasTime : undefined,
           assigneeUserId: safeAssigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
           assigneeScope: safeAssigneeScope,
@@ -400,6 +397,32 @@ export default function TaskGoalEditorSheet({
             : tr('Задача', 'Task')}
         </div>
         <div className="create-form">
+          {isLoading ? (
+            <>
+              <div className="form-field">
+                <Skeleton width="40%" height={12} radius={6} />
+                <Skeleton width="100%" height={44} radius={10} />
+              </div>
+              <div className="form-field">
+                <Skeleton width="35%" height={12} radius={6} />
+                <Skeleton width="100%" height={44} radius={10} />
+              </div>
+              <div className="form-field">
+                <Skeleton width="35%" height={12} radius={6} />
+                <Skeleton width="100%" height={72} radius={10} />
+              </div>
+              <div className="detail-block">
+                <Skeleton width="30%" height={12} radius={6} />
+                <Skeleton width="100%" height={36} radius={10} />
+                <Skeleton width="100%" height={44} radius={10} />
+              </div>
+              <div className="detail-block">
+                <Skeleton width="30%" height={12} radius={6} />
+                <Skeleton width="100%" height={36} radius={10} />
+              </div>
+            </>
+          ) : (
+            <>
           <div className="form-field">
             <label className="form-label">{tr('Название', 'Title')} *</label>
             <input
@@ -651,6 +674,8 @@ export default function TaskGoalEditorSheet({
               </Button>
             )}
           </div>
+            </>
+          )}
         </div>
       </div>
     </BottomSheet>

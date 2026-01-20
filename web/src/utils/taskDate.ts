@@ -1,12 +1,34 @@
 type TranslateFn = (ru: string, en: string) => string;
 
 export type DueStatus = 'overdue' | 'soon' | 'far';
+export type TaskDueGroupKey = 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date';
 
 export type TaskDateParts = {
   label: string;
   time: string | null;
   isOverdue: boolean;
   dueStatus: DueStatus;
+};
+
+const MS_IN_DAY = 1000 * 60 * 60 * 24;
+
+export const getDueDayDiff = (dueAt: string | null) => {
+  if (!dueAt) return null;
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return null;
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startDue = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((startDue.getTime() - startToday.getTime()) / MS_IN_DAY);
+};
+
+export const getTaskDueGroupKey = (dueAt: string | null): TaskDueGroupKey => {
+  const diffDays = getDueDayDiff(dueAt);
+  if (diffDays === null) return 'no-date';
+  if (diffDays < 0) return 'overdue';
+  if (diffDays === 0) return 'today';
+  if (diffDays <= 7) return 'upcoming';
+  return 'later';
 };
 
 const DAY_AFTER_TOMORROW = {
@@ -29,11 +51,10 @@ export const getTaskDateParts = (
   const date = new Date(dueAt);
   if (Number.isNaN(date.getTime())) return null;
 
-  const now = new Date();
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startDue = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor((startDue.getTime() - startToday.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = getDueDayDiff(dueAt);
+  if (diffDays === null) return null;
 
+  const now = new Date();
   let label = '';
   let isOverdue = false;
 

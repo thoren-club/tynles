@@ -1,8 +1,7 @@
 import { getNextAvailableDate } from './taskAvailability';
+import { getTaskDueGroupKey, TaskDueGroupKey } from './taskDate';
 
 type TranslateFn = (ru: string, en: string) => string;
-
-export type TaskDueGroupKey = 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date';
 
 export const getTaskSections = (tr: TranslateFn) => [
   { key: 'overdue', label: tr('Просрочено', 'Overdue') },
@@ -13,18 +12,7 @@ export const getTaskSections = (tr: TranslateFn) => [
 ] as const;
 
 export const getTaskDueGroup = (task: any): TaskDueGroupKey => {
-  if (!task.dueAt) return 'no-date';
-  const dueDate = new Date(task.dueAt);
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const in7Days = new Date(startOfToday);
-  in7Days.setDate(in7Days.getDate() + 7);
-
-  if (dueDate < startOfToday) return 'overdue';
-  if (dueDate <= endOfToday) return 'today';
-  if (dueDate <= in7Days) return 'upcoming';
-  return 'later';
+  return getTaskDueGroupKey(task?.dueAt || null);
 };
 
 export const sortTasksByDue = (items: any[]) => {

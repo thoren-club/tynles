@@ -91,8 +91,18 @@ export default function Dashboard() {
           return day.toISOString().slice(0, 10);
         });
 
-    const labels = dayKeys.map((dateKey) => {
-      const day = new Date(`${dateKey}T12:00:00`);
+    const fallbackLabels = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date();
+      day.setDate(day.getDate() - (6 - i));
+      return day.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
+    });
+
+    const labels = dayKeys.map((dateKey, index) => {
+      const isoDateOnly = typeof dateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateKey);
+      const day = isoDateOnly ? new Date(`${dateKey}T12:00:00`) : new Date(dateKey);
+      if (Number.isNaN(day.getTime())) {
+        return fallbackLabels[index] || '';
+      }
       return day.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
     });
 

@@ -38,7 +38,7 @@ export default function TaskListItem({
 }: TaskListItemProps) {
   const assigneeName = assignee?.firstName || assignee?.username || 'U';
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
-  const showMeta = Boolean(dateLabel) || isRecurring || typeof xp === 'number';
+  const showMeta = Boolean(dateLabel) || Boolean(timeLabel) || isRecurring || typeof xp === 'number';
   const xpIsAlone = typeof xp === 'number' && !dateLabel && !isRecurring;
 
   const metaTone = (dateLabel || timeLabel) && dueStatus ? ` task-meta-${dueStatus}` : '';
