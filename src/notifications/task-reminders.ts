@@ -98,9 +98,9 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
     const diffHours = diffMs / (1000 * 60 * 60);
     const isOverdue = diffMs < 0;
     const payload = task.recurrencePayload as any;
+    const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
     const isNoTime = isRecurring ? !payload?.timeOfDay : task.dueHasTime === false;
     const assigneeScope = getAssigneeScopeFromPayload(payload);
-    const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
 
     if (assigneeScope === 'space') {
       const members = await prisma.spaceMember.findMany({
