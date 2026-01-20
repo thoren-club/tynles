@@ -214,10 +214,15 @@ router.post('/', async (req: Request, res: Response) => {
         : getEndOfDayInTimeZone(baseDate, timeZone);
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
-      taskDueAt = new Date(dueAt);
-      if (!hasDeadlineTime && dueAtDate) {
-        const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
-        taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
+      if (!hasDeadlineTime && typeof dueAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueAt)) {
+        const [year, month, day] = dueAt.split('-').map((part) => Number(part));
+        taskDueAt = makeDateInTimeZone({ year, month, day, hour: 0, minute: 0, second: 0 }, timeZone);
+      } else {
+        taskDueAt = new Date(dueAt);
+        if (!hasDeadlineTime && dueAtDate) {
+          const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
+          taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
+        }
       }
     }
 
@@ -414,10 +419,15 @@ router.put('/:taskId', async (req: Request, res: Response) => {
         ? applyTimeOfDay(baseDate, derivedTimeOfDay)
         : getEndOfDayInTimeZone(baseDate, timeZone);
     } else if (dueAt) {
-      taskDueAt = new Date(dueAt);
-      if (!hasDeadlineTime && dueAtDate) {
-        const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
-        taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
+      if (!hasDeadlineTime && typeof dueAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueAt)) {
+        const [year, month, day] = dueAt.split('-').map((part) => Number(part));
+        taskDueAt = makeDateInTimeZone({ year, month, day, hour: 0, minute: 0, second: 0 }, timeZone);
+      } else {
+        taskDueAt = new Date(dueAt);
+        if (!hasDeadlineTime && dueAtDate) {
+          const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
+          taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
+        }
       }
     }
 

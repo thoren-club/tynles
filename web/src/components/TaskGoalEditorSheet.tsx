@@ -23,6 +23,10 @@ const formatLocalDate = (date: Date) => {
 
 const parseDueAtToLocal = (value?: string | null, hasTimeOverride?: boolean) => {
   if (!value) return { date: '', time: '23:59', hasTime: false };
+  const dateOnlyMatch = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (dateOnlyMatch) {
+    return { date: value, time: '00:00', hasTime: false };
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return { date: '', time: '23:59', hasTime: false };
   const pad = (num: number) => String(num).padStart(2, '0');
@@ -74,7 +78,10 @@ export default function TaskGoalEditorSheet({
 
   const buildDeadlineIso = (dateValue: string, timeValue: string, hasTime: boolean) => {
     if (!dateValue) return '';
-    const timePart = hasTime ? (timeValue || '23:59') : '00:00';
+    if (!hasTime) {
+      return dateValue;
+    }
+    const timePart = timeValue || '23:59';
     const localDateTime = `${dateValue}T${timePart}`;
     const parsed = new Date(localDateTime);
     if (Number.isNaN(parsed.getTime())) return '';
