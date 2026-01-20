@@ -311,7 +311,7 @@
 
 .day-button.active {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   border-color: var(--color-primary-500);
 }
 
@@ -397,7 +397,7 @@
   flex: 1;
   padding: 12px 18px;
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   border: none;
   border-radius: 12px;
   font-size: 16px;

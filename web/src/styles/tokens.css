@@ -49,6 +49,17 @@
   --color-text-muted: #a09abf;
   --color-border: color-mix(in srgb, var(--color-neutral-300) 22%, transparent);
   --color-border-strong: color-mix(in srgb, var(--color-neutral-300) 34%, transparent);
+  --color-overlay-25: color-mix(in srgb, var(--color-neutral-950) 25%, transparent);
+  --color-overlay-35: color-mix(in srgb, var(--color-neutral-950) 35%, transparent);
+  --color-overlay-50: color-mix(in srgb, var(--color-neutral-950) 50%, transparent);
+  --color-white-18: color-mix(in srgb, var(--color-neutral-0) 18%, transparent);
+  --color-white-28: color-mix(in srgb, var(--color-neutral-0) 28%, transparent);
+  --color-white-92: color-mix(in srgb, var(--color-neutral-0) 92%, transparent);
+  --shadow-color-12: color-mix(in srgb, var(--color-neutral-950) 12%, transparent);
+  --shadow-color-15: color-mix(in srgb, var(--color-neutral-950) 15%, transparent);
+  --shadow-color-18: color-mix(in srgb, var(--color-neutral-950) 18%, transparent);
+  --shadow-color-22: color-mix(in srgb, var(--color-neutral-950) 22%, transparent);
+  --shadow-color-30: color-mix(in srgb, var(--color-neutral-950) 30%, transparent);
 
   /* =========
      Radii

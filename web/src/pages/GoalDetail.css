@@ -138,7 +138,7 @@
 
 .complete-button {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   transition: background-color 0.3s ease, opacity 0.2s ease;
 }
 

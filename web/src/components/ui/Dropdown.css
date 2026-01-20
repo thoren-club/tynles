@@ -87,7 +87,7 @@
   background: var(--color-surface);
   border: var(--border-1);
   border-radius: var(--radius-sm);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 10px 24px var(--shadow-color-22);
   z-index: 1000;
   max-height: 240px;
   overflow-y: auto;

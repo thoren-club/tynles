@@ -40,7 +40,7 @@
   height: 40px;
   border-radius: 50%;
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,7 +124,7 @@
   height: 32px;
   border-radius: 50%;
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,7 +240,7 @@
 @media (hover: hover) and (pointer: fine) {
   .task-item:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px var(--shadow-color-12);
   }
 }
 
@@ -279,7 +279,7 @@
 }
 
 .check-icon {
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   font-size: 14px;
   font-weight: bold;
 }
@@ -382,7 +382,7 @@
   height: 28px;
   border-radius: var(--radius-pill);
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -390,7 +390,7 @@
   font-weight: var(--fw-semibold);
   flex-shrink: 0;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px var(--shadow-color-12);
 }
 
 .task-assignee-avatar img {

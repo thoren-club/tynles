@@ -148,12 +148,12 @@
 
 /* Визуальное выделение важных целей */
 .goal-card.goal-important {
-  box-shadow: var(--shadow-wrapper), 0 10px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-wrapper), 0 10px 24px var(--shadow-color-18);
   background: var(--color-wrapper-1);
 }
 
 .goal-card.importance-urgent {
-  box-shadow: var(--shadow-wrapper), 0 10px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-wrapper), 0 10px 24px var(--shadow-color-18);
   background: var(--color-wrapper-1);
 }
 
@@ -278,7 +278,7 @@
 
 .task-card:hover {
   transform: translateY(-1px);
-  box-shadow: inset 3px 0 0 var(--task-accent-color), var(--shadow-wrapper), 0 6px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 3px 0 0 var(--task-accent-color), var(--shadow-wrapper), 0 6px 14px var(--shadow-color-12);
 }
 
 /* Визуальные отличия для разных типов задач */
@@ -373,7 +373,7 @@
 .task-complete-btn {
   padding: 8px 14px;
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   border: none;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -404,7 +404,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-overlay-50);
   z-index: 2000;
   display: flex;
   align-items: flex-end;
@@ -615,7 +615,7 @@
 
 .day-button.active {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
   border-color: var(--color-primary-500);
 }
 
@@ -649,7 +649,7 @@
 
 .btn-create {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
 }
 
 .btn-create:hover:not(:disabled) {

@@ -144,5 +144,5 @@
 
 .mode-button.active {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
 }
