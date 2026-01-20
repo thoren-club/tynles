@@ -24,7 +24,10 @@ export default function Dashboard() {
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
   const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
-  const [weeklyXpData, setWeeklyXpData] = useState<Array<{ day: number; xp: number; label: string }>>([]);
+  const [weeklyXpData, setWeeklyXpData] = useState<{ labels: string[]; series: Array<{ userId: string; name: string; data: number[] }> }>({
+    labels: [],
+    series: [],
+  });
   const [members, setMembers] = useState<any[]>([]);
   const [currentSpace, setCurrentSpace] = useState<any>(null);
 
@@ -71,7 +74,7 @@ export default function Dashboard() {
       // Для актуальных задач показываем все невыполненные задачи
       setDailyTasks(allTasks);
 
-      generateWeeklyXpData(weeklyXp.days || []);
+      generateWeeklyXpData(weeklyXp);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -79,33 +82,28 @@ export default function Dashboard() {
     }
   };
 
-  const generateWeeklyXpData = (days: Array<{ date: string; xp: number }>) => {
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 6);
-    startDate.setHours(0, 0, 0, 0);
+  const generateWeeklyXpData = (payload: { days?: string[]; users?: Array<{ userId: string; firstName?: string | null; username?: string | null; xpByDate?: Record<string, number> }> }) => {
+    const dayKeys = payload?.days && payload.days.length === 7
+      ? payload.days
+      : Array.from({ length: 7 }, (_, i) => {
+          const day = new Date();
+          day.setDate(day.getDate() - (6 - i));
+          return day.toISOString().slice(0, 10);
+        });
 
-    const xpByDate = new Map<string, number>();
-    const normalizeDate = (date: Date) => date.toISOString().slice(0, 10);
-
-    days.forEach((day) => {
-      if (!day?.date) return;
-      xpByDate.set(day.date, day.xp || 0);
+    const labels = dayKeys.map((dateKey) => {
+      const day = new Date(`${dateKey}T12:00:00`);
+      return day.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
     });
 
-    const weekData = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(startDate);
-      day.setDate(startDate.getDate() + i);
-      const key = normalizeDate(day);
-      const label = day.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
-      return {
-        day: i,
-        xp: xpByDate.get(key) || 0,
-        label,
-      };
+    const users = payload?.users || [];
+    const series = users.map((user) => {
+      const name = user.firstName || user.username || tr('Пользователь', 'User');
+      const data = dayKeys.map((dateKey) => user.xpByDate?.[dateKey] || 0);
+      return { userId: user.userId, name, data };
     });
 
-    setWeeklyXpData(weekData);
+    setWeeklyXpData({ labels, series });
   };
 
   const handleRecurringComplete = async (taskId: string) => {
@@ -315,7 +313,7 @@ export default function Dashboard() {
       </div>
 
       <div className="weekly-xp-panel">
-        <WeeklyXpChart data={weeklyXpData} loading={loading} />
+        <WeeklyXpChart labels={weeklyXpData.labels} series={weeklyXpData.series} loading={loading} />
         {spaceLeaderboard.length > 0 && (
           <div className="space-leaderboard-mini">
             <div className="mini-leaderboard-table">
@@ -373,6 +371,7 @@ export default function Dashboard() {
                       dateLabel={dateParts?.label}
                       timeLabel={dateParts?.time}
                       isOverdue={dateParts?.isOverdue}
+                      dueStatus={dateParts?.dueStatus}
                       isRecurring={isRecurring}
                       onClick={() => {
                         triggerLightHaptic();

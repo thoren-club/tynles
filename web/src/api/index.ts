@@ -397,7 +397,16 @@ export const api = {
     return this.request('/stats/me');
   },
 
-  async getWeeklyXp(): Promise<{ days: Array<{ date: string; xp: number }> }> {
+  async getWeeklyXp(): Promise<{
+    days: string[];
+    users: Array<{
+      userId: string;
+      firstName: string | null;
+      username: string | null;
+      photoUrl?: string | null;
+      xpByDate: Record<string, number>;
+    }>;
+  }> {
     return this.request('/stats/weekly-xp');
   },
 

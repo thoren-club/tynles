@@ -16,6 +16,7 @@ interface TaskListItemProps {
   timeLabel?: string | null;
   xp?: number | null;
   isOverdue?: boolean;
+  dueStatus?: 'overdue' | 'soon' | 'far' | null;
   isRecurring?: boolean;
   showCalendarIcon?: boolean;
   onClick?: () => void;
@@ -32,6 +33,7 @@ export default function TaskListItem({
   timeLabel,
   xp,
   isOverdue = false,
+  dueStatus = null,
   isRecurring = false,
   showCalendarIcon = true,
   onClick,
@@ -40,6 +42,8 @@ export default function TaskListItem({
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const showMeta = Boolean(dateLabel) || isRecurring || typeof xp === 'number';
   const xpIsAlone = typeof xp === 'number' && !dateLabel && !isRecurring;
+
+  const metaTone = (dateLabel || timeLabel) && dueStatus ? ` task-meta-${dueStatus}` : '';
 
   return (
     <div
@@ -86,10 +90,10 @@ export default function TaskListItem({
           </div>
         </div>
         {showMeta && (
-          <div className="task-meta-row">
-                    {dateLabel && showCalendarIcon && <IconCalendar size={14} className="task-meta-icon" />}
+          <div className={`task-meta-row${metaTone}`}>
+            {dateLabel && showCalendarIcon && <IconCalendar size={14} className="task-meta-icon" />}
             {dateLabel && (
-              <span className={`task-meta-text${isOverdue ? ' is-overdue' : ''}`}>
+              <span className="task-meta-text">
                 {dateLabel}
               </span>
             )}

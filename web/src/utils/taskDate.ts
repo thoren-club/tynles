@@ -60,5 +60,7 @@ export const getTaskDateParts = (
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  return { label, time, isOverdue };
+  const dueStatus = isOverdue ? 'overdue' : diffDays <= 1 ? 'soon' : 'far';
+
+  return { label, time, isOverdue, dueStatus };
 };

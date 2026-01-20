@@ -107,12 +107,20 @@
   line-height: 14px;
 }
 
-.task-meta-icon {
-  color: inherit;
+.task-meta-row.task-meta-overdue {
+  color: var(--color-danger-500);
 }
 
-.task-meta-text.is-overdue {
-  color: var(--color-danger-500);
+.task-meta-row.task-meta-soon {
+  color: var(--color-warning-500, #ffc038);
+}
+
+.task-meta-row.task-meta-far {
+  color: var(--color-success-500);
+}
+
+.task-meta-icon {
+  color: inherit;
 }
 
 .task-meta-time {

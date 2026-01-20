@@ -9,6 +9,7 @@ import {
   LEAGUE_PERIOD_DAYS 
 } from '../../../utils/leagues';
 import { getXpForNextLevelForSpace, getTotalXpForLevelForSpace } from '../../../utils/leveling';
+import { addDaysInTimeZone, getDatePartsInTimeZone, getStartOfDayInTimeZone } from '../../../utils/timezone';
 import { sendPokeNotification } from '../../../notifications';
 
 const router = Router();
@@ -71,91 +72,76 @@ router.get('/weekly-xp', async (req: Request, res: Response) => {
     const timeZone = space?.timezone || 'UTC';
 
     const formatDateKey = (date: Date) => {
-      const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).formatToParts(date);
-      const get = (type: string) => parts.find((p) => p.type === type)?.value || '';
-      return `${get('year')}-${get('month')}-${get('day')}`;
-    };
-
-    const getTimeZoneOffsetMinutes = (date: Date) => {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        hour12: false,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }).formatToParts(date);
-      const get = (type: string) => parts.find((p) => p.type === type)?.value || '00';
-      const asUTC = Date.UTC(
-        Number(get('year')),
-        Number(get('month')) - 1,
-        Number(get('day')),
-        Number(get('hour')),
-        Number(get('minute')),
-        Number(get('second')),
-      );
-      return (asUTC - date.getTime()) / 60000;
-    };
-
-    const getStartOfDayInTimeZone = (date: Date) => {
-      const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).formatToParts(date);
-      const get = (type: string) => parts.find((p) => p.type === type)?.value || '01';
-      const utcMidnight = new Date(Date.UTC(
-        Number(get('year')),
-        Number(get('month')) - 1,
-        Number(get('day')),
-        0,
-        0,
-        0,
-      ));
-      const offsetMinutes = getTimeZoneOffsetMinutes(utcMidnight);
-      return new Date(utcMidnight.getTime() - offsetMinutes * 60000);
+      const parts = getDatePartsInTimeZone(date, timeZone);
+      const pad = (value: number) => String(value).padStart(2, '0');
+      return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
     };
 
     const today = new Date();
-    const startDate = getStartOfDayInTimeZone(today);
-    startDate.setDate(startDate.getDate() - 6);
+    const startDate = addDaysInTimeZone(getStartOfDayInTimeZone(today, timeZone), -6, timeZone);
+    const endDate = addDaysInTimeZone(startDate, 7, timeZone);
+
+    const members = await prisma.spaceMember.findMany({
+      where: { spaceId: authReq.currentSpaceId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            username: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    const memberIds = members.map((member) => member.userId);
 
     const completions = await prisma.taskCompletion.findMany({
       where: {
         spaceId: authReq.currentSpaceId,
-        userId: authReq.user!.id,
-        completedAt: { gte: startDate },
+        userId: { in: memberIds },
+        completedAt: { gte: startDate, lt: endDate },
       },
       select: {
+        userId: true,
         completedAt: true,
         xp: true,
       },
     });
 
-    const xpByDate = new Map<string, number>();
+    const xpByUserDate = new Map<string, number>();
     for (const row of completions) {
       const date = new Date(row.completedAt);
       if (Number.isNaN(date.getTime())) continue;
       const key = formatDateKey(date);
-      xpByDate.set(key, (xpByDate.get(key) || 0) + (row.xp || 0));
+      const userKey = `${row.userId.toString()}:${key}`;
+      xpByUserDate.set(userKey, (xpByUserDate.get(userKey) || 0) + (row.xp || 0));
     }
 
     const days = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(startDate);
-      day.setDate(startDate.getDate() + i);
+      const day = addDaysInTimeZone(startDate, i, timeZone);
       const key = formatDateKey(day);
-      return { date: key, xp: xpByDate.get(key) || 0 };
+      return key;
     });
 
-    res.json({ days });
+    const users = members.map((member) => {
+      const userId = member.userId.toString();
+      const xpByDate: Record<string, number> = {};
+      for (const dayKey of days) {
+        const mapKey = `${userId}:${dayKey}`;
+        xpByDate[dayKey] = xpByUserDate.get(mapKey) || 0;
+      }
+      return {
+        userId,
+        firstName: member.user.firstName,
+        username: member.user.username,
+        photoUrl: member.user.photoUrl,
+        xpByDate,
+      };
+    });
+
+    res.json({ days, users });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get weekly xp' });
   }
