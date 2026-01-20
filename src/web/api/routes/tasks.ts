@@ -5,19 +5,18 @@ import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
 import { calculateNextDueDate } from '../../../utils/recurrence';
+import { addDaysInTimeZone, getDatePartsInTimeZone, getEndOfDayInTimeZone, getStartOfDayInTimeZone, getWeekdayInTimeZone, makeDateInTimeZone } from '../../../utils/timezone';
 import { notifySpaceMembers, notifyTaskAssigneeChanged, notifyUser } from '../../../notifications';
 
 /**
  * Получает первый доступный день для повторяющейся задачи
  * Если сегодня входит в дни повторения - возвращает сегодня, иначе следующий доступный день
  */
-function getFirstAvailableDate(recurrenceType: string | null, payload: any, now: Date): Date {
+function getFirstAvailableDate(recurrenceType: string | null, payload: any, now: Date, timeZone: string): Date {
   if (!recurrenceType || recurrenceType === 'none') {
     return now; // Для одноразовых задач возвращаем текущую дату
   }
-  
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
+  const today = getStartOfDayInTimeZone(now, timeZone);
   
   // Для ежедневных задач (7 дней) - сегодня
   if (recurrenceType === 'daily') {
@@ -26,46 +25,26 @@ function getFirstAvailableDate(recurrenceType: string | null, payload: any, now:
   
   // Для еженедельных задач проверяем дни недели
   if (recurrenceType === 'weekly' && payload?.daysOfWeek && payload.daysOfWeek.length > 0) {
-    const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+    const currentDay = getWeekdayInTimeZone(now, timeZone); // 0 = воскресенье, 1 = понедельник, ...
     const daysOfWeek = payload.daysOfWeek.sort((a: number, b: number) => a - b);
-    
-    // Если сегодня входит в дни недели - возвращаем сегодня
+
     if (daysOfWeek.includes(currentDay)) {
       return today;
     }
-    
-    // Иначе находим следующий доступный день
+
     let nextDay = daysOfWeek.find((d: number) => d > currentDay);
+    let daysToAdd = 0;
     if (!nextDay) {
-      // Следующий день на следующей неделе
       nextDay = daysOfWeek[0];
-      const nextAvailable = new Date(now);
-      nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
-      nextAvailable.setHours(0, 0, 0, 0);
-      return nextAvailable;
+      daysToAdd = 7 - currentDay + nextDay;
     } else {
-      // Следующий день на этой неделе
-      const nextAvailable = new Date(now);
-      nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
-      nextAvailable.setHours(0, 0, 0, 0);
-      return nextAvailable;
+      daysToAdd = nextDay - currentDay;
     }
+    return addDaysInTimeZone(now, daysToAdd, timeZone);
   }
   
   // По умолчанию - сегодня
   return today;
-}
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
 }
 
 function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
@@ -180,6 +159,8 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
+    const space = await prisma.space.findUnique({ where: { id: authReq.currentSpaceId } });
+    const timeZone = space?.timezone || 'UTC';
     const dueAtDate = dueAt ? new Date(dueAt) : null;
     const derivedTimeOfDay = typeof timeOfDay === 'string'
       ? timeOfDay
@@ -224,17 +205,19 @@ router.post('/', async (req: Request, res: Response) => {
       const firstAvailableDate = getFirstAvailableDate(
         recurrenceType,
         { daysOfWeek },
-        referenceDate
+        referenceDate,
+        timeZone,
       );
-      const baseDate = startOfDay(firstAvailableDate);
+      const baseDate = getStartOfDayInTimeZone(firstAvailableDate, timeZone);
       taskDueAt = derivedTimeOfDay
         ? applyTimeOfDay(baseDate, derivedTimeOfDay)
-        : endOfDay(baseDate);
+        : getEndOfDayInTimeZone(baseDate, timeZone);
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
       taskDueAt = new Date(dueAt);
-      if (!hasDeadlineTime) {
-        taskDueAt.setHours(0, 0, 0, 0);
+      if (!hasDeadlineTime && dueAtDate) {
+        const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
+        taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
       }
     }
 
@@ -391,6 +374,8 @@ router.put('/:taskId', async (req: Request, res: Response) => {
       }
     }
 
+    const space = await prisma.space.findUnique({ where: { id: authReq.currentSpaceId } });
+    const timeZone = space?.timezone || 'UTC';
     const dueAtDate = dueAt ? new Date(dueAt) : null;
     const derivedTimeOfDay = typeof timeOfDay === 'string'
       ? timeOfDay
@@ -422,15 +407,17 @@ router.put('/:taskId', async (req: Request, res: Response) => {
         recurrenceType,
         { daysOfWeek },
         dueAtDate || new Date(),
+        timeZone,
       );
-      const baseDate = startOfDay(firstAvailableDate);
+      const baseDate = getStartOfDayInTimeZone(firstAvailableDate, timeZone);
       taskDueAt = derivedTimeOfDay
         ? applyTimeOfDay(baseDate, derivedTimeOfDay)
-        : endOfDay(baseDate);
+        : getEndOfDayInTimeZone(baseDate, timeZone);
     } else if (dueAt) {
       taskDueAt = new Date(dueAt);
-      if (!hasDeadlineTime) {
-        taskDueAt.setHours(0, 0, 0, 0);
+      if (!hasDeadlineTime && dueAtDate) {
+        const parts = getDatePartsInTimeZone(dueAtDate, timeZone);
+        taskDueAt = makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
       }
     }
 
@@ -507,23 +494,25 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
       }
       
       // Рассчитываем следующий доступный день для выполнения
+      const space = await prisma.space.findUnique({ where: { id: task.spaceId } });
+      const timeZone = space?.timezone || 'UTC';
       const nextDueDate = calculateNextDueDate(
         recurrenceType,
         payload as any,
-        now
+        now,
+        timeZone,
       );
 
-      const nextOccurrenceDayStart = startOfDay(nextDueDate);
       const nextOccurrenceDeadline = (payload as any)?.timeOfDay
         ? nextDueDate
-        : endOfDay(nextOccurrenceDayStart);
+        : getEndOfDayInTimeZone(nextDueDate, timeZone);
       
       // Обновляем задачу: updatedAt для отслеживания последнего выполнения и dueAt на следующий день
       await prisma.task.update({
         where: { id: taskId },
         data: {
           updatedAt: now, // Время последнего выполнения
-          dueAt: nextOccurrenceDeadline, // Дедлайн следующего окна выполнения
+          dueAt: nextOccurrenceDeadline, // Следующее окно выполнения
           reminderSent: false, // Сбрасываем флаг напоминания для следующего периода
         },
       });

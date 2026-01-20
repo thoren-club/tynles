@@ -117,9 +117,33 @@ router.post('/invites', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin role required' });
     }
 
-    const { role } = req.body;
+    const { role, refresh } = req.body as { role?: string; refresh?: boolean };
     if (!['Editor', 'Viewer'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const now = new Date();
+    const existing = await prisma.invite.findFirst({
+      where: {
+        spaceId: targetSpaceId,
+        role,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing && !refresh) {
+      return res.json({
+        code: existing.code,
+        role: existing.role,
+        expiresAt: existing.expiresAt.toISOString(),
+      });
+    }
+
+    if (existing) {
+      await prisma.invite.deleteMany({
+        where: { spaceId: targetSpaceId, role },
+      });
     }
 
     const code = randomBytes(8).toString('hex');

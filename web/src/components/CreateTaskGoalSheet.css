@@ -44,6 +44,8 @@
   color: var(--color-text);
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
+  display: block;
 }
 
 .form-textarea {

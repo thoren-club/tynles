@@ -323,9 +323,28 @@ router.delete('/:spaceId', async (req: Request, res: Response) => {
       where: { id: spaceId },
     });
 
-    // Если удаляемое пространство - текущее активное, очищаем session
+    // Если удаляемое пространство - текущее активное, переключаем на другое
     if (authReq.currentSpaceId === spaceId) {
-      setCurrentSpace(authReq.user.id, undefined);
+      const nextSpace = await prisma.spaceMember.findFirst({
+        where: {
+          userId: authReq.user.id,
+          spaceId: { not: spaceId },
+          space: { name: { not: 'Персональный' } },
+        },
+        orderBy: { joinedAt: 'asc' },
+      });
+      if (nextSpace) {
+        setCurrentSpace(authReq.user.id, nextSpace.spaceId);
+      } else {
+        const fallback = await prisma.spaceMember.findFirst({
+          where: {
+            userId: authReq.user.id,
+            spaceId: { not: spaceId },
+          },
+          orderBy: { joinedAt: 'asc' },
+        });
+        setCurrentSpace(authReq.user.id, fallback?.spaceId);
+      }
     }
 
     await notifyUser({
@@ -370,7 +389,26 @@ router.post('/:spaceId/leave', async (req: Request, res: Response) => {
     });
 
     if (authReq.currentSpaceId === spaceId) {
-      setCurrentSpace(authReq.user.id, undefined);
+      const nextSpace = await prisma.spaceMember.findFirst({
+        where: {
+          userId: authReq.user.id,
+          spaceId: { not: spaceId },
+          space: { name: { not: 'Персональный' } },
+        },
+        orderBy: { joinedAt: 'asc' },
+      });
+      if (nextSpace) {
+        setCurrentSpace(authReq.user.id, nextSpace.spaceId);
+      } else {
+        const fallback = await prisma.spaceMember.findFirst({
+          where: {
+            userId: authReq.user.id,
+            spaceId: { not: spaceId },
+          },
+          orderBy: { joinedAt: 'asc' },
+        });
+        setCurrentSpace(authReq.user.id, fallback?.spaceId);
+      }
     }
 
     res.json({ success: true });

@@ -1,18 +1,7 @@
 import { prisma } from '../db';
 import { logger } from '../logger';
 import { calculateNextDueDate } from './recurrence';
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
+import { getEndOfDayInTimeZone } from './timezone';
 
 function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
   return payload?.assigneeScope === 'space' ? 'space' : 'user';
@@ -122,20 +111,23 @@ export async function processExpiredRecurringTasks() {
             recurrenceType = 'weekly';
           }
           
+          const timeZone = task.space?.timezone || 'UTC';
           const nextDueAt = calculateNextDueDate(
             recurrenceType,
             payload as any,
             now,
+            timeZone,
           );
 
           if (nextDueAt) {
-            const nextOccurrenceDayStart = startOfDay(nextDueAt);
-            const nextOccurrenceDeadline = endOfDay(nextOccurrenceDayStart);
+            const nextDueWithTime = payload?.timeOfDay
+              ? nextDueAt
+              : getEndOfDayInTimeZone(nextDueAt, timeZone);
             // Обновляем задачу на следующий период
             await prisma.task.update({
               where: { id: task.id },
               data: {
-                dueAt: nextOccurrenceDeadline,
+                dueAt: nextDueWithTime,
                 reminderSent: false, // Сбрасываем флаг напоминания
               },
             });

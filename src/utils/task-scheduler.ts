@@ -3,12 +3,7 @@ import { Bot } from 'grammy';
 import { AuthContext } from '../middleware/auth';
 import { addXp } from './xp';
 import { calculateNextDueDate } from './recurrence';
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
+import { getEndOfDayInTimeZone } from './timezone';
 
 function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
   return payload?.assigneeScope === 'space' ? 'space' : 'user';
@@ -162,13 +157,17 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
 
   // Handle recurrence
   if (task.recurrenceType && task.recurrenceType !== 'none') {
+    const timeZone = task.space?.timezone || 'UTC';
     const nextDueAt = calculateNextDueDate(
       task.recurrenceType,
       task.recurrencePayload as any,
       new Date(),
+      timeZone,
     );
     const payload = task.recurrencePayload as any;
-    const nextDueWithTime = payload?.timeOfDay ? nextDueAt : endOfDay(nextDueAt);
+    const nextDueWithTime = payload?.timeOfDay
+      ? nextDueAt
+      : getEndOfDayInTimeZone(nextDueAt, timeZone);
 
     await prisma.task.update({
       where: { id: task.id },

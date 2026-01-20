@@ -53,11 +53,11 @@ export const groupTasksByDue = (tasks: any[]) => {
   return grouped;
 };
 
-export const applyRecurringCompletion = (tasks: any[], taskId: string) => {
+export const applyRecurringCompletion = (tasks: any[], taskId: string, timeZone?: string) => {
   let updated = false;
   const nextTasks = tasks.map((task) => {
     if (task.id !== taskId) return task;
-    const nextDate = getNextAvailableDate(task);
+    const nextDate = getNextAvailableDate(task, timeZone);
     updated = true;
     return {
       ...task,

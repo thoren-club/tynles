@@ -293,6 +293,24 @@ export async function authMiddleware(
     // Get current space from session or use first available space
     const savedSpaceId = getCurrentSpace(user.id);
     
+    const findPreferredSpace = async () => {
+      const nonPersonal = await prisma.spaceMember.findFirst({
+        where: {
+          userId: user.id,
+          space: { name: { not: 'Персональный' } },
+        },
+        orderBy: { joinedAt: 'asc' },
+        include: { space: true },
+      });
+      if (nonPersonal) return nonPersonal.spaceId;
+
+      const fallback = await prisma.spaceMember.findFirst({
+        where: { userId: user.id },
+        orderBy: { joinedAt: 'asc' },
+      });
+      return fallback?.spaceId;
+    };
+
     if (savedSpaceId) {
       // Проверяем, что пространство все еще существует и пользователь является участником
       const spaceMember = await prisma.spaceMember.findUnique({
@@ -307,27 +325,17 @@ export async function authMiddleware(
       if (spaceMember) {
         req.currentSpaceId = savedSpaceId;
       } else {
-        // Пространство больше не доступно, находим первое доступное
-        const firstSpaceMember = await prisma.spaceMember.findFirst({
-          where: { userId: user.id },
-          orderBy: { joinedAt: 'asc' },
-        });
-        
-        if (firstSpaceMember) {
-          req.currentSpaceId = firstSpaceMember.spaceId;
-          setCurrentSpace(user.id, firstSpaceMember.spaceId);
+        const preferredSpaceId = await findPreferredSpace();
+        if (preferredSpaceId) {
+          req.currentSpaceId = preferredSpaceId;
+          setCurrentSpace(user.id, preferredSpaceId);
         }
       }
     } else {
-      // Нет сохраненного пространства, берем первое доступное
-      const firstSpaceMember = await prisma.spaceMember.findFirst({
-        where: { userId: user.id },
-        orderBy: { joinedAt: 'asc' },
-      });
-      
-      if (firstSpaceMember) {
-        req.currentSpaceId = firstSpaceMember.spaceId;
-        setCurrentSpace(user.id, firstSpaceMember.spaceId);
+      const preferredSpaceId = await findPreferredSpace();
+      if (preferredSpaceId) {
+        req.currentSpaceId = preferredSpaceId;
+        setCurrentSpace(user.id, preferredSpaceId);
       }
     }
 

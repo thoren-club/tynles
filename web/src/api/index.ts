@@ -437,11 +437,15 @@ export const api = {
     return result;
   },
 
-  async createInvite(role: 'Admin' | 'Editor' | 'Viewer', spaceId?: string): Promise<InviteResponse> {
+  async createInvite(
+    role: 'Admin' | 'Editor' | 'Viewer',
+    spaceId?: string,
+    refresh?: boolean,
+  ): Promise<InviteResponse> {
     const url = spaceId ? `/members/invites?spaceId=${spaceId}` : '/members/invites';
     return this.request<InviteResponse>(url, {
       method: 'POST',
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ role, refresh: !!refresh }),
     });
   },
 

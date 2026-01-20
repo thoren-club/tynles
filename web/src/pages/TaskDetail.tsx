@@ -419,11 +419,11 @@ export default function TaskDetail() {
   }
 
   const isRecurring = originalTask.recurrenceType && originalTask.recurrenceType !== 'none';
-  const taskAvailable = isTaskAvailable(originalTask);
+  const taskAvailable = isTaskAvailable(originalTask, currentSpace?.timezone);
   const nextAvailableTime = getNextAvailableDate(originalTask);
   
   const formatTimeUntilNextText = (): string => {
-    return formatTimeUntilNextUtil(originalTask);
+    return formatTimeUntilNextUtil(originalTask, currentSpace?.timezone);
   };
 
   return (

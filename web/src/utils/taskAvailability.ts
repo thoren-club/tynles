@@ -11,7 +11,9 @@
  *   1. dueAt <= текущее время (наступил следующий доступный день)
  *   2. Текущий день недели входит в daysOfWeek (для еженедельных задач)
  */
-export function isTaskAvailable(task: any): boolean {
+import { addDaysInTimeZone, getStartOfDayInTimeZone, getWeekdayInTimeZone } from './timezone';
+
+export function isTaskAvailable(task: any, timeZone?: string): boolean {
   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
   
   // Одноразовые задачи всегда доступны
@@ -19,6 +21,7 @@ export function isTaskAvailable(task: any): boolean {
     return true;
   }
   
+  const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const now = new Date();
   
   // Если нет dueAt, задача доступна (недавно создана, еще не выполнена)
@@ -28,15 +31,16 @@ export function isTaskAvailable(task: any): boolean {
   
   const dueDate = new Date(task.dueAt);
   
-  // Для повторяющихся: dueAt = дедлайн окна выполнения (конец дня)
-  const windowStart = new Date(dueDate);
-  windowStart.setHours(0, 0, 0, 0);
+  // Для повторяющихся: окно выполнения по TZ пространства
+  const windowStart = getStartOfDayInTimeZone(dueDate, tz);
+  const hasTime = !!task.recurrencePayload?.timeOfDay;
+  const windowEnd = hasTime ? dueDate : addDaysInTimeZone(windowStart, 1, tz);
 
   // Окно выполнения ещё не наступило
   if (now < windowStart) return false;
 
   // Окно выполнения уже прошло
-  if (now > dueDate) return false;
+  if (now > windowEnd) return false;
 
   // Если задача уже выполнена в текущем окне — недоступна
   if (task.updatedAt) {
@@ -48,7 +52,7 @@ export function isTaskAvailable(task: any): boolean {
   const daysOfWeek = task.recurrencePayload?.daysOfWeek as number[] | undefined;
   if (daysOfWeek && daysOfWeek.length > 0 && daysOfWeek.length < 7) {
     // Еженедельная задача - проверяем текущий день недели
-    const currentDay = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+    const currentDay = getWeekdayInTimeZone(now, tz); // 0 = воскресенье, 1 = понедельник, ...
     if (!daysOfWeek.includes(currentDay)) {
       // Сегодня не входит в дни повторения
       return false;
@@ -62,17 +66,16 @@ export function isTaskAvailable(task: any): boolean {
 /**
  * Получает следующий доступный день для повторяющейся задачи
  */
-export function getNextAvailableDate(task: any): Date | null {
+export function getNextAvailableDate(task: any, timeZone?: string): Date | null {
   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
   
   if (!isRecurring || !task.dueAt) {
     return null;
   }
-  
+  const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const now = new Date();
   const dueDate = new Date(task.dueAt);
-  const windowStart = new Date(dueDate);
-  windowStart.setHours(0, 0, 0, 0);
+  const windowStart = getStartOfDayInTimeZone(dueDate, tz);
   const daysOfWeek = task.recurrencePayload?.daysOfWeek as number[] | undefined;
 
   // Если окно ещё не наступило — следующее доступное время это начало окна
@@ -86,48 +89,36 @@ export function getNextAvailableDate(task: any): Date | null {
     if (lastUpdate >= windowStart) {
       // сервер после выполнения уже переведёт dueAt на следующий день,
       // но если фронт ещё не обновился — покажем начало следующего дня
-      const next = new Date(windowStart);
-      next.setDate(next.getDate() + 1);
-      next.setHours(0, 0, 0, 0);
-      return next;
+      return addDaysInTimeZone(windowStart, 1, tz);
     }
   }
   
   // Если есть дни недели и их меньше 7 - это еженедельная задача
   if (daysOfWeek && daysOfWeek.length > 0 && daysOfWeek.length < 7) {
     // Еженедельная задача - находим следующий день недели
-    const currentDay = now.getDay();
+    const currentDay = getWeekdayInTimeZone(now, tz);
     const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
     let nextDay = sortedDays.find((d) => d > currentDay);
     
     if (!nextDay) {
       // Следующий день на следующей неделе
       nextDay = sortedDays[0];
-      const nextAvailable = new Date(now);
-      nextAvailable.setDate(nextAvailable.getDate() + (7 - currentDay + nextDay));
-      nextAvailable.setHours(0, 0, 0, 0);
-      return nextAvailable;
+      return addDaysInTimeZone(now, 7 - currentDay + nextDay, tz);
     } else {
       // Следующий день на этой неделе
-      const nextAvailable = new Date(now);
-      nextAvailable.setDate(nextAvailable.getDate() + (nextDay - currentDay));
-      nextAvailable.setHours(0, 0, 0, 0);
-      return nextAvailable;
+      return addDaysInTimeZone(now, nextDay - currentDay, tz);
     }
   }
   
   // Ежедневная задача (7 дней или daily) - следующий день = dueAt (если в будущем) или завтра
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  return tomorrow;
+  return addDaysInTimeZone(now, 1, tz);
 }
 
 /**
  * Форматирует время до следующего доступного дня
  */
-export function formatTimeUntilNext(task: any): string {
-  const nextAvailable = getNextAvailableDate(task);
+export function formatTimeUntilNext(task: any, timeZone?: string): string {
+  const nextAvailable = getNextAvailableDate(task, timeZone);
   if (!nextAvailable) return '';
   
   const now = new Date();

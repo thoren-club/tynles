@@ -16,6 +16,11 @@ export default function Members() {
     loadMembers();
   }, []);
 
+  useEffect(() => {
+    if (!showInvite) return;
+    handleCreateInvite(false);
+  }, [showInvite, selectedRole]);
+
   const loadMembers = async () => {
     try {
       const data = await api.getMembers();
@@ -28,9 +33,9 @@ export default function Members() {
     }
   };
 
-  const handleCreateInvite = async () => {
+  const handleCreateInvite = async (refresh: boolean = false) => {
     try {
-      const data = await api.createInvite(selectedRole);
+      const data = await api.createInvite(selectedRole, undefined, refresh);
       setInviteCode(data.code);
     } catch (error: any) {
       console.error('Failed to create invite:', error);
@@ -93,19 +98,27 @@ export default function Members() {
             <option value="Editor">{tr('Редактор', 'Editor')}</option>
             <option value="Viewer">{tr('Наблюдатель', 'Viewer')}</option>
           </select>
-          <button className="btn-primary" onClick={handleCreateInvite}>
+          <button className="btn-primary" onClick={() => handleCreateInvite(false)}>
             {tr('Создать приглашение', 'Create Invite')}
           </button>
           {inviteCode && (
             <div className="invite-code">
               <div className="invite-code-label">{tr('Код приглашения:', 'Invite Code:')}</div>
               <div className="invite-code-value">{inviteCode}</div>
-              <button
-                className="btn-copy"
-                onClick={() => copyToClipboard(inviteCode)}
-              >
-                {tr('Копировать', 'Copy')}
-              </button>
+              <div className="invite-code-actions">
+                <button
+                  className="btn-secondary"
+                  onClick={() => handleCreateInvite(true)}
+                >
+                  {tr('Обновить', 'Refresh')}
+                </button>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(inviteCode)}
+                >
+                  {tr('Копировать', 'Copy')}
+                </button>
+              </div>
             </div>
           )}
         </div>

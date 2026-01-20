@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import { logger } from '../logger';
 import { generateTaskReminderMessage } from '../utils/telegram';
+import { addDaysInTimeZone, getDatePartsInTimeZone, makeDateInTimeZone } from '../utils/timezone';
 import { TelegramTransport } from './telegram-transport';
 
 export type TaskReminderRunResult = {
@@ -85,6 +86,9 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
       isPaused: false,
       reminderSent: false,
     },
+    include: {
+      space: true,
+    },
   });
 
   let remindersSent = 0;
@@ -101,6 +105,43 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
     const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
     const isNoTime = isRecurring ? !payload?.timeOfDay : task.dueHasTime === false;
     const assigneeScope = getAssigneeScopeFromPayload(payload);
+    const timeZone = task.space?.timezone || 'UTC';
+
+    const formatTimeLeft = (diffMsValue: number) => {
+      if (diffMsValue <= 0) return '';
+      const totalMinutes = Math.ceil(diffMsValue / 60000);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const minutes = totalMinutes % 60;
+      if (days > 0) {
+        return `${days}д ${hours}ч`;
+      }
+      if (hours > 0) {
+        return minutes > 0 ? `${hours}ч ${minutes}м` : `${hours}ч`;
+      }
+      return `${minutes}м`;
+    };
+
+    const buildNoTimeReminderAt = (baseDueDate: Date, reminderTime: { hours: number; minutes: number }) => {
+      const parts = getDatePartsInTimeZone(baseDueDate, timeZone);
+      const reminderDay = addDaysInTimeZone(
+        makeDateInTimeZone({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone),
+        -1,
+        timeZone,
+      );
+      const reminderParts = getDatePartsInTimeZone(reminderDay, timeZone);
+      return makeDateInTimeZone(
+        {
+          year: reminderParts.year,
+          month: reminderParts.month,
+          day: reminderParts.day,
+          hour: reminderTime.hours,
+          minute: reminderTime.minutes,
+          second: 0,
+        },
+        timeZone,
+      );
+    };
 
     if (assigneeScope === 'space') {
       const members = await prisma.spaceMember.findMany({
@@ -120,9 +161,7 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
         let isDayBefore = false;
         if (!isOverdue && isNoTime) {
           const reminderTime = parseReminderTime(settings?.reminderTime, defaultReminderTime);
-          const reminderAt = new Date(dueDate);
-          reminderAt.setDate(reminderAt.getDate() - 1);
-          reminderAt.setHours(reminderTime.hours, reminderTime.minutes, 0, 0);
+          const reminderAt = buildNoTimeReminderAt(dueDate, reminderTime);
           shouldRemind = now >= reminderAt && now < dueDate;
           isDayBefore = true;
         } else {
@@ -133,10 +172,12 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
         if (!isOverdue && !shouldRemind) continue;
 
         const recipientName = recipient.firstName || recipient.username || undefined;
+        const timeLeft = !isOverdue && !isDayBefore ? formatTimeLeft(diffMs) : undefined;
         const message = generateTaskReminderMessage(task.title, isOverdue, {
           isRecurring,
           recipientName,
           isDayBefore,
+          timeLeft,
         });
 
         const sent = await transport.sendMessage(recipient.tgId, message);
@@ -166,9 +207,7 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
       let isDayBefore = false;
       if (!isOverdue && isNoTime) {
         const reminderTime = parseReminderTime(settings?.reminderTime, defaultReminderTime);
-        const reminderAt = new Date(dueDate);
-        reminderAt.setDate(reminderAt.getDate() - 1);
-        reminderAt.setHours(reminderTime.hours, reminderTime.minutes, 0, 0);
+        const reminderAt = buildNoTimeReminderAt(dueDate, reminderTime);
         shouldRemind = now >= reminderAt && now < dueDate;
         isDayBefore = true;
       } else {
@@ -179,10 +218,12 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
       if (!isOverdue && !shouldRemind) continue;
 
       const recipientName = recipient.firstName || recipient.username || undefined;
+      const timeLeft = !isOverdue && !isDayBefore ? formatTimeLeft(diffMs) : undefined;
       const message = generateTaskReminderMessage(task.title, isOverdue, {
         isRecurring,
         recipientName,
         isDayBefore,
+        timeLeft,
       });
 
       const sent = await transport.sendMessage(recipient.tgId, message);

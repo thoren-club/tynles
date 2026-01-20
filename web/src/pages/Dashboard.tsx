@@ -38,6 +38,14 @@ export default function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleDataChanged = () => {
+      loadData();
+    };
+    window.addEventListener('app-data-changed', handleDataChanged);
+    return () => window.removeEventListener('app-data-changed', handleDataChanged);
+  }, []);
+
   const loadData = async () => {
     try {
       const [userData, statsData, tasksData, leaderboardData, membersData, spaceInfo, weeklyXp] = await Promise.all([
@@ -102,7 +110,11 @@ export default function Dashboard() {
   const handleRecurringComplete = async (taskId: string) => {
     triggerLightHaptic();
     const previousTasks = dailyTasks;
-    const { tasks: updatedTasks } = applyRecurringCompletion(previousTasks, taskId);
+    const { tasks: updatedTasks } = applyRecurringCompletion(
+      previousTasks,
+      taskId,
+      currentSpace?.timezone,
+    );
     setDailyTasks(updatedTasks);
 
     try {
@@ -324,7 +336,7 @@ export default function Dashboard() {
               <div className="tasks-list">
                 {sortTasksByDue(tasksForSection).map((task: any) => {
                   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-                  const taskAvailable = isRecurring ? true : isTaskAvailable(task);
+                  const taskAvailable = isRecurring ? true : isTaskAvailable(task, currentSpace?.timezone);
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const hideTime = isRecurring
                     ? !task.recurrencePayload?.timeOfDay

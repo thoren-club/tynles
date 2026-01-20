@@ -87,7 +87,11 @@ export default function Deals() {
   const handleRecurringComplete = async (taskId: string) => {
     triggerLightHaptic();
     const previousTasks = tasks;
-    const { tasks: updatedTasks } = applyRecurringCompletion(previousTasks, taskId);
+    const { tasks: updatedTasks } = applyRecurringCompletion(
+      previousTasks,
+      taskId,
+      currentSpace?.timezone,
+    );
     setTasks(updatedTasks);
 
     try {
@@ -262,7 +266,7 @@ export default function Deals() {
               <div className="tasks-list">
                 {sortTasksByDue(tasksForSection).map((task) => {
                   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-                  const taskAvailable = isRecurring ? true : isTaskAvailable(task);
+                  const taskAvailable = isRecurring ? true : isTaskAvailable(task, currentSpace?.timezone);
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const hideTime = isRecurring
                     ? !task.recurrencePayload?.timeOfDay

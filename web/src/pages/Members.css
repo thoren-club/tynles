@@ -41,6 +41,21 @@
   word-break: break-all;
 }
 
+.invite-code-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  border: var(--border-1);
+}
+
 .btn-copy {
   background: var(--color-primary-500);
   color: var(--tg-theme-button-text-color, #111019);
