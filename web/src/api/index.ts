@@ -361,7 +361,7 @@ export const api = {
   },
 
   async updateSpaceAvatar(spaceId: string, avatarData: string) {
-    return this.request(`/spaces/${spaceId}/avatar`, {
+    return this.request<{ avatarUrl?: string | null }>(`/spaces/${spaceId}/avatar`, {
       method: 'PUT',
       body: JSON.stringify({ avatarData }),
     });
