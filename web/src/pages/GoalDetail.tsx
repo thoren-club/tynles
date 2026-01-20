@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button, Dropdown } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -37,13 +38,6 @@ export default function GoalDetail() {
       loadGoal();
     }
   }, [id]);
-
-  useEffect(() => {
-    document.body.classList.add('modal-open');
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, []);
 
   const loadGoal = async () => {
     try {
@@ -152,14 +146,9 @@ export default function GoalDetail() {
 
   if (loading) {
     return (
-      <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
-        <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="goal-detail" aria-busy="true">
-            <div className="goal-detail-header">
-              <div className="swipe-indicator" />
-            </div>
-            <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
-          </div>
+      <div className="goal-detail-page">
+        <div className="goal-detail" aria-busy="true">
+          <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
         </div>
       </div>
     );
@@ -167,23 +156,22 @@ export default function GoalDetail() {
 
   if (!originalGoal) {
     return (
-      <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
-        <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="goal-detail">{tr('Цель не найдена', 'Goal not found')}</div>
-        </div>
+      <div className="goal-detail-page">
+        <div className="goal-detail">{tr('Цель не найдена', 'Goal not found')}</div>
       </div>
     );
   }
 
   return (
-    <div className="goal-detail-overlay" onClick={() => navigate('/deals')}>
-      <div className="goal-detail-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="goal-detail">
-          <div className="goal-detail-header">
-            <div className="swipe-indicator" />
+    <div className="goal-detail-page">
+      <div className="goal-detail">
+        <div className="goal-detail-content">
+          <div className="detail-page-header">
+            <button type="button" className="detail-back-button" onClick={() => navigate(-1)}>
+              <IconChevronLeft size={20} />
+            </button>
+            <div className="detail-page-title">{tr('Цель', 'Goal')}</div>
           </div>
-
-          <div className="goal-detail-content">
             <div className="detail-title-row">
               {isEditingTitle ? (
                 <input
@@ -295,7 +283,7 @@ export default function GoalDetail() {
             {/* Кнопки действий */}
             <div className="goal-actions">
               <Button 
-                variant={originalGoal.isDone ? 'success' : 'primary'}
+                variant="success"
                 onClick={handleComplete}
                 disabled={isCompleting}
                 loading={isCompleting}
@@ -325,7 +313,6 @@ export default function GoalDetail() {
                 {tr('Удалить цель', 'Delete goal')}
               </Button>
             </div>
-          </div>
         </div>
       </div>
     </div>

@@ -314,6 +314,45 @@ router.delete('/:spaceId', async (req: Request, res: Response) => {
   }
 });
 
+// Leave space (non-owner)
+router.post('/:spaceId/leave', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+    const space = await prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) {
+      return res.status(404).json({ error: 'Space not found' });
+    }
+
+    if (space.ownerUserId === authReq.user.id) {
+      return res.status(403).json({ error: 'Owner cannot leave the space' });
+    }
+
+    const member = await prisma.spaceMember.findUnique({
+      where: { spaceId_userId: { spaceId, userId: authReq.user.id } },
+    });
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this space' });
+    }
+
+    await prisma.spaceMember.delete({
+      where: { spaceId_userId: { spaceId, userId: authReq.user.id } },
+    });
+
+    if (authReq.currentSpaceId === spaceId) {
+      setCurrentSpace(authReq.user.id, undefined);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to leave space' });
+  }
+});
+
 // Get space info by ID
 router.get('/:spaceId/info', async (req: Request, res: Response) => {
   try {

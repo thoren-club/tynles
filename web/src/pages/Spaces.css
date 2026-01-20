@@ -4,6 +4,25 @@
   padding-bottom: 80px;
 }
 
+.space-settings-page {
+  padding: var(--spacing-lg);
+  min-height: 100vh;
+}
+
+.space-settings-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 4px;
+}
+
 .spaces-header {
   display: flex;
   justify-content: space-between;
@@ -116,6 +135,25 @@
 }
 
 .btn-delete-space:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Выход из пространства */
+.btn-leave-space {
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: var(--border-1);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-leave-space:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

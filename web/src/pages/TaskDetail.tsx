@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button, Dropdown, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
@@ -61,13 +62,6 @@ export default function TaskDetail() {
       loadTask();
     }
   }, [id]);
-
-  useEffect(() => {
-    document.body.classList.add('modal-open');
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, []);
 
   const loadTask = async () => {
     try {
@@ -269,14 +263,9 @@ export default function TaskDetail() {
 
   if (loading) {
     return (
-      <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
-        <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="task-detail" aria-busy="true">
-            <div className="task-detail-header">
-              <div className="swipe-indicator" />
-            </div>
-            <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
-          </div>
+      <div className="task-detail-page">
+        <div className="task-detail" aria-busy="true">
+          <div className="loading-content">{tr('Загрузка...', 'Loading...')}</div>
         </div>
       </div>
     );
@@ -284,10 +273,8 @@ export default function TaskDetail() {
 
   if (!originalTask) {
     return (
-      <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
-        <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="task-detail">{tr('Задача не найдена', 'Task not found')}</div>
-        </div>
+      <div className="task-detail-page">
+        <div className="task-detail">{tr('Задача не найдена', 'Task not found')}</div>
       </div>
     );
   }
@@ -301,14 +288,15 @@ export default function TaskDetail() {
   };
 
   return (
-    <div className="task-detail-overlay" onClick={() => navigate('/deals')}>
-      <div className="task-detail-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="task-detail">
-          <div className="task-detail-header">
-            <div className="swipe-indicator" />
+    <div className="task-detail-page">
+      <div className="task-detail">
+        <div className="task-detail-content">
+          <div className="detail-page-header">
+            <button type="button" className="detail-back-button" onClick={() => navigate(-1)}>
+              <IconChevronLeft size={20} />
+            </button>
+            <div className="detail-page-title">{tr('Задача', 'Task')}</div>
           </div>
-
-          <div className="task-detail-content">
             <div className="detail-title-row">
               <button
                 type="button"
@@ -382,7 +370,7 @@ export default function TaskDetail() {
                 </div>
               )}
             </div>
-
+            <div className="form-separator" />
             <div className="form-field switch-section">
               <label className="form-checkbox-label form-switch">
                 <span>{tr('Время', 'Time')}</span>
@@ -419,17 +407,18 @@ export default function TaskDetail() {
               options={assigneeOptions}
               fullWidth
             />
+            <div className="form-separator" />
 
             {/* Повторяющаяся задача */}
             <div className="form-field">
               <label className="form-checkbox-label form-switch">
+                <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
                 <input
                   type="checkbox"
                   className="form-checkbox form-switch-input"
                   checked={formData.isRecurring}
                   onChange={(e) => handleRecurringToggle(e.target.checked)}
                 />
-                <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
               </label>
             </div>
 
@@ -493,7 +482,6 @@ export default function TaskDetail() {
                 {tr('Удалить', 'Delete')}
               </Button>
             </div>
-          </div>
         </div>
       </div>
     </div>

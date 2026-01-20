@@ -29,6 +29,32 @@
   gap: 4px;
 }
 
+.global-create-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--color-primary-500);
+  color: var(--color-neutral-0);
+  border: none;
+  box-shadow: 0 4px 0 #7b4a1b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1100;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.global-create-fab:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #7b4a1b;
+}
+
 .nav-indicator {
   position: absolute;
   top: 6px;

@@ -1,53 +1,32 @@
 /* Аналог GoalDetail.css */
-.task-detail-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 2000;
-  display: flex;
-  align-items: flex-end;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.task-detail-sheet {
-  width: 100%;
-  max-height: 90vh;
-  background: var(--color-surface);
-  border-radius: 20px 20px 0 0;
-  animation: slideUp 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+.task-detail-page {
+  padding: var(--spacing-lg);
+  min-height: 100vh;
 }
 
 .task-detail {
-  padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  max-height: 90vh;
-  overflow-y: auto;
+}
+
+.detail-page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detail-back-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 4px;
+}
+
+.detail-page-title {
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
 }
 
 .task-detail-content {
@@ -126,6 +105,12 @@
 
 .switch-body {
   margin-top: var(--spacing-xs);
+}
+
+.form-separator {
+  height: 1px;
+  background: color-mix(in srgb, var(--color-text-muted) 15%, transparent);
+  margin: var(--spacing-sm) 0;
 }
 
 .form-field {
@@ -251,19 +236,6 @@
   font-size: var(--text-md);
 }
 
-.task-detail-header {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--spacing-md);
-  padding-top: 8px;
-}
-
-.swipe-indicator {
-  width: 40px;
-  height: 4px;
-  background: var(--color-border-strong);
-  border-radius: 2px;
-}
 
 .task-field {
   display: flex;

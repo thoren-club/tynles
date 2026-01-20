@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
@@ -14,6 +14,7 @@ import './Deals.css';
 
 export default function Deals() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { tr, locale } = useLanguage();
 
   const formatLocalDateTime = (date: Date) => {
@@ -84,6 +85,20 @@ export default function Deals() {
       };
     }
   }, [showCreateModal]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const create = params.get('create');
+    if (!create) return;
+
+    if (create === 'task' || create === 'goal') {
+      handleCreateTypeSelect(create);
+    } else if (create === 'menu') {
+      setShowCreateDropdown(true);
+    }
+
+    navigate(location.pathname, { replace: true });
+  }, [location.search]);
 
   useEffect(() => {
     if (createType === 'task' && !formData.assigneeScope) {
@@ -693,11 +708,8 @@ export default function Deals() {
         </div>
       )}
 
-      <div className="create-fab-container">
-        <button className="create-fab" onClick={handleCreateClick}>
-          <IconPlus size={20} />
-        </button>
-        {showCreateDropdown && (
+      {showCreateDropdown && (
+        <div className="create-fab-container">
           <div className="create-fab-dropdown">
             <button 
               className="dropdown-item"
@@ -712,8 +724,8 @@ export default function Deals() {
               {tr('Задача', 'Task')}
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Шторка создания цели/задачи */}
       {showCreateModal && createType && (
@@ -806,6 +818,7 @@ export default function Deals() {
                       )}
                     </div>
 
+                    <div className="form-separator" />
                     <div className="form-field switch-section">
                       <label className="form-checkbox-label form-switch">
                         <span>{tr('Время', 'Time')}</span>
@@ -830,6 +843,7 @@ export default function Deals() {
                   />
                 )}
 
+                {createType === 'task' && <div className="form-separator" />}
                 {/* Период цели */}
                 {createType === 'goal' && (
                   <>
@@ -909,18 +923,19 @@ export default function Deals() {
                   />
                 )}
 
+                {(createType === 'task' || createType === 'goal') && <div className="form-separator" />}
                 {/* Повторяющаяся задача (только для задач) */}
                 {createType === 'task' && (
                   <>
                     <div className="form-field">
                       <label className="form-checkbox-label form-switch">
+                        <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
                         <input
                           type="checkbox"
                           className="form-checkbox form-switch-input"
                           checked={formData.isRecurring}
                           onChange={(e) => handleRecurringToggle(e.target.checked)}
                         />
-                        <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
                       </label>
                     </div>
 

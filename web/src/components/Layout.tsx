@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IconDashboard, IconListCheck, IconTrophy, IconFolder } from '@tabler/icons-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Layout.css';
@@ -21,6 +21,7 @@ const HIDE_NAVBAR_PATHS = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
   const { t } = useLanguage();
   const navItems = ['/', '/deals', '/leaderboard', '/spaces'];
@@ -32,6 +33,15 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="layout">
       <main className={`main-content ${shouldHideNavbar ? 'no-navbar' : ''}`}>{children}</main>
+      {!shouldHideNavbar && (
+        <button
+          className="global-create-fab"
+          type="button"
+          onClick={() => navigate('/deals?create=menu')}
+        >
+          +
+        </button>
+      )}
       {!shouldHideNavbar && (
         <nav
           className="bottom-nav"

@@ -4,6 +4,7 @@ import { api } from './api';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import Dashboard from './pages/Dashboard';
 import Spaces from './pages/Spaces';
+import SpaceSettings from './pages/SpaceSettings';
 import Deals from './pages/Deals';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
@@ -236,6 +237,7 @@ function AppContent() {
           <Route path="/deals" element={<Deals />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/spaces" element={<Spaces />} />
+          <Route path="/space-settings/:id" element={<SpaceSettings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/level-progression" element={<LevelProgression />} />

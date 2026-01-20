@@ -572,6 +572,12 @@
   margin-top: 6px;
 }
 
+.form-separator {
+  height: 1px;
+  background: color-mix(in srgb, var(--color-text-muted) 15%, transparent);
+  margin: 8px 0;
+}
+
 .days-of-week {
   display: flex;
   gap: 8px;

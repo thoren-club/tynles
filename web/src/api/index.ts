@@ -201,6 +201,12 @@ export const api = {
     });
   },
 
+  async leaveSpace(spaceId: string) {
+    return this.request(`/spaces/${spaceId}/leave`, {
+      method: 'POST',
+    });
+  },
+
   // Tasks
   async getTasks(): Promise<TasksResponse> {
     return this.request<TasksResponse>('/tasks');

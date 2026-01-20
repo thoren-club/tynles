@@ -338,6 +338,112 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
   }
 });
 
+// Update task
+router.put('/:taskId', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.currentSpaceId || !authReq.user) {
+      return res.status(404).json({ error: 'No current space' });
+    }
+
+    const taskId = BigInt(req.params.taskId);
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || task.spaceId !== authReq.currentSpaceId) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const { title, difficulty, description, dueAt, isRecurring, daysOfWeek, assigneeUserId, assigneeScope } = req.body;
+
+    let recurrenceType: string | null = null;
+    let recurrencePayload: Prisma.InputJsonValue | Prisma.JsonNullValueInput | null = Prisma.JsonNull;
+
+    if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
+      recurrenceType = daysOfWeek.length === 7 ? 'daily' : 'weekly';
+    }
+
+    const resolvedAssigneeScope = assigneeScope === 'space' ? 'space' : 'user';
+    let resolvedAssigneeId: bigint | null = null;
+    if (resolvedAssigneeScope === 'user' && assigneeUserId) {
+      try {
+        resolvedAssigneeId = BigInt(String(assigneeUserId));
+      } catch {
+        return res.status(400).json({ error: 'Invalid assigneeUserId' });
+      }
+    }
+
+    if (resolvedAssigneeId) {
+      const member = await prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId: authReq.currentSpaceId, userId: resolvedAssigneeId } },
+      });
+      if (!member) {
+        return res.status(404).json({ error: 'Assignee not found in this space' });
+      }
+    }
+
+    const dueAtDate = dueAt ? new Date(dueAt) : null;
+    const timeOfDay = dueAtDate
+      ? `${dueAtDate.getHours().toString().padStart(2, '0')}:${dueAtDate.getMinutes().toString().padStart(2, '0')}`
+      : undefined;
+
+    const payload: Record<string, any> = {};
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      payload.daysOfWeek = daysOfWeek;
+    }
+    if (resolvedAssigneeScope === 'space') {
+      payload.assigneeScope = 'space';
+    }
+    if (resolvedAssigneeId) {
+      payload.assigneeUserId = resolvedAssigneeId.toString();
+    }
+    if (timeOfDay) {
+      payload.timeOfDay = timeOfDay;
+    }
+    if (Object.keys(payload).length > 0) {
+      recurrencePayload = payload;
+    }
+
+    let taskDueAt: Date | null = null;
+    if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
+      const firstAvailableDate = getFirstAvailableDate(
+        recurrenceType,
+        { daysOfWeek },
+        dueAtDate || new Date(),
+      );
+      const baseDate = startOfDay(firstAvailableDate);
+      taskDueAt = timeOfDay ? applyTimeOfDay(baseDate, timeOfDay) : endOfDay(baseDate);
+    } else if (dueAt) {
+      taskDueAt = new Date(dueAt);
+    }
+
+    const updated = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        title: typeof title === 'string' ? title : undefined,
+        difficulty: typeof difficulty === 'number' ? difficulty : undefined,
+        description: typeof description === 'string' ? description : undefined,
+        dueAt: taskDueAt,
+        recurrenceType,
+        recurrencePayload,
+        reminderSent: false,
+      },
+    });
+
+    res.json({
+      id: updated.id.toString(),
+      title: updated.title,
+      difficulty: updated.difficulty,
+      xp: updated.xp,
+      dueAt: updated.dueAt?.toISOString() || null,
+      recurrenceType: updated.recurrenceType || null,
+      recurrencePayload: (updated.recurrencePayload as any) || null,
+      assigneeUserId: getAssigneeUserIdFromPayload(updated.recurrencePayload as any)?.toString() || null,
+      assigneeScope: getAssigneeScopeFromPayload(updated.recurrencePayload as any),
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
 // Complete task
 router.post('/:taskId/complete', async (req: Request, res: Response) => {
   try {

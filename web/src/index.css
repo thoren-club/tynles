@@ -13,14 +13,7 @@
   }
 }
 
-/* Fallback for environments without scrollbar-gutter (avoid layout shift on desktop). */
-@supports not (scrollbar-gutter: stable) {
-  @media (hover: hover) and (pointer: fine) {
-    body {
-      overflow-y: scroll;
-    }
-  }
-}
+/* Keep natural scroll; no forced scrollbar when content is short. */
 
 body {
   font-family: var(--font-sans);

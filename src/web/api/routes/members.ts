@@ -78,7 +78,7 @@ router.post('/invites', async (req: Request, res: Response) => {
     }
 
     const { role } = req.body;
-    if (!['Admin', 'Editor', 'Viewer'].includes(role)) {
+    if (!['Editor', 'Viewer'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
@@ -135,7 +135,7 @@ router.put('/:userId/role', async (req: Request, res: Response) => {
     const userId = BigInt(req.params.userId);
     const { role } = req.body;
 
-    if (!['Admin', 'Editor', 'Viewer'].includes(role)) {
+    if (!['Editor', 'Viewer'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
