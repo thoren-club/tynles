@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db';
+import { Role } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { randomBytes } from 'crypto';
 
@@ -118,7 +119,8 @@ router.post('/invites', async (req: Request, res: Response) => {
     }
 
     const { role, refresh } = req.body as { role?: string; refresh?: boolean };
-    if (!['Editor', 'Viewer'].includes(role)) {
+    const roleValue = role === 'Editor' || role === 'Viewer' ? role : null;
+    if (!roleValue) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
@@ -126,7 +128,7 @@ router.post('/invites', async (req: Request, res: Response) => {
     const existing = await prisma.invite.findFirst({
       where: {
         spaceId: targetSpaceId,
-        role,
+        role: roleValue,
         expiresAt: { gt: now },
       },
       orderBy: { createdAt: 'desc' },
@@ -142,7 +144,7 @@ router.post('/invites', async (req: Request, res: Response) => {
 
     if (existing) {
       await prisma.invite.deleteMany({
-        where: { spaceId: targetSpaceId, role },
+        where: { spaceId: targetSpaceId, role: roleValue },
       });
     }
 
@@ -153,7 +155,7 @@ router.post('/invites', async (req: Request, res: Response) => {
     const invite = await prisma.invite.create({
       data: {
         spaceId: targetSpaceId,
-        role,
+        role: roleValue as Role,
         code,
         expiresAt,
         createdBy: authReq.user!.id,

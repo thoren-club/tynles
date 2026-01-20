@@ -104,7 +104,7 @@ export async function processExpiredRecurringTasks() {
           // Преобразуем тип для calculateNextDueDate
           // В БД у нас 'daily' для задач с daysOfWeek, но это на самом деле еженедельные
           let recurrenceType = task.recurrenceType;
-          const payload = task.recurrencePayload as { daysOfWeek?: number[] } | null;
+          const payload = task.recurrencePayload as { daysOfWeek?: number[]; timeOfDay?: string } | null;
           
           // Если есть daysOfWeek - это еженедельная задача, независимо от типа
           if (payload?.daysOfWeek && payload.daysOfWeek.length > 0) {
