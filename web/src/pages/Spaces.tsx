@@ -25,6 +25,8 @@ export default function Spaces() {
   const [showSpacesDropdown, setShowSpacesDropdown] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const spacesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,6 +133,7 @@ export default function Spaces() {
       setInviteCode(inviteData?.code || '');
       setLevelRewards(rewardsData.rewards || []);
       setSelectedSpace(space);
+      setAvatarPreview(space.avatarUrl || null);
     } catch (error) {
       console.error('Failed to load space settings:', error);
     }
@@ -145,6 +148,37 @@ export default function Spaces() {
     setEditingRewardText('');
     setEditingMemberRole(null);
     setIsSpaceOwner(false);
+    setAvatarPreview(null);
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedSpace) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert(tr('Максимум 5 МБ', 'Max 5 MB'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || '');
+      if (!dataUrl) return;
+      setAvatarPreview(dataUrl);
+      setIsUploadingAvatar(true);
+      try {
+        const result = await api.updateSpaceAvatar(selectedSpace.id, dataUrl);
+        setSelectedSpace((prev: any) => ({ ...prev, avatarUrl: result.avatarUrl || dataUrl }));
+        await loadSpaces();
+      } catch (error) {
+        console.error('Failed to upload avatar:', error);
+        alert(tr('Не удалось загрузить аватарку', 'Failed to upload avatar'));
+        setAvatarPreview(selectedSpace.avatarUrl || null);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteSpace = async () => {
@@ -368,6 +402,15 @@ export default function Spaces() {
                 onClick={() => !space.isCurrent && handleSwitchSpace(space.id)}
               >
                 <div className="space-content">
+                  <div className="space-avatar">
+                    {space.avatarUrl ? (
+                      <img src={space.avatarUrl} alt={space.name} className="space-avatar-image" />
+                    ) : (
+                      <div className="space-avatar-placeholder">
+                        {space.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-main">
                     <div className="space-name">{space.name}</div>
                     <div className="space-info">
@@ -399,6 +442,33 @@ export default function Spaces() {
               </div>
 
               <h2 className="space-settings-title">{selectedSpace.name}</h2>
+
+              <div className="settings-section">
+                <h3 className="section-title">{tr('Аватар пространства', 'Space avatar')}</h3>
+                <div className="space-avatar-editor">
+                  <div className="space-avatar-preview">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt={selectedSpace.name} className="space-avatar-preview-image" />
+                    ) : (
+                      <div className="space-avatar-placeholder">
+                        {selectedSpace.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <label className="space-avatar-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={isUploadingAvatar}
+                    />
+                    {isUploadingAvatar ? tr('Загрузка...', 'Uploading...') : tr('Загрузить', 'Upload')}
+                  </label>
+                </div>
+                <div className="space-avatar-hint">
+                  {tr('Максимум 5 МБ. Кадрирование пока фиксированное.', 'Max 5 MB. Cropping is fixed for now.')}
+                </div>
+              </div>
 
               {/* Участники */}
               <div className="settings-section">

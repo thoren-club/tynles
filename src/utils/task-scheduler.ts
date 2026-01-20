@@ -63,6 +63,15 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
   // Add XP
   const xpResult = await addXp(task.spaceId, userId, task.xp);
 
+  await prisma.taskCompletion.create({
+    data: {
+      taskId: task.id,
+      spaceId: task.spaceId,
+      userId,
+      xp: task.xp,
+    },
+  });
+
   // Handle recurrence
   if (task.recurrenceType && task.recurrenceType !== 'none') {
     const nextDueAt = calculateNextDueDate(
@@ -86,6 +95,19 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
     });
   }
 
+  // Notify completion
+  const user = await prisma.telegramUser.findUnique({
+    where: { id: userId },
+  });
+
+  if (user) {
+    try {
+      await bot.api.sendMessage(Number(user.tgId), `✅ Задача выполнена: ${task.title}\n+${task.xp} XP`);
+    } catch (error) {
+      console.error('Failed to send task completion message:', error);
+    }
+  }
+
   // Check for level up and rewards
   if (xpResult.levelUp) {
     const reward = await prisma.reward.findUnique({
@@ -95,10 +117,6 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
           level: xpResult.newLevel,
         },
       },
-    });
-
-    const user = await prisma.telegramUser.findUnique({
-      where: { id: userId },
     });
 
     if (user) {

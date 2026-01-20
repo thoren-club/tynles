@@ -40,6 +40,8 @@
 
 .ui-datetimepicker {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 12px 16px;
   padding-left: calc(var(--spacing-md) * 3 + var(--spacing-xs));
   padding-right: calc(48px + var(--spacing-md));

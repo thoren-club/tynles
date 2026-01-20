@@ -5,7 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import { calculateTaskXp, calculateLevel } from '../../../types';
 import { addXp } from '../../../utils/xp';
 import { calculateNextDueDate } from '../../../utils/recurrence';
-import { notifyTaskAssigneeChanged } from '../../../notifications';
+import { notifyTaskAssigneeChanged, notifyUser } from '../../../notifications';
 
 /**
  * Получает первый доступный день для повторяющейся задачи
@@ -68,7 +68,14 @@ function endOfDay(date: Date): Date {
   return d;
 }
 
+function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
+  return payload?.assigneeScope === 'space' ? 'space' : 'user';
+}
+
 function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  if (getAssigneeScopeFromPayload(payload) === 'space') {
+    return null;
+  }
   const raw = payload?.assigneeUserId;
   if (!raw) return null;
   try {
@@ -77,6 +84,17 @@ function getAssigneeUserIdFromPayload(payload: any): bigint | null {
   } catch {
     return null;
   }
+}
+
+function applyTimeOfDay(baseDate: Date, timeOfDay?: string | null) {
+  if (!timeOfDay) return baseDate;
+  const [hours, minutes] = timeOfDay.split(':').map((part) => parseInt(part, 10));
+  if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+    const next = new Date(baseDate);
+    next.setHours(hours, minutes, 0, 0);
+    return next;
+  }
+  return baseDate;
 }
 
 const router = Router();
@@ -105,6 +123,7 @@ router.get('/', async (req: Request, res: Response) => {
         recurrenceType: task.recurrenceType || null,
         recurrencePayload: (task.recurrencePayload as any) || null,
         assigneeUserId: getAssigneeUserIdFromPayload(task.recurrencePayload as any)?.toString() || null,
+        assigneeScope: getAssigneeScopeFromPayload(task.recurrencePayload as any),
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString(),
       })),
@@ -122,7 +141,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek } = req.body;
+    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek, assigneeUserId, assigneeScope } = req.body;
 
     if (!title || typeof title !== 'string') {
       return res.status(400).json({ error: 'Title is required' });
@@ -132,6 +151,25 @@ router.post('/', async (req: Request, res: Response) => {
     let recurrenceType: string | null = null;
     let recurrencePayload: Prisma.InputJsonValue | Prisma.JsonNullValueInput | null = null;
     
+    const resolvedAssigneeScope = assigneeScope === 'space' ? 'space' : 'user';
+    let resolvedAssigneeId: bigint | null = null;
+    if (resolvedAssigneeScope === 'user' && assigneeUserId) {
+      try {
+        resolvedAssigneeId = BigInt(String(assigneeUserId));
+      } catch {
+        return res.status(400).json({ error: 'Invalid assigneeUserId' });
+      }
+    }
+
+    if (resolvedAssigneeId) {
+      const member = await prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId: authReq.currentSpaceId, userId: resolvedAssigneeId } },
+      });
+      if (!member) {
+        return res.status(404).json({ error: 'Assignee not found in this space' });
+      }
+    }
+
     if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
       // Определяем тип повторения: ежедневная (7 дней) или еженедельная (меньше 7)
       if (daysOfWeek.length === 7) {
@@ -139,9 +177,30 @@ router.post('/', async (req: Request, res: Response) => {
       } else {
         recurrenceType = 'weekly';
       }
-      recurrencePayload = { daysOfWeek: daysOfWeek };
+    }
+
+    const dueAtDate = dueAt ? new Date(dueAt) : null;
+    const timeOfDay = dueAtDate
+      ? `${dueAtDate.getHours().toString().padStart(2, '0')}:${dueAtDate.getMinutes().toString().padStart(2, '0')}`
+      : undefined;
+
+    const payload: Record<string, any> = {};
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      payload.daysOfWeek = daysOfWeek;
+    }
+    if (resolvedAssigneeScope === 'space') {
+      payload.assigneeScope = 'space';
+    }
+    if (resolvedAssigneeId) {
+      payload.assigneeUserId = resolvedAssigneeId.toString();
+    }
+    if (timeOfDay) {
+      payload.timeOfDay = timeOfDay;
+    }
+
+    if (Object.keys(payload).length > 0) {
+      recurrencePayload = payload;
     } else {
-      // Используем Prisma.JsonNull для явного null в Json поле
       recurrencePayload = Prisma.JsonNull;
     }
 
@@ -154,16 +213,17 @@ router.post('/', async (req: Request, res: Response) => {
     // Для одноразовых - используем переданный dueAt
     let taskDueAt: Date | null = null;
     const now = new Date();
+    const referenceDate = dueAt ? new Date(dueAt) : now;
     
     if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
       // Для повторяющихся задач устанавливаем dueAt на первый доступный день
       const firstAvailableDate = getFirstAvailableDate(
         recurrenceType,
         { daysOfWeek },
-        now
+        referenceDate
       );
-      // Для повторяющихся задач дедлайн = конец доступного дня
-      taskDueAt = endOfDay(startOfDay(firstAvailableDate));
+      const baseDate = startOfDay(firstAvailableDate);
+      taskDueAt = timeOfDay ? applyTimeOfDay(baseDate, timeOfDay) : endOfDay(baseDate);
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
       taskDueAt = new Date(dueAt);
@@ -203,7 +263,7 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
     }
 
     const taskId = BigInt(req.params.taskId);
-    const { userId } = req.body as { userId?: string | null };
+    const { userId, assigneeScope } = req.body as { userId?: string | null; assigneeScope?: string };
 
     const task = await prisma.task.findUnique({ where: { id: taskId } });
     if (!task || task.spaceId !== authReq.currentSpaceId) {
@@ -219,7 +279,8 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
     const prevAssigneeId = getAssigneeUserIdFromPayload(payload);
 
     let nextAssigneeId: bigint | null = null;
-    if (userId) {
+    const nextAssigneeScope = assigneeScope === 'space' || userId === 'space' ? 'space' : 'user';
+    if (nextAssigneeScope === 'user' && userId) {
       try {
         nextAssigneeId = BigInt(userId);
       } catch {
@@ -236,10 +297,15 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
       }
     }
 
-    if (nextAssigneeId) {
+    if (nextAssigneeScope === 'space') {
+      payload.assigneeScope = 'space';
+      delete payload.assigneeUserId;
+    } else if (nextAssigneeId) {
+      payload.assigneeScope = 'user';
       payload.assigneeUserId = nextAssigneeId.toString();
     } else {
       delete payload.assigneeUserId;
+      delete payload.assigneeScope;
     }
 
     await prisma.task.update({
@@ -252,15 +318,21 @@ router.put('/:taskId/assignee', async (req: Request, res: Response) => {
 
     const actorName = authReq.user.firstName || authReq.user.username || 'Кто-то';
 
-    await notifyTaskAssigneeChanged({
-      prevAssigneeId,
-      nextAssigneeId,
-      taskTitle: task.title,
-      spaceName,
-      actorName,
-    });
+    if (nextAssigneeScope !== 'space') {
+      await notifyTaskAssigneeChanged({
+        prevAssigneeId,
+        nextAssigneeId,
+        taskTitle: task.title,
+        spaceName,
+        actorName,
+      });
+    }
 
-    res.json({ success: true, assigneeUserId: nextAssigneeId?.toString() || null });
+    res.json({
+      success: true,
+      assigneeUserId: nextAssigneeId?.toString() || null,
+      assigneeScope: nextAssigneeScope,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update assignee' });
   }
@@ -286,6 +358,15 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
 
     // Update user stats with XP using the utility function
     const result = await addXp(authReq.currentSpaceId, authReq.user.id, task.xp);
+
+    await prisma.taskCompletion.create({
+      data: {
+        taskId: task.id,
+        spaceId: task.spaceId,
+        userId: authReq.user.id,
+        xp: task.xp,
+      },
+    });
 
     // Для повторяющихся задач не удаляем, а обновляем updatedAt и dueAt на следующий доступный день
     // Для одноразовых задач удаляем
@@ -313,7 +394,9 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
       );
 
       const nextOccurrenceDayStart = startOfDay(nextDueDate);
-      const nextOccurrenceDeadline = endOfDay(nextOccurrenceDayStart);
+      const nextOccurrenceDeadline = (payload as any)?.timeOfDay
+        ? nextDueDate
+        : endOfDay(nextOccurrenceDayStart);
       
       // Обновляем задачу: updatedAt для отслеживания последнего выполнения и dueAt на следующий день
       await prisma.task.update({
@@ -328,6 +411,15 @@ router.post('/:taskId/complete', async (req: Request, res: Response) => {
       // Удаляем одноразовую задачу
       await prisma.task.delete({
         where: { id: taskId },
+      });
+    }
+
+    const completionMessage = `✅ Задача выполнена: <b>${task.title}</b>\n+${task.xp} XP`;
+    await notifyUser({ userId: authReq.user.id, message: completionMessage });
+    if (result.levelUp) {
+      await notifyUser({
+        userId: authReq.user.id,
+        message: `🎉 Поздравляем! Ты достиг уровня ${result.newLevel}.`,
       });
     }
 

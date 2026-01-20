@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
+import { triggerMediumHaptic } from '../utils/haptics';
 import './Leaderboard.css';
 
 // Компонент для элемента лидерборда с поддержкой аватарок и пинков
@@ -31,6 +32,7 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
     
     setIsPoking(true);
     try {
+      triggerMediumHaptic();
       await onPoke(entry.userId);
       setPoked(true);
     } catch (error) {

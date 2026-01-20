@@ -52,6 +52,39 @@ button {
   outline: none;
 }
 
+.btn-primary,
+.create-button,
+.task-complete-btn,
+.pagination-button,
+.btn-create,
+.btn-complete,
+.complete-button {
+  background: var(--color-primary-500);
+  color: var(--color-neutral-0);
+  padding: 16px 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #7b4a1b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 15px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-primary:active:not(:disabled),
+.create-button:active:not(:disabled),
+.task-complete-btn:active:not(:disabled),
+.pagination-button:active:not(:disabled),
+.btn-create:active:not(:disabled),
+.btn-complete:active:not(:disabled),
+.complete-button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #7b4a1b;
+}
+
 input, textarea {
   font-family: inherit;
   outline: none;

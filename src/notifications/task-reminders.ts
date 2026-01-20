@@ -9,7 +9,14 @@ export type TaskReminderRunResult = {
   horizonHours: number;
 };
 
+function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
+  return payload?.assigneeScope === 'space' ? 'space' : 'user';
+}
+
 function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  if (getAssigneeScopeFromPayload(payload) === 'space') {
+    return null;
+  }
   const raw = payload?.assigneeUserId;
   if (!raw) return null;
   try {
@@ -76,31 +83,64 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
     const isOverdue = diffMs < 0;
 
     const payload = task.recurrencePayload as any;
-    const assigneeUserId = getAssigneeUserIdFromPayload(payload);
-    const recipientUserId: bigint = assigneeUserId ?? task.createdBy;
-
-    const recipient = userById.get(recipientUserId);
-    if (!recipient) continue;
-
-    const settings = recipient.notificationSettings;
-    if (settings && !settings.taskRemindersEnabled) continue;
-
-    const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
-
-    const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
-    if (!isOverdue && !shouldRemind) continue;
-
+    const assigneeScope = getAssigneeScopeFromPayload(payload);
     const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
     const message = generateTaskReminderMessage(task.title, isOverdue, { isRecurring });
 
-    const sent = await transport.sendMessage(recipient.tgId, message);
-    if (!sent) continue;
+    if (assigneeScope === 'space') {
+      const members = await prisma.spaceMember.findMany({
+        where: { spaceId: task.spaceId },
+        select: { userId: true },
+      });
+      let sentToAny = false;
 
-    await prisma.task.update({
-      where: { id: task.id },
-      data: { reminderSent: true },
-    });
-    remindersSent++;
+      for (const member of members) {
+        const recipient = userById.get(member.userId);
+        if (!recipient) continue;
+
+        const settings = recipient.notificationSettings;
+        if (settings && !settings.taskRemindersEnabled) continue;
+
+        const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
+        const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+        if (!isOverdue && !shouldRemind) continue;
+
+        const sent = await transport.sendMessage(recipient.tgId, message);
+        if (sent) {
+          sentToAny = true;
+        }
+      }
+
+      if (!sentToAny) continue;
+
+      await prisma.task.update({
+        where: { id: task.id },
+        data: { reminderSent: true },
+      });
+      remindersSent++;
+    } else {
+      const assigneeUserId = getAssigneeUserIdFromPayload(payload);
+      const recipientUserId: bigint = assigneeUserId ?? task.createdBy;
+
+      const recipient = userById.get(recipientUserId);
+      if (!recipient) continue;
+
+      const settings = recipient.notificationSettings;
+      if (settings && !settings.taskRemindersEnabled) continue;
+
+      const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
+      const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+      if (!isOverdue && !shouldRemind) continue;
+
+      const sent = await transport.sendMessage(recipient.tgId, message);
+      if (!sent) continue;
+
+      await prisma.task.update({
+        where: { id: task.id },
+        data: { reminderSent: true },
+      });
+      remindersSent++;
+    }
   }
 
   logger.info({ remindersSent, consideredTasks: tasks.length, horizonHours }, 'Task reminders check completed');

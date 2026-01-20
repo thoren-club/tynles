@@ -3,6 +3,14 @@
   padding-bottom: 80px;
 }
 
+.weekly-xp-panel {
+  background: var(--color-wrapper-1);
+  box-shadow: var(--shadow-wrapper);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
 /* Верхняя зона Dashboard */
 .dashboard-top-bar {
   display: flex;

@@ -4,8 +4,10 @@ import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import { getTaskDateParts } from '../utils/taskDate';
+import { getGoalTimeframeLabel } from '../utils/goalTimeframe';
 import { triggerLightHaptic } from '../utils/haptics';
-import { Skeleton, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
+import { applyRecurringCompletion, getTaskSections, groupTasksByDue, sortTasksByDue } from '../utils/taskList';
+import { Skeleton, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import TaskListItem from '../components/TaskListItem';
 import './Deals.css';
@@ -13,9 +15,20 @@ import './Deals.css';
 export default function Deals() {
   const navigate = useNavigate();
   const { tr, locale } = useLanguage();
+
+  const formatLocalDateTime = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  const formatLocalDate = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  };
   const [goals, setGoals] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -27,14 +40,22 @@ export default function Deals() {
     description: '',
     deadline: '',
     importance: 1,
-    type: 'unlimited' as 'year' | 'month' | 'unlimited',
+    goalTargetType: 'unlimited' as 'year' | 'month' | 'unlimited',
+    goalTargetYear: new Date().getFullYear(),
+    goalTargetMonth: new Date().getMonth() + 1,
     isRecurring: false,
     daysOfWeek: [] as number[],
+    assigneeUserId: '',
+    assigneeScope: 'space' as 'space' | 'user',
   });
   
   const [isCreating, setIsCreating] = useState(false);
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
+  const [deadlineEnabled, setDeadlineEnabled] = useState(true);
+  const [deadlineDate, setDeadlineDate] = useState(formatLocalDate(new Date()));
+  const [deadlineTime, setDeadlineTime] = useState('23:59');
+  const [deadlineHasTime, setDeadlineHasTime] = useState(true);
   
   // Для свайпа шторки
   const [swipeStartY, setSwipeStartY] = useState<number | null>(null);
@@ -63,6 +84,12 @@ export default function Deals() {
       };
     }
   }, [showCreateModal]);
+
+  useEffect(() => {
+    if (createType === 'task' && !formData.assigneeScope) {
+      setFormData((prev) => ({ ...prev, assigneeScope: 'space', assigneeUserId: '' }));
+    }
+  }, [createType, formData.assigneeScope]);
 
   // Глобальные обработчики для свайпа мыши (на document)
   useEffect(() => {
@@ -126,15 +153,17 @@ export default function Deals() {
 
   const loadData = async () => {
     try {
-      const [goalsData, tasksData, membersData] = await Promise.all([
+      const [goalsData, tasksData, membersData, spaceInfo] = await Promise.all([
         api.getGoals(),
         api.getTasks(),
         api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
       ]);
       
       setGoals(goalsData.goals || []);
       setTasks(tasksData.tasks || []);
       setMembers(membersData.members || []);
+      setCurrentSpace(spaceInfo);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -153,17 +182,27 @@ export default function Deals() {
     // Умные значения по умолчанию
     const today = new Date();
     today.setHours(23, 59, 0, 0);
-    const defaultDeadline = today.toISOString().slice(0, 16);
+    const defaultDeadline = formatLocalDateTime(today);
+    const defaultAssigneeScope = 'space';
+    const defaultAssignee = '';
     
     setFormData({
       title: '',
       description: '',
       deadline: defaultDeadline,
       importance: 2, // Средняя по умолчанию
-      type: 'unlimited',
+      goalTargetType: 'unlimited',
+      goalTargetYear: new Date().getFullYear(),
+      goalTargetMonth: new Date().getMonth() + 1,
       isRecurring: false,
       daysOfWeek: [],
+      assigneeUserId: type === 'task' ? defaultAssignee : '',
+      assigneeScope: type === 'task' ? defaultAssigneeScope : 'space',
     });
+    setDeadlineEnabled(type === 'task');
+    setDeadlineDate(defaultDeadline.slice(0, 10));
+    setDeadlineTime(defaultDeadline.slice(11, 16));
+    setDeadlineHasTime(true);
     setShowCreateModal(true);
   };
 
@@ -175,10 +214,18 @@ export default function Deals() {
       description: '',
       deadline: '',
       importance: 1,
-      type: 'unlimited',
+      goalTargetType: 'unlimited',
+      goalTargetYear: new Date().getFullYear(),
+      goalTargetMonth: new Date().getMonth() + 1,
       isRecurring: false,
       daysOfWeek: [],
+      assigneeUserId: '',
+      assigneeScope: 'space',
     });
+    setDeadlineEnabled(false);
+    setDeadlineDate(formatLocalDate(new Date()));
+    setDeadlineTime('23:59');
+    setDeadlineHasTime(false);
     setSheetTransform(0);
     setSwipeStartY(null);
     setSwipeCurrentY(null);
@@ -287,6 +334,11 @@ export default function Deals() {
       return;
     }
 
+    if ((createType === 'task' || createType === 'goal') && formData.assigneeScope === 'user' && !formData.assigneeUserId) {
+      alert(tr('Выберите исполнителя', 'Select an assignee'));
+      return;
+    }
+
     setIsCreating(true);
     try {
       if (createType === 'goal') {
@@ -294,8 +346,11 @@ export default function Deals() {
           title: formData.title.trim(),
           difficulty: formData.importance,
           description: formData.description.trim() || undefined,
-          deadline: formData.deadline || undefined,
-          type: formData.type || undefined,
+          assigneeScope: formData.assigneeScope,
+          assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
+          targetType: formData.goalTargetType,
+          targetYear: formData.goalTargetType !== 'unlimited' ? formData.goalTargetYear : undefined,
+          targetMonth: formData.goalTargetType === 'month' ? formData.goalTargetMonth : undefined,
         });
       } else {
         // Задача
@@ -304,6 +359,8 @@ export default function Deals() {
           difficulty: formData.importance,
           description: formData.description.trim() || undefined,
           dueAt: formData.deadline || undefined,
+          assigneeScope: formData.assigneeScope,
+          assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
         };
 
         if (formData.isRecurring && formData.daysOfWeek.length > 0) {
@@ -331,42 +388,93 @@ export default function Deals() {
     navigate(`/goal/${goalId}`);
   };
 
+  const handleGoalToggle = async (goalId: string) => {
+    triggerLightHaptic();
+    try {
+      await api.toggleGoal(goalId);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to toggle goal:', error);
+      alert(tr('Не удалось изменить статус цели', 'Failed to update goal status'));
+    }
+  };
+
   const handleTaskClick = (taskId: string) => {
     navigate(`/task/${taskId}`);
   };
 
   const handleRecurringComplete = async (taskId: string) => {
     triggerLightHaptic();
+    const previousTasks = tasks;
+    const { tasks: updatedTasks } = applyRecurringCompletion(previousTasks, taskId);
+    setTasks(updatedTasks);
+
     try {
       await api.completeTask(taskId);
-      await loadData();
     } catch (error) {
       console.error('Failed to complete task:', error);
+      setTasks(previousTasks);
       alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
     }
   };
 
-  // Получаем текст важности по difficulty
-  const getImportanceText = (difficulty: number): string => {
-    const importanceMap: { [key: number]: string } = {
-      1: tr('Низкая', 'Low'),
-      2: tr('Средняя', 'Medium'),
-      3: tr('Высокая', 'High'),
-      4: tr('Критическая', 'Critical'),
-    };
-    return importanceMap[difficulty] || importanceMap[1];
+  const memberOptions = members.map((m: any) => ({
+    value: `user:${m.id}`,
+    label: m.firstName || m.username || m.id,
+  }));
+
+  const spaceOption = {
+    value: 'space',
+    label: currentSpace?.name || tr('Пространство', 'Space'),
   };
 
-  // Получаем класс для важности (для цвета)
-  const getImportanceClass = (difficulty: number): string => {
-    const classMap: { [key: number]: string } = {
-      1: 'importance-low',      // серый
-      2: 'importance-medium',   // зеленый
-      3: 'importance-high',     // оранжевый
-      4: 'importance-urgent',   // красный
-    };
-    return classMap[difficulty] || classMap[1];
+  const assigneeOptions = [spaceOption, ...memberOptions];
+
+  const handleRecurringToggle = (checked: boolean) => {
+    setFormData({ ...formData, isRecurring: checked });
   };
+
+  const handleDeadlineToggle = (checked: boolean) => {
+    setDeadlineEnabled(checked);
+    if (checked && !deadlineDate) {
+      setDeadlineDate(formatLocalDate(new Date()));
+    }
+  };
+
+  const handleDeadlineTimeToggle = (checked: boolean) => {
+    setDeadlineHasTime(checked);
+    if (checked && !deadlineDate) {
+      setDeadlineDate(formatLocalDate(new Date()));
+    }
+    if (!checked) {
+      setDeadlineTime('23:59');
+    }
+  };
+
+  const handleDeadlineChange = (value: string) => {
+    if (deadlineHasTime) {
+      const [datePart, timePart] = value.split('T');
+      setDeadlineDate(datePart || '');
+      setDeadlineTime((timePart || '23:59').slice(0, 5));
+    } else {
+      setDeadlineDate(value);
+    }
+  };
+
+  useEffect(() => {
+    if (!deadlineEnabled) {
+      if (formData.deadline) {
+        setFormData((prev) => ({ ...prev, deadline: '' }));
+      }
+      return;
+    }
+    if (!deadlineDate) return;
+    const timePart = deadlineHasTime ? (deadlineTime || '23:59') : '23:59';
+    const nextValue = `${deadlineDate}T${timePart}`;
+    if (nextValue !== formData.deadline) {
+      setFormData((prev) => ({ ...prev, deadline: nextValue }));
+    }
+  }, [deadlineEnabled, deadlineDate, deadlineTime, deadlineHasTime, formData.deadline]);
 
   const handleTaskComplete = async (taskId: string) => {
     triggerLightHaptic();
@@ -405,55 +513,13 @@ export default function Deals() {
     }
   };
 
-  const getTaskDueGroup = (task: any): 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date' => {
-    if (!task.dueAt) return 'no-date';
-    const dueDate = new Date(task.dueAt);
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    const in7Days = new Date(startOfToday);
-    in7Days.setDate(in7Days.getDate() + 7);
-
-    if (dueDate < startOfToday) return 'overdue';
-    if (dueDate <= endOfToday) return 'today';
-    if (dueDate <= in7Days) return 'upcoming';
-    return 'later';
-  };
-
-  const sortTasksByDue = (items: any[]) => {
-    return [...items].sort((a, b) => {
-      if (!a.dueAt && !b.dueAt) return 0;
-      if (!a.dueAt) return 1;
-      if (!b.dueAt) return -1;
-      return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
-    });
-  };
-
   const displayedGoals = goals.slice(0, 6);
   const hasMoreGoals = goals.length > 6;
   
   // Показываем все невыполненные задачи, даже если они ещё недоступны
   const uncompletedTasks = tasks.filter((task: any) => !task.isCompleted);
-  const groupedTasks = {
-    overdue: [] as any[],
-    today: [] as any[],
-    upcoming: [] as any[],
-    later: [] as any[],
-    noDate: [] as any[],
-  };
-
-  uncompletedTasks.forEach((task: any) => {
-    const group = getTaskDueGroup(task);
-    groupedTasks[group === 'no-date' ? 'noDate' : group].push(task);
-  });
-
-  const taskSections = [
-    { key: 'overdue', label: tr('Просрочено', 'Overdue') },
-    { key: 'today', label: tr('Сегодня', 'Today') },
-    { key: 'upcoming', label: tr('Ближайшие 7 дней', 'Next 7 days') },
-    { key: 'later', label: tr('Позже', 'Later') },
-    { key: 'noDate', label: tr('Без срока', 'No due date') },
-  ] as const;
+  const groupedTasks = groupTasksByDue(uncompletedTasks);
+  const taskSections = getTaskSections(tr);
 
   if (loading) {
     return (
@@ -510,32 +576,6 @@ export default function Deals() {
       {/* Хедер с кнопкой создать */}
       <div className="deals-header">
         <h1 className="deals-title">{tr('Дела', 'Deals')}</h1>
-        <div className="create-button-container">
-          <button 
-            className="create-button"
-            onClick={handleCreateClick}
-          >
-            <IconPlus size={20} />
-            <span>{tr('создать', 'create')}</span>
-          </button>
-          
-          {showCreateDropdown && (
-            <div className="create-dropdown">
-              <button 
-                className="dropdown-item"
-                onClick={() => handleCreateTypeSelect('goal')}
-              >
-                {tr('Цель', 'Goal')}
-              </button>
-              <button 
-                className="dropdown-item"
-                onClick={() => handleCreateTypeSelect('task')}
-              >
-                {tr('Задача', 'Task')}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Секция целей */}
@@ -558,27 +598,29 @@ export default function Deals() {
         ) : (
           <div className="goals-list">
             {displayedGoals.map((goal) => {
-              const importanceClass = getImportanceClass(goal.difficulty || 1);
-              const isImportant = (goal.difficulty || 1) >= 3;
-              
+              const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
+              const goalAssignee = goal.assigneeScope === 'space'
+                ? {
+                    firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    photoUrl: currentSpace?.avatarUrl,
+                  }
+                : goal.assigneeUserId
+                  ? members.find((m: any) => m.id === goal.assigneeUserId)
+                  : null;
+
               return (
-                <div 
-                  key={goal.id} 
-                  className={`goal-card ${importanceClass} ${isImportant ? 'goal-important' : ''}`}
+                <TaskListItem
+                  key={goal.id}
+                  title={goal.title}
+                  assignee={goalAssignee}
+                  isChecked={goal.isDone}
+                  isDisabled={false}
+                  isDimmed={goal.isDone}
+                  onToggle={() => handleGoalToggle(goal.id)}
+                  dateLabel={timeframeLabel}
+                  showCalendarIcon={false}
                   onClick={() => handleGoalClick(goal.id)}
-                >
-                  <div className="goal-content">
-                    <div className="goal-title">{goal.title}</div>
-                    <div className="goal-meta">
-                      <span className={`goal-importance ${importanceClass}`}>
-                        {getImportanceText(goal.difficulty || 1)}
-                      </span>
-                    </div>
-                  </div>
-                  {goal.isDone && (
-                    <div className="goal-done-badge">✓</div>
-                  )}
-                </div>
+                />
               );
             })}
           </div>
@@ -589,7 +631,7 @@ export default function Deals() {
       <div className="tasks-section">
         <h2 className="section-title">{tr('Задачи', 'Tasks')}</h2>
         {taskSections.map((section) => {
-          const tasksForSection = groupedTasks[section.key as keyof typeof groupedTasks];
+          const tasksForSection = groupedTasks[section.key];
           if (tasksForSection.length === 0) return null;
           return (
             <div key={section.key} className="task-group">
@@ -601,7 +643,14 @@ export default function Deals() {
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const dateParts = getTaskDateParts(task.dueAt, locale, tr);
                   const assigneeId = task.assigneeUserId;
-                  const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
+                  const assignee = task.assigneeScope === 'space'
+                    ? {
+                        firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                        photoUrl: currentSpace?.avatarUrl,
+                      }
+                    : assigneeId
+                      ? members.find((m: any) => m.id === assigneeId)
+                      : null;
 
                   return (
                     <TaskListItem
@@ -644,6 +693,28 @@ export default function Deals() {
         </div>
       )}
 
+      <div className="create-fab-container">
+        <button className="create-fab" onClick={handleCreateClick}>
+          <IconPlus size={20} />
+        </button>
+        {showCreateDropdown && (
+          <div className="create-fab-dropdown">
+            <button 
+              className="dropdown-item"
+              onClick={() => handleCreateTypeSelect('goal')}
+            >
+              {tr('Цель', 'Goal')}
+            </button>
+            <button 
+              className="dropdown-item"
+              onClick={() => handleCreateTypeSelect('task')}
+            >
+              {tr('Задача', 'Task')}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Шторка создания цели/задачи */}
       {showCreateModal && createType && (
         <div 
@@ -657,6 +728,8 @@ export default function Deals() {
               transform: sheetTransform > 0 ? `translateY(${sheetTransform}px)` : 'none',
               transition: swipeStartY === null ? 'transform 0.2s ease-out' : 'none'
             }}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
@@ -707,50 +780,145 @@ export default function Deals() {
                   />
                 </div>
 
-                {/* Дедлайн - показываем только для целей и одноразовых задач */}
-                {(createType === 'goal' || (createType === 'task' && !formData.isRecurring)) && (
-                  <DateTimePickerWithPresets
-                    label={tr('Дедлайн', 'Deadline')}
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                {/* Дедлайн */}
+                {createType === 'task' && (
+                  <>
+                    <div className="form-field switch-section">
+                      <label className="form-checkbox-label form-switch">
+                        <span>{tr('Дедлайн', 'Deadline')}</span>
+                        <input
+                          type="checkbox"
+                          className="form-checkbox form-switch-input"
+                          checked={deadlineEnabled}
+                          onChange={(e) => handleDeadlineToggle(e.target.checked)}
+                        />
+                      </label>
+                      {deadlineEnabled && (
+                        <div className="switch-body">
+                          <DateTimePickerWithPresets
+                            label={tr('Дата', 'Date')}
+                            value={deadlineHasTime ? `${deadlineDate}T${deadlineTime}` : deadlineDate}
+                            onChange={(e) => handleDeadlineChange(e.target.value)}
+                            fullWidth
+                            showTime={deadlineHasTime}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-field switch-section">
+                      <label className="form-checkbox-label form-switch">
+                        <span>{tr('Время', 'Time')}</span>
+                        <input
+                          type="checkbox"
+                          className="form-checkbox form-switch-input"
+                          checked={deadlineHasTime}
+                          onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                        />
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {/* Важность */}
+                {createType === 'task' && (
+                  <ImportanceSelector
+                    label={tr('Важность', 'Priority')}
+                    value={formData.importance}
+                    onChange={(value) => setFormData({ ...formData, importance: value })}
                     fullWidth
                   />
                 )}
 
-                {/* Важность */}
-                <ImportanceSelector
-                  label={tr('Важность', 'Priority')}
-                  value={formData.importance}
-                  onChange={(value) => setFormData({ ...formData, importance: value })}
-                  fullWidth
-                />
-
-                {/* Тип цели (только для целей) */}
+                {/* Период цели */}
                 {createType === 'goal' && (
-                  <div className="form-field">
-                    <label className="form-label">{tr('Тип цели', 'Goal type')}</label>
-                    <select
-                      className="form-select"
-                      value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    >
-                      <option value="unlimited">{tr('Бессрочная', 'Unlimited')}</option>
-                      <option value="month">{tr('На месяц', 'Month')}</option>
-                      <option value="year">{tr('На год', 'Year')}</option>
-                    </select>
-                  </div>
+                  <>
+                    <Dropdown
+                      label={tr('Период', 'Period')}
+                      value={String(formData.goalTargetType)}
+                      onChange={(value) => setFormData({ ...formData, goalTargetType: value as any })}
+                      options={[
+                        { value: 'unlimited', label: tr('Бессрочно', 'Unlimited') },
+                        { value: 'month', label: tr('В течение месяца', 'Within a month') },
+                        { value: 'year', label: tr('В течение года', 'Within a year') },
+                      ]}
+                      fullWidth
+                    />
+                    {formData.goalTargetType === 'month' && (
+                      <>
+                        <Dropdown
+                          label={tr('Месяц', 'Month')}
+                          value={String(formData.goalTargetMonth)}
+                          onChange={(value) => setFormData({ ...formData, goalTargetMonth: Number(value) })}
+                          options={Array.from({ length: 12 }, (_, index) => {
+                            const date = new Date(formData.goalTargetYear, index, 1);
+                            return {
+                              value: String(index + 1),
+                              label: date.toLocaleString(locale, { month: 'long' }),
+                            };
+                          })}
+                          fullWidth
+                        />
+                        <Dropdown
+                          label={tr('Год', 'Year')}
+                          value={String(formData.goalTargetYear)}
+                          onChange={(value) => setFormData({ ...formData, goalTargetYear: Number(value) })}
+                          options={Array.from({ length: 6 }, (_, index) => {
+                            const year = new Date().getFullYear() + index;
+                            return { value: String(year), label: String(year) };
+                          })}
+                          fullWidth
+                        />
+                      </>
+                    )}
+                    {formData.goalTargetType === 'year' && (
+                      <Dropdown
+                        label={tr('Год', 'Year')}
+                        value={String(formData.goalTargetYear)}
+                        onChange={(value) => setFormData({ ...formData, goalTargetYear: Number(value) })}
+                        options={Array.from({ length: 6 }, (_, index) => {
+                          const year = new Date().getFullYear() + index;
+                          return { value: String(year), label: String(year) };
+                        })}
+                        fullWidth
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Исполнитель */}
+                {(createType === 'task' || createType === 'goal') && (
+                  <Dropdown
+                    label={tr('Исполнитель', 'Assignee') + ' *'}
+                    value={
+                      formData.assigneeScope === 'space' || !formData.assigneeUserId
+                        ? 'space'
+                        : `user:${formData.assigneeUserId}`
+                    }
+                    onChange={(value: string | number) => {
+                      const nextValue = String(value);
+                      if (nextValue === 'space') {
+                        setFormData({ ...formData, assigneeScope: 'space', assigneeUserId: '' });
+                        return;
+                      }
+                      const userId = nextValue.replace('user:', '');
+                      setFormData({ ...formData, assigneeScope: 'user', assigneeUserId: userId });
+                    }}
+                    options={assigneeOptions}
+                    fullWidth
+                  />
                 )}
 
                 {/* Повторяющаяся задача (только для задач) */}
                 {createType === 'task' && (
                   <>
                     <div className="form-field">
-                      <label className="form-checkbox-label">
+                      <label className="form-checkbox-label form-switch">
                         <input
                           type="checkbox"
-                          className="form-checkbox"
+                          className="form-checkbox form-switch-input"
                           checked={formData.isRecurring}
-                          onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                          onChange={(e) => handleRecurringToggle(e.target.checked)}
                         />
                         <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
                       </label>
@@ -763,6 +931,20 @@ export default function Deals() {
                         onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
                         fullWidth
                       />
+                    )}
+
+                    {formData.isRecurring && (
+                      <div className="form-field switch-section">
+                        <label className="form-checkbox-label form-switch">
+                          <span>{tr('Время', 'Time')}</span>
+                          <input
+                            type="checkbox"
+                            className="form-checkbox form-switch-input"
+                            checked={deadlineHasTime}
+                            onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                          />
+                        </label>
+                      </div>
                     )}
                   </>
                 )}

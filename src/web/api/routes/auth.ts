@@ -4,6 +4,7 @@ import { getUserLanguage } from '../../../utils/language';
 import { setCurrentSpace, getCurrentSpace } from '../../../utils/session';
 import { AuthRequest } from '../middleware/auth';
 import { getUserRole, UserRole } from '../../../utils/user-role';
+import { notifyUser } from '../../../notifications';
 
 const router = Router();
 
@@ -60,6 +61,7 @@ router.get('/spaces', async (req: AuthRequest, res: Response) => {
         name: m.space.name,
         role: m.role,
         isCurrent: currentSpaceId === m.space.id,
+        avatarUrl: m.space.avatarUrl || null,
       })),
     });
   } catch (error) {
@@ -131,6 +133,11 @@ router.post('/invites/use', async (req: AuthRequest, res: Response) => {
 
     // Set as current space
     setCurrentSpace(req.user.id, invite.spaceId);
+
+    await notifyUser({
+      userId: req.user.id,
+      message: `🎉 Вы вступили в пространство <b>${invite.space.name}</b>!`,
+    });
 
     res.json({
       success: true,

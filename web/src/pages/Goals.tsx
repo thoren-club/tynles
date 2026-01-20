@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import { Skeleton } from '../components/ui';
+import { Dropdown, Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
+import TaskListItem from '../components/TaskListItem';
+import { getGoalTimeframeLabel } from '../utils/goalTimeframe';
 import './Goals.css';
 
 export default function Goals() {
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   const [goals, setGoals] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newGoal, setNewGoal] = useState({ title: '', difficulty: 1, xp: 0 });
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    assigneeScope: 'space' as 'space' | 'user',
+    assigneeUserId: '',
+    targetType: 'unlimited' as 'year' | 'month' | 'unlimited',
+    targetYear: new Date().getFullYear(),
+    targetMonth: new Date().getMonth() + 1,
+  });
 
   useEffect(() => {
     loadGoals();
@@ -17,8 +28,14 @@ export default function Goals() {
 
   const loadGoals = async () => {
     try {
-      const data = await api.getGoals();
+      const [data, membersData, spaceInfo] = await Promise.all([
+        api.getGoals(),
+        api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
+      ]);
       setGoals(data.goals);
+      setMembers(membersData.members || []);
+      setCurrentSpace(spaceInfo);
     } catch (error) {
       console.error('Failed to load goals:', error);
       alert(tr('Не удалось загрузить цели', 'Failed to load goals'));
@@ -30,9 +47,28 @@ export default function Goals() {
   const handleCreateGoal = async () => {
     if (!newGoal.title.trim()) return;
 
+    if (newGoal.assigneeScope === 'user' && !newGoal.assigneeUserId) {
+      alert(tr('Выберите исполнителя', 'Select an assignee'));
+      return;
+    }
+
     try {
-      await api.createGoal(newGoal);
-      setNewGoal({ title: '', difficulty: 1, xp: 0 });
+      await api.createGoal({
+        title: newGoal.title.trim(),
+        assigneeScope: newGoal.assigneeScope,
+        assigneeUserId: newGoal.assigneeScope === 'user' ? newGoal.assigneeUserId : undefined,
+        targetType: newGoal.targetType,
+        targetYear: newGoal.targetType !== 'unlimited' ? newGoal.targetYear : undefined,
+        targetMonth: newGoal.targetType === 'month' ? newGoal.targetMonth : undefined,
+      });
+      setNewGoal({
+        title: '',
+        assigneeScope: 'space',
+        assigneeUserId: '',
+        targetType: 'unlimited',
+        targetYear: new Date().getFullYear(),
+        targetMonth: new Date().getMonth() + 1,
+      });
       setShowCreate(false);
       loadGoals();
     } catch (error) {
@@ -99,6 +135,18 @@ export default function Goals() {
     );
   }
 
+  const assigneeOptions = [
+    { value: 'space', label: currentSpace?.name || tr('Пространство', 'Space') },
+    ...members.map((m: any) => ({
+      value: `user:${m.id}`,
+      label: m.firstName || m.username || m.id,
+    })),
+  ];
+  const assigneeValue =
+    newGoal.assigneeScope === 'space' || !newGoal.assigneeUserId
+      ? 'space'
+      : `user:${newGoal.assigneeUserId}`;
+
   return (
     <div className="goals">
       <div className="goals-header">
@@ -117,24 +165,71 @@ export default function Goals() {
             onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
             className="input"
           />
-          <div className="form-row">
-            <input
-              type="number"
-              placeholder={tr('Сложность', 'Difficulty')}
-              value={newGoal.difficulty}
-              onChange={(e) => setNewGoal({ ...newGoal, difficulty: parseInt(e.target.value) || 1 })}
-              className="input"
-              style={{ width: '100px' }}
+          <Dropdown
+            label={tr('Исполнитель', 'Assignee') + ' *'}
+            value={assigneeValue}
+            onChange={(value: string | number) => {
+              const nextValue = String(value);
+              if (nextValue === 'space') {
+                setNewGoal({ ...newGoal, assigneeScope: 'space', assigneeUserId: '' });
+                return;
+              }
+              const userId = nextValue.replace('user:', '');
+              setNewGoal({ ...newGoal, assigneeScope: 'user', assigneeUserId: userId });
+            }}
+            options={assigneeOptions}
+            fullWidth
+          />
+          <Dropdown
+            label={tr('Период', 'Period')}
+            value={String(newGoal.targetType)}
+            onChange={(value) => setNewGoal({ ...newGoal, targetType: value as any })}
+            options={[
+              { value: 'unlimited', label: tr('Бессрочно', 'Unlimited') },
+              { value: 'month', label: tr('В течение месяца', 'Within a month') },
+              { value: 'year', label: tr('В течение года', 'Within a year') },
+            ]}
+            fullWidth
+          />
+          {newGoal.targetType === 'month' && (
+            <>
+              <Dropdown
+                label={tr('Месяц', 'Month')}
+                value={String(newGoal.targetMonth)}
+                onChange={(value) => setNewGoal({ ...newGoal, targetMonth: Number(value) })}
+                options={Array.from({ length: 12 }, (_, index) => {
+                  const date = new Date(newGoal.targetYear, index, 1);
+                  return {
+                    value: String(index + 1),
+                    label: date.toLocaleString(locale, { month: 'long' }),
+                  };
+                })}
+                fullWidth
+              />
+              <Dropdown
+                label={tr('Год', 'Year')}
+                value={String(newGoal.targetYear)}
+                onChange={(value) => setNewGoal({ ...newGoal, targetYear: Number(value) })}
+                options={Array.from({ length: 6 }, (_, index) => {
+                  const year = new Date().getFullYear() + index;
+                  return { value: String(year), label: String(year) };
+                })}
+                fullWidth
+              />
+            </>
+          )}
+          {newGoal.targetType === 'year' && (
+            <Dropdown
+              label={tr('Год', 'Year')}
+              value={String(newGoal.targetYear)}
+              onChange={(value) => setNewGoal({ ...newGoal, targetYear: Number(value) })}
+              options={Array.from({ length: 6 }, (_, index) => {
+                const year = new Date().getFullYear() + index;
+                return { value: String(year), label: String(year) };
+              })}
+              fullWidth
             />
-            <input
-              type="number"
-              placeholder="XP"
-              value={newGoal.xp}
-              onChange={(e) => setNewGoal({ ...newGoal, xp: parseInt(e.target.value) || 0 })}
-              className="input"
-              style={{ width: '100px' }}
-            />
-          </div>
+          )}
           <button className="btn-primary" onClick={handleCreateGoal}>
             {tr('Создать', 'Create')}
           </button>
@@ -145,36 +240,35 @@ export default function Goals() {
         {goals.length === 0 ? (
           <div className="empty-state">{tr('Пока нет целей', 'No goals yet')}</div>
         ) : (
-          goals.map((goal) => (
-            <div 
-              key={goal.id} 
-              className={`goal-card ${goal.isDone ? 'done' : ''}`}
-            >
-              <div className="goal-content">
-                <div className="goal-title">{goal.title}</div>
-                <div className="goal-meta">
-                  <span>{tr('Сложность', 'Difficulty')}: {goal.difficulty}</span>
-                  <span>XP: {goal.xp}</span>
-                  {goal.isDone && <span className="done-badge">{tr('Готово', 'Done')}</span>}
-                </div>
-              </div>
-              <div className="goal-actions">
-                <button
-                  className={`btn-toggle ${goal.isDone ? 'done' : ''}`}
-                  onClick={() => handleToggleGoal(goal.id)}
-                  title={goal.isDone ? tr('Отменить выполнение', 'Mark as incomplete') : tr('Подтвердить выполнение', 'Mark as complete')}
-                >
-                  {goal.isDone ? '✓' : '○'}
-                </button>
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDeleteGoal(goal.id)}
-                >
+          goals.map((goal) => {
+            const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
+            const goalAssignee = goal.assigneeScope === 'space'
+              ? {
+                  firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                  photoUrl: currentSpace?.avatarUrl,
+                }
+              : goal.assigneeUserId
+                ? members.find((m: any) => m.id === goal.assigneeUserId)
+                : null;
+
+            return (
+              <div key={goal.id} className="goal-row">
+                <TaskListItem
+                  title={goal.title}
+                  assignee={goalAssignee}
+                  isChecked={goal.isDone}
+                  isDisabled={false}
+                  isDimmed={goal.isDone}
+                  onToggle={() => handleToggleGoal(goal.id)}
+                  dateLabel={timeframeLabel}
+                  showCalendarIcon={false}
+                />
+                <button className="btn-delete" onClick={() => handleDeleteGoal(goal.id)}>
                   {tr('Удалить', 'Delete')}
                 </button>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

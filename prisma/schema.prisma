@@ -35,6 +35,7 @@ model Space {
   name        String   @db.VarChar(255)
   ownerUserId BigInt   @map("owner_user_id")
   timezone    String   @default("Europe/Berlin") @db.VarChar(100)
+  avatarUrl   String?  @map("avatar_url") @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
 
   owner     TelegramUser     @relation("SpaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
@@ -112,6 +113,11 @@ model Goal {
   difficulty Int      @default(1)
   xp         Int      @default(0)
   isDone     Boolean  @default(false) @map("is_done")
+  assigneeUserId BigInt? @map("assignee_user_id")
+  assigneeScope  String  @default("space") @map("assignee_scope") @db.VarChar(20)
+  targetType     String  @default("unlimited") @map("target_type") @db.VarChar(20)
+  targetYear     Int?    @map("target_year")
+  targetMonth    Int?    @map("target_month")
   createdBy  BigInt   @map("created_by")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -135,6 +141,32 @@ model UserSpaceStats {
   @@id([spaceId, userId])
   @@index([spaceId, totalXp])
   @@map("user_space_stats")
+}
+
+model TaskCompletion {
+  id          BigInt   @id @default(autoincrement())
+  taskId      BigInt   @map("task_id")
+  spaceId     BigInt   @map("space_id")
+  userId      BigInt   @map("user_id")
+  xp          Int      @default(0)
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  @@index([spaceId, userId, completedAt])
+  @@index([taskId])
+  @@map("task_completions")
+}
+
+model UserEngagementState {
+  spaceId            BigInt   @map("space_id")
+  userId             BigInt   @map("user_id")
+  lastInactiveAt     DateTime? @map("last_inactive_at")
+  lastBegAt          DateTime? @map("last_beg_at")
+  lastSuccessAt      DateTime? @map("last_success_at")
+  lastRewardAt       DateTime? @map("last_reward_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@id([spaceId, userId])
+  @@map("user_engagement_state")
 }
 
 model Reward {

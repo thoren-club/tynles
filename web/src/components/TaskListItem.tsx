@@ -16,6 +16,7 @@ interface TaskListItemProps {
   timeLabel?: string | null;
   isOverdue?: boolean;
   isRecurring?: boolean;
+  showCalendarIcon?: boolean;
   onClick?: () => void;
 }
 
@@ -30,6 +31,7 @@ export default function TaskListItem({
   timeLabel,
   isOverdue = false,
   isRecurring = false,
+  showCalendarIcon = true,
   onClick,
 }: TaskListItemProps) {
   const assigneeName = assignee?.firstName || assignee?.username || 'U';
@@ -82,7 +84,7 @@ export default function TaskListItem({
         </div>
         {showMeta && (
           <div className="task-meta-row">
-            {dateLabel && <IconCalendar size={14} className="task-meta-icon" />}
+                    {dateLabel && showCalendarIcon && <IconCalendar size={14} className="task-meta-icon" />}
             {dateLabel && (
               <span className={`task-meta-text${isOverdue ? ' is-overdue' : ''}`}>
                 {dateLabel}

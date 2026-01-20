@@ -79,14 +79,3 @@
   background: var(--color-bg);
   border-radius: var(--radius-xs);
 }
-
-.btn-primary {
-  background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-}

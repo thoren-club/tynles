@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import { getTaskDateParts } from '../utils/taskDate';
 import { triggerLightHaptic } from '../utils/haptics';
+import { applyRecurringCompletion, getTaskSections, groupTasksByDue, sortTasksByDue } from '../utils/taskList';
 import WeeklyXpChart from '../components/WeeklyXpChart';
 import TaskListItem from '../components/TaskListItem';
 import './Dashboard.css';
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
   const [weeklyXpData, setWeeklyXpData] = useState<Array<{ day: number; xp: number; label: string }>>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -39,33 +41,30 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, statsData, tasksData, leaderboardData, membersData] = await Promise.all([
+      const [userData, statsData, tasksData, leaderboardData, membersData, spaceInfo] = await Promise.all([
         api.getUser(),
         api.getMyStats(),
         api.getTasks(),
         api.getSpaceLeaderboard().catch(() => ({ leaderboard: [] })),
         api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
       ]);
       
       setUser(userData);
       setStats(statsData);
       setSpaceLeaderboard((leaderboardData as any).leaderboard || []);
       setMembers((membersData as any).members || []);
+      setCurrentSpace(spaceInfo);
       
       // Фильтруем задачи: показываем все задачи (одноразовые и ежедневные)
       // Для статистики "на сегодня" используем только ежедневные повторяющиеся
       const allTasks = tasksData.tasks;
-      const dailyRecurring = allTasks.filter((task: any) => 
-        task.recurrenceType === 'daily' || 
-        (task.recurrenceType === 'weekly' && task.recurrencePayload?.daysOfWeek?.length === 7)
-      );
+      const dailyRecurring = getDailyRecurringTasks(allTasks);
       // Для актуальных задач показываем все невыполненные задачи
       setDailyTasks(allTasks);
       setDailyRecurringTasks(dailyRecurring);
 
-      // Генерируем данные для графика XP за неделю (пока заглушка)
-      // TODO: Заменить на реальный API endpoint для получения XP по дням
-      generateWeeklyXpData();
+      generateWeeklyXpData(allTasks);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -73,56 +72,58 @@ export default function Dashboard() {
     }
   };
 
-  // Генерирует данные графика XP за неделю (временная заглушка)
-  // TODO: Заменить на реальный API endpoint
-  const generateWeeklyXpData = () => {
-    // Пока возвращаем пустые данные (можно позже добавить API)
-    // Формат: { day: 0-6 (Sunday-Saturday), xp: number, label: string }
-    const weekData = Array.from({ length: 7 }, (_, i) => {
-      const jsDayOfWeek = i; // 0 = Sunday, 1 = Monday, etc.
-      return {
-        day: jsDayOfWeek,
-        xp: 0, // TODO: Получать из API
-        label: '', // Будет установлен в компоненте
-      };
+  const generateWeeklyXpData = (tasks: any[]) => {
+    const xpByDay = new Map<number, number>();
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(today);
+    endDate.setHours(23, 59, 59, 999);
+
+    tasks.forEach((task) => {
+      if (!task.isCompleted) return;
+      const completedAt = task.completedAt || task.updatedAt;
+      if (!completedAt) return;
+      const completedDate = new Date(completedAt);
+      if (Number.isNaN(completedDate.getTime())) return;
+      if (completedDate < startDate || completedDate > endDate) return;
+      const day = completedDate.getDay();
+      const current = xpByDay.get(day) || 0;
+      xpByDay.set(day, current + (task.xp || 0));
     });
-    
+
+    const weekData = Array.from({ length: 7 }, (_, i) => ({
+      day: i,
+      xp: xpByDay.get(i) || 0,
+      label: '',
+    }));
+
     setWeeklyXpData(weekData);
   };
 
   const handleRecurringComplete = async (taskId: string) => {
     triggerLightHaptic();
+    const previousTasks = dailyTasks;
+    const previousRecurring = dailyRecurringTasks;
+    const { tasks: updatedTasks } = applyRecurringCompletion(previousTasks, taskId);
+    setDailyTasks(updatedTasks);
+    setDailyRecurringTasks(getDailyRecurringTasks(updatedTasks));
+
     try {
       await api.completeTask(taskId);
-      await loadData();
     } catch (error) {
       console.error('Failed to complete task:', error);
+      setDailyTasks(previousTasks);
+      setDailyRecurringTasks(previousRecurring);
     }
   };
 
-  const getTaskDueGroup = (task: any): 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date' => {
-    if (!task.dueAt) return 'no-date';
-    const dueDate = new Date(task.dueAt);
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    const in7Days = new Date(startOfToday);
-    in7Days.setDate(in7Days.getDate() + 7);
-
-    if (dueDate < startOfToday) return 'overdue';
-    if (dueDate <= endOfToday) return 'today';
-    if (dueDate <= in7Days) return 'upcoming';
-    return 'later';
-  };
-
-  const sortTasksByDue = (items: any[]) => {
-    return [...items].sort((a, b) => {
-      if (!a.dueAt && !b.dueAt) return 0;
-      if (!a.dueAt) return 1;
-      if (!b.dueAt) return -1;
-      return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
-    });
-  };
+  const getDailyRecurringTasks = (tasks: any[]) =>
+    tasks.filter((task: any) => 
+      task.recurrenceType === 'daily' || 
+      (task.recurrenceType === 'weekly' && task.recurrencePayload?.daysOfWeek?.length === 7)
+    );
 
   // Выполнение задачи с возможностью отмены
   const handleTaskComplete = async (taskId: string) => {
@@ -243,26 +244,8 @@ export default function Dashboard() {
   
   // Актуальные задачи - показываем все невыполненные, даже если они ещё не доступны
   const uncompletedTasks = dailyTasks.filter((task: any) => !task.isCompleted);
-  const groupedTasks = {
-    overdue: [] as any[],
-    today: [] as any[],
-    upcoming: [] as any[],
-    later: [] as any[],
-    noDate: [] as any[],
-  };
-
-  uncompletedTasks.forEach((task: any) => {
-    const group = getTaskDueGroup(task);
-    groupedTasks[group === 'no-date' ? 'noDate' : group].push(task);
-  });
-
-  const taskSections = [
-    { key: 'overdue', label: tr('Просрочено', 'Overdue') },
-    { key: 'today', label: tr('Сегодня', 'Today') },
-    { key: 'upcoming', label: tr('Ближайшие 7 дней', 'Next 7 days') },
-    { key: 'later', label: tr('Позже', 'Later') },
-    { key: 'noDate', label: tr('Без срока', 'No due date') },
-  ] as const;
+  const groupedTasks = groupTasksByDue(uncompletedTasks);
+  const taskSections = getTaskSections(tr);
 
   // Мотивационные фразы
   const motivationalPhrases = [
@@ -374,34 +357,33 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* График XP за неделю */}
-      <WeeklyXpChart data={weeklyXpData} loading={loading} />
-
-      {/* Таблица лидеров пространства */}
-      {spaceLeaderboard.length > 0 && (
-        <div className="space-leaderboard-mini">
-          <h3 className="mini-leaderboard-title">
-            {tr('Лидеры пространства', 'Space leaders')}
-          </h3>
-          <div className="mini-leaderboard-table">
-            {spaceLeaderboard.slice(0, 5).map((entry, index) => (
-              <div key={entry.userId || index} className="mini-leaderboard-row">
-                <div className="mini-leaderboard-rank">#{index + 1}</div>
-                <div className="mini-leaderboard-name">
-                  {entry.firstName || entry.username || tr('Неизвестно', 'Unknown')}
+      <div className="weekly-xp-panel">
+        <WeeklyXpChart data={weeklyXpData} loading={loading} />
+        {spaceLeaderboard.length > 0 && (
+          <div className="space-leaderboard-mini">
+            <h3 className="mini-leaderboard-title">
+              {tr('Лидеры пространства', 'Space leaders')}
+            </h3>
+            <div className="mini-leaderboard-table">
+              {spaceLeaderboard.slice(0, 5).map((entry, index) => (
+                <div key={entry.userId || index} className="mini-leaderboard-row">
+                  <div className="mini-leaderboard-rank">#{index + 1}</div>
+                  <div className="mini-leaderboard-name">
+                    {entry.firstName || entry.username || tr('Неизвестно', 'Unknown')}
+                  </div>
+                  <div className="mini-leaderboard-xp">{entry.totalXp || 0} XP</div>
                 </div>
-                <div className="mini-leaderboard-xp">{entry.totalXp || 0} XP</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Блок актуальных задач */}
       <div className="actual-tasks-block">
         <h2 className="block-title">{tr('Актуальные задачи', 'Current tasks')}</h2>
         {taskSections.map((section) => {
-          const tasksForSection = groupedTasks[section.key as keyof typeof groupedTasks];
+          const tasksForSection = groupedTasks[section.key];
           if (tasksForSection.length === 0) return null;
           return (
             <div key={section.key} className="task-group">
@@ -413,7 +395,14 @@ export default function Dashboard() {
                   const isChecked = !isRecurring && completedTaskId === task.id;
                   const dateParts = getTaskDateParts(task.dueAt, locale, tr);
                   const assigneeId = task.assigneeUserId;
-                  const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
+                  const assignee = task.assigneeScope === 'space'
+                    ? {
+                        firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                        photoUrl: currentSpace?.avatarUrl,
+                      }
+                    : assigneeId
+                      ? members.find((m: any) => m.id === assigneeId)
+                      : null;
 
                   return (
                     <TaskListItem

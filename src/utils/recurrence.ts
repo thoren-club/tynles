@@ -42,5 +42,12 @@ export function calculateNextDueDate(
       next.setDate(next.getDate() + 1);
   }
 
+  if (payload?.timeOfDay) {
+    const [hours, minutes] = payload.timeOfDay.split(':').map((part) => parseInt(part, 10));
+    if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+      next.setHours(hours, minutes, 0, 0);
+    }
+  }
+
   return next;
 }

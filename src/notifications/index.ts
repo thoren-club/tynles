@@ -3,6 +3,7 @@ import { sendTaskReminders as sendTaskRemindersImpl } from './task-reminders';
 import { notifySpaceMembers as notifySpaceMembersImpl } from './space-notifications';
 import { notifyTaskAssigneeChanged as notifyTaskAssigneeChangedImpl } from './task-assignment-notifications';
 import { sendPokeNotification as sendPokeNotificationImpl } from './poke-notifications';
+import { notifyUser as notifyUserImpl } from './user-notifications';
 
 export { telegramTransport };
 export type { TelegramTransport } from './telegram-transport';
@@ -37,5 +38,9 @@ export async function sendPokeNotification(params: {
   toTgId: bigint;
 }) {
   return sendPokeNotificationImpl(telegramTransport, params);
+}
+
+export async function notifyUser(params: { userId: bigint; message: string }) {
+  return notifyUserImpl(telegramTransport, params);
 }
 

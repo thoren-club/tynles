@@ -126,24 +126,6 @@
   color: var(--color-text);
 }
 
-.btn-primary {
-  background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
-  padding: 10px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .btn-primary:hover {
-    opacity: 0.9;
-  }
-}
-
 .limit-reached {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -186,7 +168,8 @@
 }
 
 .space-card.active {
-  box-shadow: var(--shadow-wrapper), 0 0 0 2px var(--color-primary-500);
+  background: var(--color-wrapper-2);
+  box-shadow: var(--shadow-wrapper);
 }
 
 .space-content {
@@ -194,6 +177,34 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+}
+
+.space-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-wrapper-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.space-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.space-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .space-main {
@@ -313,6 +324,55 @@
   font-weight: 600;
   margin: 0 0 24px 0;
   color: var(--color-text);
+}
+
+.space-avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.space-avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-wrapper-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.space-avatar-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.space-avatar-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  background: var(--color-primary-500);
+  color: var(--color-neutral-0);
+  border-radius: 12px;
+  box-shadow: 0 4px 0 #7b4a1b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.space-avatar-upload input {
+  display: none;
+}
+
+.space-avatar-hint {
+  margin-top: var(--spacing-xs);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
 .settings-section {

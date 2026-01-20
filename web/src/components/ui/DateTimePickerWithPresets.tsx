@@ -7,6 +7,7 @@ interface DateTimePickerWithPresetsProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fullWidth?: boolean;
   showPresets?: boolean;
+  showTime?: boolean;
 }
 
 export function DateTimePickerWithPresets({
@@ -15,12 +16,20 @@ export function DateTimePickerWithPresets({
   onChange,
   fullWidth = false,
   showPresets = true,
+  showTime = true,
 }: DateTimePickerWithPresetsProps) {
   const { tr } = useLanguage();
 
-  const setPreset = (preset: 'today' | 'tomorrow' | 'week') => {
+  const formatValue = (date: Date) => {
+    if (!showTime) {
+      return date.toISOString().slice(0, 10);
+    }
+    return date.toISOString().slice(0, 16);
+  };
+
+  const getPresetValue = (preset: 'today' | 'tomorrow' | 'week') => {
     const now = new Date();
-    let targetDate = new Date();
+    const targetDate = new Date();
 
     switch (preset) {
       case 'today':
@@ -39,9 +48,12 @@ export function DateTimePickerWithPresets({
         break;
     }
 
-    // Форматируем в datetime-local формат: YYYY-MM-DDTHH:mm
-    const formatted = targetDate.toISOString().slice(0, 16);
-    
+    return formatValue(targetDate);
+  };
+
+  const setPreset = (preset: 'today' | 'tomorrow' | 'week') => {
+    const formatted = getPresetValue(preset);
+
     // Создаем синтетическое событие
     const syntheticEvent = {
       target: { value: formatted },
@@ -51,29 +63,50 @@ export function DateTimePickerWithPresets({
     onChange(syntheticEvent);
   };
 
+  const clearValue = () => {
+    const syntheticEvent = {
+      target: { value: '' },
+      currentTarget: { value: '' },
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(syntheticEvent);
+  };
+
+  const activePreset = value
+    ? (['today', 'tomorrow', 'week'] as const).find((preset) => getPresetValue(preset) === value)
+    : undefined;
+
   return (
     <div className={`datetime-picker-with-presets ${fullWidth ? 'full-width' : ''}`}>
-      {label && <label className="datetime-label">{label}</label>}
+      {(label || value) && (
+        <div className="datetime-label-row">
+          {label && <label className="datetime-label">{label}</label>}
+          {value && (
+            <button type="button" className="datetime-clear" onClick={clearValue}>
+              {tr('Сбросить', 'Clear')}
+            </button>
+          )}
+        </div>
+      )}
       
       {showPresets && (
         <div className="datetime-presets">
           <button
             type="button"
-            className="preset-button"
+            className={`preset-button${activePreset === 'today' ? ' active' : ''}`}
             onClick={() => setPreset('today')}
           >
             {tr('Сегодня', 'Today')}
           </button>
           <button
             type="button"
-            className="preset-button"
+            className={`preset-button${activePreset === 'tomorrow' ? ' active' : ''}`}
             onClick={() => setPreset('tomorrow')}
           >
             {tr('Завтра', 'Tomorrow')}
           </button>
           <button
             type="button"
-            className="preset-button"
+            className={`preset-button${activePreset === 'week' ? ' active' : ''}`}
             onClick={() => setPreset('week')}
           >
             {tr('Через неделю', 'In a week')}
@@ -82,7 +115,7 @@ export function DateTimePickerWithPresets({
       )}
       
       <input
-        type="datetime-local"
+        type={showTime ? 'datetime-local' : 'date'}
         className="datetime-input"
         value={value}
         onChange={onChange}

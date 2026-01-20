@@ -23,12 +23,24 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
   const { t } = useLanguage();
+  const navItems = ['/', '/deals', '/leaderboard', '/spaces'];
+  const activeIndex = Math.max(
+    navItems.findIndex((path) => location.pathname === path),
+    0,
+  );
 
   return (
     <div className="layout">
       <main className={`main-content ${shouldHideNavbar ? 'no-navbar' : ''}`}>{children}</main>
       {!shouldHideNavbar && (
-        <nav className="bottom-nav">
+        <nav
+          className="bottom-nav"
+          style={{
+            ['--active-index' as any]: activeIndex,
+            ['--nav-items' as any]: navItems.length,
+          }}
+        >
+          <span className="nav-indicator" aria-hidden="true" />
           <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
             <IconDashboard size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.dashboard')}</span>

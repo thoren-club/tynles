@@ -18,40 +18,41 @@
   color: var(--color-text);
 }
 
-.create-button-container {
-  position: relative;
+.create-fab-container {
+  position: fixed;
+  right: 16px;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
 }
 
-.create-button {
+.create-fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--color-primary-500);
+  color: var(--color-neutral-0);
+  border: none;
+  box-shadow: 0 4px 0 #7b4a1b;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
+  justify-content: center;
   cursor: pointer;
-  transition: opacity 0.2s;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .create-button:hover {
-    opacity: 0.9;
-  }
+.create-fab:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #7b4a1b;
 }
 
-.create-dropdown {
+.create-fab-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
   right: 0;
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  min-width: 150px;
-  z-index: 100;
+  bottom: calc(100% + 8px);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
+  min-width: 160px;
+  z-index: 1101;
   overflow: hidden;
 }
 
@@ -418,6 +419,7 @@
   flex-direction: column;
   transition: transform 0.2s ease-out;
   touch-action: pan-y;
+  overflow-x: hidden;
 }
 
 @keyframes slideUp {
@@ -433,6 +435,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-x: hidden;
 }
 
 .create-modal-content {
@@ -523,6 +526,50 @@
   height: 20px;
   cursor: pointer;
   accent-color: var(--color-primary-500);
+}
+
+.form-switch {
+  justify-content: space-between;
+}
+
+.form-switch-input {
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background: var(--color-surface-2);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s ease-out;
+  cursor: pointer;
+}
+
+.form-switch-input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-text);
+  transition: transform 0.2s ease-out;
+}
+
+.form-switch-input:checked {
+  background: var(--color-primary-500);
+}
+
+.form-switch-input:checked::after {
+  transform: translateX(20px);
+  background: var(--color-neutral-0);
+}
+
+.switch-section {
+  gap: 8px;
+}
+
+.switch-body {
+  margin-top: 6px;
 }
 
 .days-of-week {

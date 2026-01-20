@@ -14,7 +14,14 @@ function endOfDay(date: Date): Date {
   return d;
 }
 
+function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
+  return payload?.assigneeScope === 'space' ? 'space' : 'user';
+}
+
 function getAssigneeUserIdFromPayload(payload: any): bigint | null {
+  if (getAssigneeScopeFromPayload(payload) === 'space') {
+    return null;
+  }
   const raw = payload?.assigneeUserId;
   if (!raw) return null;
   try {

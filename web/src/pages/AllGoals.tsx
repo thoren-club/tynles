@@ -3,12 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
+import TaskListItem from '../components/TaskListItem';
+import { getGoalTimeframeLabel } from '../utils/goalTimeframe';
 import { useLanguage } from '../contexts/LanguageContext';
 import './AllGoals.css';
 
 export default function AllGoals() {
   const navigate = useNavigate();
   const { tr, locale } = useLanguage();
+  const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'year' | 'month' | 'unlimited'>('all');
@@ -19,8 +23,14 @@ export default function AllGoals() {
 
   const loadGoals = async () => {
     try {
-      const data = await api.getGoals();
+      const [data, membersData, spaceInfo] = await Promise.all([
+        api.getGoals(),
+        api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
+      ]);
       setGoals(data.goals || []);
+      setMembers(membersData.members || []);
+      setCurrentSpace(spaceInfo);
     } catch (error) {
       console.error('Failed to load goals:', error);
     } finally {
@@ -32,11 +42,11 @@ export default function AllGoals() {
     let filtered = goals;
     
     if (filter === 'year') {
-      filtered = goals.filter((g: any) => g.type === 'year');
+      filtered = goals.filter((g: any) => g.targetType === 'year');
     } else if (filter === 'month') {
-      filtered = goals.filter((g: any) => g.type === 'month');
+      filtered = goals.filter((g: any) => g.targetType === 'month');
     } else if (filter === 'unlimited') {
-      filtered = goals.filter((g: any) => !g.type || g.type === 'unlimited');
+      filtered = goals.filter((g: any) => !g.targetType || g.targetType === 'unlimited');
     }
     
     const current = filtered.filter((g: any) => !g.isDone);
@@ -76,7 +86,7 @@ export default function AllGoals() {
 
   const { current, completed } = getFilteredGoals();
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().toLocaleString(locale, { month: 'long' });
+      const currentMonth = new Date().toLocaleString(locale, { month: 'long' });
 
   return (
     <div className="all-goals">
@@ -126,15 +136,31 @@ export default function AllGoals() {
           <div className="empty-state">{tr('Нет текущих целей', 'No current goals')}</div>
         ) : (
           <div className="goals-list">
-            {current.map((goal) => (
-              <div 
-                key={goal.id} 
-                className="goal-card"
-                onClick={() => navigate(`/goal/${goal.id}`)}
-              >
-                <div className="goal-title">{goal.title}</div>
-              </div>
-            ))}
+            {current.map((goal) => {
+              const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
+              const goalAssignee = goal.assigneeScope === 'space'
+                ? {
+                    firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    photoUrl: currentSpace?.avatarUrl,
+                  }
+                : goal.assigneeUserId
+                  ? members.find((m: any) => m.id === goal.assigneeUserId)
+                  : null;
+              return (
+                <TaskListItem
+                  key={goal.id}
+                  title={goal.title}
+                  assignee={goalAssignee}
+                  isChecked={goal.isDone}
+                  isDisabled={false}
+                  isDimmed={goal.isDone}
+                  onToggle={() => navigate(`/goal/${goal.id}`)}
+                  dateLabel={timeframeLabel}
+                  showCalendarIcon={false}
+                  onClick={() => navigate(`/goal/${goal.id}`)}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -146,16 +172,31 @@ export default function AllGoals() {
           <div className="empty-state">{tr('Нет выполненных целей', 'No completed goals')}</div>
         ) : (
           <div className="goals-list">
-            {completed.map((goal) => (
-              <div 
-                key={goal.id} 
-                className="goal-card completed"
-                onClick={() => navigate(`/goal/${goal.id}`)}
-              >
-                <div className="goal-title">{goal.title}</div>
-                <div className="goal-done-badge">✓</div>
-              </div>
-            ))}
+            {completed.map((goal) => {
+              const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
+              const goalAssignee = goal.assigneeScope === 'space'
+                ? {
+                    firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    photoUrl: currentSpace?.avatarUrl,
+                  }
+                : goal.assigneeUserId
+                  ? members.find((m: any) => m.id === goal.assigneeUserId)
+                  : null;
+              return (
+                <TaskListItem
+                  key={goal.id}
+                  title={goal.title}
+                  assignee={goalAssignee}
+                  isChecked={goal.isDone}
+                  isDisabled={false}
+                  isDimmed={goal.isDone}
+                  onToggle={() => navigate(`/goal/${goal.id}`)}
+                  dateLabel={timeframeLabel}
+                  showCalendarIcon={false}
+                  onClick={() => navigate(`/goal/${goal.id}`)}
+                />
+              );
+            })}
           </div>
         )}
       </div>

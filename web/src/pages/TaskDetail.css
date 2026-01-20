@@ -64,6 +64,70 @@
   line-height: var(--lh-tight);
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detail-title-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  padding: 0;
+  text-align: left;
+  flex: 1;
+}
+
+.detail-title-input {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  padding: 0;
+  width: 100%;
+  outline: none;
+}
+
+.detail-title-toggle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  padding: 0;
+}
+
+.detail-title-toggle.checked {
+  border-color: var(--color-neutral-0);
+}
+
+.detail-title-toggle.checked::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-neutral-0);
+}
+
+.switch-section {
+  gap: var(--spacing-xs);
+}
+
+.switch-body {
+  margin-top: var(--spacing-xs);
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
@@ -111,6 +175,41 @@
   height: 20px;
   border-radius: var(--radius-xs);
   cursor: pointer;
+}
+
+.form-checkbox-label.form-switch {
+  justify-content: space-between;
+}
+
+.form-checkbox.form-switch-input {
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  position: relative;
+  transition: background 0.2s ease-out;
+}
+
+.form-checkbox.form-switch-input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-text);
+  transition: transform 0.2s ease-out;
+}
+
+.form-checkbox.form-switch-input:checked {
+  background: var(--color-primary-500);
+}
+
+.form-checkbox.form-switch-input:checked::after {
+  transform: translateX(20px);
+  background: var(--color-neutral-0);
 }
 
 .days-of-week {

@@ -56,6 +56,36 @@
   line-height: var(--lh-tight);
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detail-title-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  padding: 0;
+  text-align: left;
+  flex: 1;
+}
+
+.detail-title-input {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  padding: 0;
+  width: 100%;
+  outline: none;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;

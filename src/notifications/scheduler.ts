@@ -1,6 +1,7 @@
 import { logger } from '../logger';
 import { telegramTransport } from './telegram-transport';
 import { sendTaskReminders } from './task-reminders';
+import { sendEngagementNotifications } from './engagement-notifications';
 
 export type NotificationsScheduler = {
   stop: () => void;
@@ -32,6 +33,7 @@ export function startNotificationsScheduler(
 
   let stopped = false;
   let inFlight = false;
+  let lastEngagementRun = 0;
 
   const tick = async () => {
     if (stopped) return;
@@ -40,6 +42,11 @@ export function startNotificationsScheduler(
 
     try {
       await sendTaskReminders(telegramTransport);
+      const now = Date.now();
+      if (now - lastEngagementRun > 6 * 60 * 60 * 1000) {
+        await sendEngagementNotifications(telegramTransport);
+        lastEngagementRun = now;
+      }
     } catch (error) {
       logger.error(error, 'Notifications scheduler error');
     } finally {

@@ -1,27 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button, Input, Dropdown, DateTimePickerWithPresets, ImportanceSelector } from '../components/ui';
+import { Button, Dropdown } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import './GoalDetail.css';
 
 export default function GoalDetail() {
   const navigate = useNavigate();
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   const { id } = useParams<{ id: string }>();
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   
   // Form data
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    deadline: '',
-    importance: 1,
-    type: 'unlimited' as 'year' | 'month' | 'unlimited',
+    assigneeUserId: '',
+    assigneeScope: 'space' as 'space' | 'user',
+    targetType: 'unlimited' as 'year' | 'month' | 'unlimited',
+    targetYear: new Date().getFullYear(),
+    targetMonth: new Date().getMonth() + 1,
   });
   
   const [originalGoal, setOriginalGoal] = useState<any>(null);
@@ -41,18 +47,26 @@ export default function GoalDetail() {
 
   const loadGoal = async () => {
     try {
-      const goals = await api.getGoals();
+      const [goals, membersData, spaceInfo] = await Promise.all([
+        api.getGoals(),
+        api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
+      ]);
       const foundGoal = goals.goals.find((g: any) => g.id === id);
       if (foundGoal) {
         setOriginalGoal(foundGoal);
         setFormData({
           title: foundGoal.title || '',
           description: foundGoal.description || '',
-          deadline: foundGoal.deadline || '',
-          importance: foundGoal.difficulty || 1,
-          type: foundGoal.type || 'unlimited',
+          assigneeUserId: foundGoal.assigneeUserId || '',
+          assigneeScope: foundGoal.assigneeScope === 'user' && foundGoal.assigneeUserId ? 'user' : 'space',
+          targetType: foundGoal.targetType || 'unlimited',
+          targetYear: foundGoal.targetYear || new Date().getFullYear(),
+          targetMonth: foundGoal.targetMonth || new Date().getMonth() + 1,
         });
       }
+      setMembers(membersData.members || []);
+      setCurrentSpace(spaceInfo);
     } catch (error) {
       console.error('Failed to load goal:', error);
     } finally {
@@ -70,10 +84,12 @@ export default function GoalDetail() {
     try {
       await api.updateGoal(id!, {
         title: formData.title.trim(),
-        difficulty: formData.importance,
-        description: formData.description.trim() || undefined,
-        deadline: formData.deadline || undefined,
-        type: formData.type || undefined,
+        difficulty: originalGoal?.difficulty || 1,
+        assigneeScope: formData.assigneeScope,
+        assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
+        targetType: formData.targetType,
+        targetYear: formData.targetType !== 'unlimited' ? formData.targetYear : undefined,
+        targetMonth: formData.targetType === 'month' ? formData.targetMonth : undefined,
       });
       navigate('/deals');
     } catch (error) {
@@ -112,11 +128,27 @@ export default function GoalDetail() {
     }
   };
 
-  const typeOptions = [
-    { value: 'unlimited', label: tr('Бессрочная', 'Unlimited') },
-    { value: 'month', label: tr('На месяц', 'Month') },
-    { value: 'year', label: tr('На год', 'Year') },
+  const memberOptions = members.map((m: any) => ({
+    value: `user:${m.id}`,
+    label: m.firstName || m.username || m.id,
+  }));
+
+  const assigneeOptions = [
+    { value: 'space', label: currentSpace?.name || tr('Пространство', 'Space') },
+    ...memberOptions,
   ];
+
+  const assigneeValue =
+    formData.assigneeScope === 'space' || !formData.assigneeUserId
+      ? 'space'
+      : `user:${formData.assigneeUserId}`;
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
 
   if (loading) {
     return (
@@ -152,16 +184,32 @@ export default function GoalDetail() {
           </div>
 
           <div className="goal-detail-content">
-            <h2 className="detail-title">{tr('Редактировать цель', 'Edit Goal')}</h2>
-
-            {/* Название */}
-            <Input
-              label={tr('Название', 'Title') + ' *'}
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder={tr('Цель', 'Goal')}
-              fullWidth
-            />
+            <div className="detail-title-row">
+              {isEditingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  className="detail-title-input"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onBlur={() => setIsEditingTitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  placeholder={tr('Цель', 'Goal')}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="detail-title-button"
+                  onClick={() => setIsEditingTitle(true)}
+                >
+                  {formData.title || tr('Цель', 'Goal')}
+                </button>
+              )}
+            </div>
 
             {/* Описание */}
             <div className="form-field">
@@ -175,30 +223,74 @@ export default function GoalDetail() {
               />
             </div>
 
-            {/* Дедлайн */}
-            <DateTimePickerWithPresets
-              label={tr('Дедлайн', 'Deadline')}
-              value={formData.deadline}
-              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-              fullWidth
-            />
-
-            {/* Важность */}
-            <ImportanceSelector
-              label={tr('Важность', 'Priority')}
-              value={formData.importance}
-              onChange={(value) => setFormData({ ...formData, importance: value })}
-              fullWidth
-            />
-
-            {/* Тип цели */}
+            {/* Исполнитель */}
             <Dropdown
-              label={tr('Тип цели', 'Goal type')}
-              value={String(formData.type)}
-              onChange={(value) => setFormData({ ...formData, type: value as 'year' | 'month' | 'unlimited' })}
-              options={typeOptions}
+              label={tr('Исполнитель', 'Assignee') + ' *'}
+              value={assigneeValue}
+              onChange={(value: string | number) => {
+                const nextValue = String(value);
+                if (nextValue === 'space') {
+                  setFormData({ ...formData, assigneeScope: 'space', assigneeUserId: '' });
+                  return;
+                }
+                const userId = nextValue.replace('user:', '');
+                setFormData({ ...formData, assigneeScope: 'user', assigneeUserId: userId });
+              }}
+              options={assigneeOptions}
               fullWidth
             />
+
+            {/* Период */}
+            <Dropdown
+              label={tr('Период', 'Period')}
+              value={String(formData.targetType)}
+              onChange={(value) => setFormData({ ...formData, targetType: value as any })}
+              options={[
+                { value: 'unlimited', label: tr('Бессрочно', 'Unlimited') },
+                { value: 'month', label: tr('В течение месяца', 'Within a month') },
+                { value: 'year', label: tr('В течение года', 'Within a year') },
+              ]}
+              fullWidth
+            />
+            {formData.targetType === 'month' && (
+              <>
+                <Dropdown
+                  label={tr('Месяц', 'Month')}
+                  value={String(formData.targetMonth)}
+                  onChange={(value) => setFormData({ ...formData, targetMonth: Number(value) })}
+                  options={Array.from({ length: 12 }, (_, index) => {
+                    const date = new Date(formData.targetYear, index, 1);
+                    return {
+                      value: String(index + 1),
+                      label: date.toLocaleString(locale, { month: 'long' }),
+                    };
+                  })}
+                  fullWidth
+                />
+                <Dropdown
+                  label={tr('Год', 'Year')}
+                  value={String(formData.targetYear)}
+                  onChange={(value) => setFormData({ ...formData, targetYear: Number(value) })}
+                  options={Array.from({ length: 6 }, (_, index) => {
+                    const year = new Date().getFullYear() + index;
+                    return { value: String(year), label: String(year) };
+                  })}
+                  fullWidth
+                />
+              </>
+            )}
+            {formData.targetType === 'year' && (
+              <Dropdown
+                label={tr('Год', 'Year')}
+                value={String(formData.targetYear)}
+                onChange={(value) => setFormData({ ...formData, targetYear: Number(value) })}
+                options={Array.from({ length: 6 }, (_, index) => {
+                  const year = new Date().getFullYear() + index;
+                  return { value: String(year), label: String(year) };
+                })}
+                fullWidth
+              />
+            )}
 
             {/* Кнопки действий */}
             <div className="goal-actions">

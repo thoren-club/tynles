@@ -12,6 +12,7 @@ export interface SpacesResponse {
     name: string;
     role: string;
     isCurrent: boolean;
+    avatarUrl?: string | null;
   }>;
 }
 
@@ -27,6 +28,7 @@ export interface TasksResponse {
     recurrenceType: string | null;
     recurrencePayload: { daysOfWeek?: number[] } | null;
     assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
     createdAt: string;
   }>;
 }
@@ -39,8 +41,11 @@ export interface GoalsResponse {
     difficulty: number;
     xp: number;
     isDone: boolean;
-    deadline?: string;
-    type?: 'year' | 'month' | 'unlimited';
+    assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
+    targetType?: 'year' | 'month' | 'unlimited';
+    targetYear?: number | null;
+    targetMonth?: number | null;
     createdAt: string;
   }>;
 }
@@ -209,6 +214,8 @@ export const api = {
     description?: string;
     isRecurring?: boolean;
     daysOfWeek?: number[];
+    assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
   }) {
     return this.request('/tasks', {
       method: 'POST',
@@ -229,6 +236,7 @@ export const api = {
     isRecurring?: boolean;
     daysOfWeek?: number[];
     assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
   }) {
     return this.request(`/tasks/${taskId}`, {
       method: 'PUT',
@@ -257,8 +265,11 @@ export const api = {
     difficulty?: number; 
     xp?: number;
     description?: string;
-    deadline?: string;
-    type?: 'year' | 'month' | 'unlimited';
+    assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
+    targetType?: 'year' | 'month' | 'unlimited';
+    targetYear?: number;
+    targetMonth?: number;
   }) {
     return this.request('/goals', {
       method: 'POST',
@@ -275,8 +286,11 @@ export const api = {
     difficulty?: number;
     xp?: number;
     description?: string;
-    deadline?: string;
-    type?: 'year' | 'month' | 'unlimited';
+    assigneeUserId?: string | null;
+    assigneeScope?: 'user' | 'space';
+    targetType?: 'year' | 'month' | 'unlimited';
+    targetYear?: number;
+    targetMonth?: number;
   }) {
     return this.request(`/goals/${goalId}`, {
       method: 'PUT',
@@ -343,7 +357,14 @@ export const api = {
   },
   
   async getSpaceInfo(spaceId: string) {
-    return this.request<{ id: string; name: string; role: string; isOwner: boolean }>(`/spaces/${spaceId}/info`);
+    return this.request<{ id: string; name: string; role: string; isOwner: boolean; avatarUrl?: string | null }>(`/spaces/${spaceId}/info`);
+  },
+
+  async updateSpaceAvatar(spaceId: string, avatarData: string) {
+    return this.request(`/spaces/${spaceId}/avatar`, {
+      method: 'PUT',
+      body: JSON.stringify({ avatarData }),
+    });
   },
 
   async updateLevelReward(level: number, text: string, spaceId?: string) {

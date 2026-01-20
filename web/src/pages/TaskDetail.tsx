@@ -1,21 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Button, Input, Dropdown, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
+import { Button, Dropdown, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
 import { useLanguage } from '../contexts/LanguageContext';
+import { triggerLightHaptic } from '../utils/haptics';
 import './TaskDetail.css';
 
 export default function TaskDetail() {
   const navigate = useNavigate();
   const { tr } = useLanguage();
   const { id } = useParams<{ id: string }>();
+
+  const parseDueAtToLocal = (value?: string | null) => {
+    if (!value) return { date: '', time: '23:59', hasTime: false };
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return { date: '', time: '23:59', hasTime: false };
+    const pad = (num: number) => String(num).padStart(2, '0');
+    const datePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const hasTime = !(date.getHours() === 23 && date.getMinutes() === 59);
+    return { date: datePart, time: timePart, hasTime };
+  };
+
+  const formatLocalDate = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  };
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
+  const [currentSpace, setCurrentSpace] = useState<any>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const [deadlineEnabled, setDeadlineEnabled] = useState(false);
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('23:59');
+  const [deadlineHasTime, setDeadlineHasTime] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -24,6 +48,7 @@ export default function TaskDetail() {
     dueAt: '',
     importance: 1,
     assigneeUserId: '',
+    assigneeScope: 'space' as 'space' | 'user',
     isRecurring: false,
     daysOfWeek: [] as number[],
     xp: 0,
@@ -46,9 +71,10 @@ export default function TaskDetail() {
 
   const loadTask = async () => {
     try {
-      const [tasksData, membersData] = await Promise.all([
+      const [tasksData, membersData, spaceInfo] = await Promise.all([
         api.getTasks(),
         api.getMembers().catch(() => ({ members: [] })),
+        api.getCurrentSpace().catch(() => null),
       ]);
       
       const foundTask = tasksData.tasks.find((t: any) => t.id === id);
@@ -61,12 +87,26 @@ export default function TaskDetail() {
           dueAt: foundTask.dueAt || '',
           importance: foundTask.difficulty || 1,
           assigneeUserId: foundTask.assigneeUserId || '',
+          assigneeScope: foundTask.assigneeScope === 'space' || !foundTask.assigneeUserId ? 'space' : 'user',
           isRecurring: !!foundTask.recurrenceType && foundTask.recurrenceType !== 'none',
           daysOfWeek: daysOfWeek,
           xp: foundTask.xp || 0,
         });
+        const parsed = parseDueAtToLocal(foundTask.dueAt);
+        if (parsed.date) {
+          setDeadlineEnabled(true);
+          setDeadlineDate(parsed.date);
+          setDeadlineTime(parsed.time);
+          setDeadlineHasTime(parsed.hasTime);
+        } else {
+          setDeadlineEnabled(false);
+          setDeadlineDate('');
+          setDeadlineTime('23:59');
+          setDeadlineHasTime(false);
+        }
       }
       setMembers(membersData.members || []);
+      setCurrentSpace(spaceInfo);
     } catch (error) {
       console.error('Failed to load task:', error);
     } finally {
@@ -87,7 +127,8 @@ export default function TaskDetail() {
         difficulty: formData.importance,
         description: formData.description.trim() || undefined,
         dueAt: formData.dueAt || undefined,
-        assigneeUserId: formData.assigneeUserId || undefined,
+        assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
+        assigneeScope: formData.assigneeScope,
       };
 
       if (formData.isRecurring && formData.daysOfWeek.length > 0) {
@@ -139,15 +180,92 @@ export default function TaskDetail() {
     }
   };
 
+  const handleQuickComplete = async () => {
+    if (isCompleting) return;
+    triggerLightHaptic();
+    setIsCompleting(true);
+    try {
+      await api.completeTask(id!);
+      navigate('/deals');
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   // Больше не нужно - используются новые компоненты
 
-  const memberOptions = [
-    { value: '', label: tr('Не назначено', 'Unassigned') },
-    ...members.map((m: any) => ({
-      value: m.id,
-      label: m.firstName || m.username || m.id,
-    })),
-  ];
+  const memberOptions = members.map((m: any) => ({
+    value: `user:${m.id}`,
+    label: m.firstName || m.username || m.id,
+  }));
+
+  const spaceOption = {
+    value: 'space',
+    label: currentSpace?.name || tr('Пространство', 'Space'),
+  };
+
+  const handleRecurringToggle = (checked: boolean) => {
+    setFormData({ ...formData, isRecurring: checked });
+  };
+
+  const handleDeadlineToggle = (checked: boolean) => {
+    setDeadlineEnabled(checked);
+    if (checked && !deadlineDate) {
+      setDeadlineDate(formatLocalDate(new Date()));
+    }
+  };
+
+  const handleDeadlineTimeToggle = (checked: boolean) => {
+    setDeadlineHasTime(checked);
+    if (checked && !deadlineDate) {
+      setDeadlineDate(formatLocalDate(new Date()));
+    }
+    if (!checked) {
+      setDeadlineTime('23:59');
+    }
+  };
+
+  const handleDeadlineChange = (value: string) => {
+    if (deadlineHasTime) {
+      const [datePart, timePart] = value.split('T');
+      setDeadlineDate(datePart || '');
+      setDeadlineTime((timePart || '23:59').slice(0, 5));
+    } else {
+      setDeadlineDate(value);
+    }
+  };
+
+  useEffect(() => {
+    if (!deadlineEnabled) {
+      if (formData.dueAt) {
+        setFormData((prev) => ({ ...prev, dueAt: '' }));
+      }
+      return;
+    }
+
+    if (!deadlineDate) return;
+    const timePart = deadlineHasTime ? (deadlineTime || '23:59') : '23:59';
+    const nextValue = `${deadlineDate}T${timePart}`;
+    if (nextValue !== formData.dueAt) {
+      setFormData((prev) => ({ ...prev, dueAt: nextValue }));
+    }
+  }, [deadlineEnabled, deadlineDate, deadlineTime, deadlineHasTime, formData.dueAt]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
+
+  const assigneeValue =
+    formData.assigneeScope === 'space' || !formData.assigneeUserId
+      ? 'space'
+      : `user:${formData.assigneeUserId}`;
+  const assigneeOptions = [spaceOption, ...memberOptions];
 
   if (loading) {
     return (
@@ -191,16 +309,43 @@ export default function TaskDetail() {
           </div>
 
           <div className="task-detail-content">
-            <h2 className="detail-title">{tr('Редактировать задачу', 'Edit Task')}</h2>
-
-            {/* Название */}
-            <Input
-              label={tr('Название', 'Title') + ' *'}
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder={tr('Задача', 'Task')}
-              fullWidth
-            />
+            <div className="detail-title-row">
+              <button
+                type="button"
+                className="task-toggle detail-title-toggle"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleQuickComplete();
+                }}
+                disabled={isCompleting}
+                role="checkbox"
+                aria-checked="false"
+              />
+              {isEditingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  className="detail-title-input"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onBlur={() => setIsEditingTitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  placeholder={tr('Задача', 'Task')}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="detail-title-button"
+                  onClick={() => setIsEditingTitle(true)}
+                >
+                  {formData.title || tr('Задача', 'Task')}
+                </button>
+              )}
+            </div>
 
             {/* Описание */}
             <div className="form-field">
@@ -214,15 +359,41 @@ export default function TaskDetail() {
               />
             </div>
 
-            {/* Дедлайн - только для одноразовых задач */}
-            {!formData.isRecurring && (
-              <DateTimePickerWithPresets
-                label={tr('Дедлайн', 'Deadline')}
-                value={formData.dueAt}
-                onChange={(e) => setFormData({ ...formData, dueAt: e.target.value })}
-                fullWidth
-              />
-            )}
+            {/* Дедлайн */}
+            <div className="form-field switch-section">
+              <label className="form-checkbox-label form-switch">
+                <span>{tr('Дедлайн', 'Deadline')}</span>
+                <input
+                  type="checkbox"
+                  className="form-checkbox form-switch-input"
+                  checked={deadlineEnabled}
+                  onChange={(e) => handleDeadlineToggle(e.target.checked)}
+                />
+              </label>
+              {deadlineEnabled && (
+                <div className="switch-body">
+                  <DateTimePickerWithPresets
+                    label={tr('Дата', 'Date')}
+                    value={deadlineHasTime ? `${deadlineDate}T${deadlineTime}` : deadlineDate}
+                    onChange={(e) => handleDeadlineChange(e.target.value)}
+                    fullWidth
+                    showTime={deadlineHasTime}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="form-field switch-section">
+              <label className="form-checkbox-label form-switch">
+                <span>{tr('Время', 'Time')}</span>
+                <input
+                  type="checkbox"
+                  className="form-checkbox form-switch-input"
+                  checked={deadlineHasTime}
+                  onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                />
+              </label>
+            </div>
 
             {/* Важность */}
             <ImportanceSelector
@@ -235,20 +406,28 @@ export default function TaskDetail() {
             {/* Исполнитель */}
             <Dropdown
               label={tr('Исполнитель', 'Assignee')}
-              value={String(formData.assigneeUserId)}
-              onChange={(value: string | number) => setFormData({ ...formData, assigneeUserId: String(value) })}
-              options={memberOptions}
+              value={assigneeValue}
+              onChange={(value: string | number) => {
+                const nextValue = String(value);
+                if (nextValue === 'space') {
+                  setFormData({ ...formData, assigneeScope: 'space', assigneeUserId: '' });
+                  return;
+                }
+                const userId = nextValue.replace('user:', '');
+                setFormData({ ...formData, assigneeScope: 'user', assigneeUserId: userId });
+              }}
+              options={assigneeOptions}
               fullWidth
             />
 
             {/* Повторяющаяся задача */}
             <div className="form-field">
-              <label className="form-checkbox-label">
+              <label className="form-checkbox-label form-switch">
                 <input
                   type="checkbox"
-                  className="form-checkbox"
+                  className="form-checkbox form-switch-input"
                   checked={formData.isRecurring}
-                  onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                  onChange={(e) => handleRecurringToggle(e.target.checked)}
                 />
                 <span>{tr('Повторяющаяся задача', 'Recurring task')}</span>
               </label>
@@ -262,6 +441,20 @@ export default function TaskDetail() {
                 onChange={(days) => setFormData({ ...formData, daysOfWeek: days })}
                 fullWidth
               />
+            )}
+
+            {formData.isRecurring && (
+              <div className="form-field switch-section">
+                <label className="form-checkbox-label form-switch">
+                  <span>{tr('Время', 'Time')}</span>
+                  <input
+                    type="checkbox"
+                    className="form-checkbox form-switch-input"
+                    checked={deadlineHasTime}
+                    onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                  />
+                </label>
+              </div>
             )}
 
             {/* Кнопки действий */}

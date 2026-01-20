@@ -3,6 +3,7 @@ import { prisma } from '../../../db';
 import { AuthRequest } from '../middleware/auth';
 import { getUserLanguage } from '../../../utils/language';
 import { setCurrentSpace } from '../../../utils/session';
+import { notifyUser } from '../../../notifications';
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.get('/current', async (req: Request, res: Response) => {
       timezone: space.timezone,
       role: member?.role,
       isOwner: space.ownerUserId === authReq.user!.id,
+      avatarUrl: space.avatarUrl || null,
       stats: {
         tasks: space._count.tasks,
         goals: space._count.goals,
@@ -300,6 +302,11 @@ router.delete('/:spaceId', async (req: Request, res: Response) => {
       setCurrentSpace(authReq.user.id, undefined);
     }
 
+    await notifyUser({
+      userId: authReq.user.id,
+      message: `🗑️ Пространство <b>${space.name}</b> удалено.`,
+    });
+
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to delete space:', error);
@@ -341,9 +348,47 @@ router.get('/:spaceId/info', async (req: Request, res: Response) => {
       name: space.name,
       role: member.role,
       isOwner: space.ownerUserId === authReq.user.id,
+      avatarUrl: space.avatarUrl || null,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get space info' });
+  }
+});
+
+// Update space avatar
+router.put('/:spaceId/avatar', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const spaceId = BigInt(req.params.spaceId);
+    const { avatarData } = req.body as { avatarData?: string | null };
+    if (!avatarData || typeof avatarData !== 'string') {
+      return res.status(400).json({ error: 'avatarData is required' });
+    }
+
+    const member = await prisma.spaceMember.findUnique({
+      where: { spaceId_userId: { spaceId, userId: authReq.user.id } },
+    });
+    if (!member || (member.role !== 'Admin' && member.role !== 'Editor')) {
+      return res.status(403).json({ error: 'Not allowed' });
+    }
+
+    const maxLength = 8 * 1024 * 1024;
+    if (avatarData.length > maxLength) {
+      return res.status(400).json({ error: 'Avatar is too large' });
+    }
+
+    await prisma.space.update({
+      where: { id: spaceId },
+      data: { avatarUrl: avatarData },
+    });
+
+    res.json({ success: true, avatarUrl: avatarData });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update avatar' });
   }
 });
 

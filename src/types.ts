@@ -8,6 +8,9 @@ export enum RecurrenceType {
 export interface RecurrencePayload {
   daysOfWeek?: number[]; // 0-6, Sunday = 0
   dayOfMonth?: number;
+  timeOfDay?: string; // HH:mm
+  assigneeUserId?: string;
+  assigneeScope?: 'user' | 'space';
 }
 
 /**

@@ -1,11 +1,8 @@
 /* Weekly XP Chart Component — согласно DESIGN_GUIDELINES.md */
 
 .weekly-xp-chart {
-  background: var(--color-surface);
-  border: var(--border-1);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 24px;
+  padding: 0;
+  margin-bottom: 12px;
 }
 
 .weekly-xp-chart-header {
