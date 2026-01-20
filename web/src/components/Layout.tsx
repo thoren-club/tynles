@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ReactNode, useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { IconDashboard, IconListCheck, IconTrophy, IconFolder } from '@tabler/icons-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import CreateTaskGoalSheet from './CreateTaskGoalSheet';
 import './Layout.css';
 
 interface LayoutProps {
@@ -21,27 +22,62 @@ const HIDE_NAVBAR_PATHS = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const navigate = useNavigate();
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [createType, setCreateType] = useState<'task' | 'goal' | null>(null);
   const shouldHideNavbar = HIDE_NAVBAR_PATHS.some(path => location.pathname.startsWith(path));
-  const { t } = useLanguage();
+  const { t, tr } = useLanguage();
   const navItems = ['/', '/deals', '/leaderboard', '/spaces'];
   const activeIndex = Math.max(
     navItems.findIndex((path) => location.pathname === path),
     0,
   );
 
+  useEffect(() => {
+    setShowCreateMenu(false);
+  }, [location.pathname]);
+
   return (
     <div className="layout">
       <main className={`main-content ${shouldHideNavbar ? 'no-navbar' : ''}`}>{children}</main>
-      {!shouldHideNavbar && (
-        <button
-          className="global-create-fab"
-          type="button"
-          onClick={() => navigate('/deals?create=menu')}
-        >
-          +
-        </button>
+      <button
+        className="global-create-fab"
+        type="button"
+        onClick={() => setShowCreateMenu((prev) => !prev)}
+      >
+        +
+      </button>
+      {showCreateMenu && (
+        <div className="global-create-menu-overlay" onClick={() => setShowCreateMenu(false)}>
+          <div className="global-create-menu" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="global-create-menu-item"
+              onClick={() => {
+                setCreateType('goal');
+                setShowCreateMenu(false);
+              }}
+            >
+              {tr('Цель', 'Goal')}
+            </button>
+            <button
+              type="button"
+              className="global-create-menu-item"
+              onClick={() => {
+                setCreateType('task');
+                setShowCreateMenu(false);
+              }}
+            >
+              {tr('Задача', 'Task')}
+            </button>
+          </div>
+        </div>
       )}
+      <CreateTaskGoalSheet
+        isOpen={createType !== null}
+        createType={createType}
+        onClose={() => setCreateType(null)}
+        onCreated={() => window.dispatchEvent(new Event('app-data-changed'))}
+      />
       {!shouldHideNavbar && (
         <nav
           className="bottom-nav"

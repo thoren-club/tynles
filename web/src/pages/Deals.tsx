@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
@@ -7,66 +7,32 @@ import { getTaskDateParts } from '../utils/taskDate';
 import { getGoalTimeframeLabel } from '../utils/goalTimeframe';
 import { triggerLightHaptic } from '../utils/haptics';
 import { applyRecurringCompletion, getTaskSections, groupTasksByDue, sortTasksByDue } from '../utils/taskList';
-import { Skeleton, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown } from '../components/ui';
+import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import TaskListItem from '../components/TaskListItem';
 import './Deals.css';
 
 export default function Deals() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { tr, locale } = useLanguage();
-
-  const formatLocalDateTime = (date: Date) => {
-    const pad = (num: number) => String(num).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
-
-  const formatLocalDate = (date: Date) => {
-    const pad = (num: number) => String(num).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  };
   const [goals, setGoals] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [currentSpace, setCurrentSpace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createType, setCreateType] = useState<'goal' | 'task' | null>(null);
-  
-  // Форма создания
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    deadline: '',
-    importance: 1,
-    goalTargetType: 'unlimited' as 'year' | 'month' | 'unlimited',
-    goalTargetYear: new Date().getFullYear(),
-    goalTargetMonth: new Date().getMonth() + 1,
-    isRecurring: false,
-    daysOfWeek: [] as number[],
-    assigneeUserId: '',
-    assigneeScope: 'space' as 'space' | 'user',
-  });
-  
-  const [isCreating, setIsCreating] = useState(false);
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
-  const [deadlineEnabled, setDeadlineEnabled] = useState(true);
-  const [deadlineDate, setDeadlineDate] = useState(formatLocalDate(new Date()));
-  const [deadlineTime, setDeadlineTime] = useState('23:59');
-  const [deadlineHasTime, setDeadlineHasTime] = useState(true);
-  
-  // Для свайпа шторки
-  const [swipeStartY, setSwipeStartY] = useState<number | null>(null);
-  const [swipeCurrentY, setSwipeCurrentY] = useState<number | null>(null);
-  const [sheetTransform, setSheetTransform] = useState(0);
-  const [canSwipe, setCanSwipe] = useState(false); // Можно ли свайпать (на хедере или контент вверху)
-  const sheetContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const handleDataChanged = () => {
+      loadData();
+    };
+    window.addEventListener('app-data-changed', handleDataChanged);
+    return () => window.removeEventListener('app-data-changed', handleDataChanged);
   }, []);
 
   useEffect(() => {
@@ -76,95 +42,6 @@ export default function Deals() {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (showCreateModal) {
-      document.body.classList.add('modal-open');
-      return () => {
-        document.body.classList.remove('modal-open');
-      };
-    }
-  }, [showCreateModal]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const create = params.get('create');
-    if (!create) return;
-
-    if (create === 'task' || create === 'goal') {
-      handleCreateTypeSelect(create);
-    } else if (create === 'menu') {
-      setShowCreateDropdown(true);
-    }
-
-    navigate(location.pathname, { replace: true });
-  }, [location.search]);
-
-  useEffect(() => {
-    if (createType === 'task' && !formData.assigneeScope) {
-      setFormData((prev) => ({ ...prev, assigneeScope: 'space', assigneeUserId: '' }));
-    }
-  }, [createType, formData.assigneeScope]);
-
-  // Глобальные обработчики для свайпа мыши (на document)
-  useEffect(() => {
-    if (!showCreateModal || swipeStartY === null || !canSwipe) return;
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - swipeStartY!;
-      if (deltaY > 0) {
-        e.preventDefault();
-        setSwipeCurrentY(e.clientY);
-        setSheetTransform(deltaY);
-      }
-    };
-
-    const handleGlobalMouseUp = () => {
-      const currentY = swipeCurrentY;
-      if (swipeStartY === null || currentY === null) return;
-
-      const deltaY = currentY - swipeStartY;
-      const threshold = 100;
-
-      if (deltaY >= threshold) {
-        setSheetTransform(window.innerHeight);
-        setTimeout(() => {
-          handleCloseModal();
-        }, 200);
-      } else {
-        setSheetTransform(0);
-      }
-
-      setSwipeStartY(null);
-      setSwipeCurrentY(null);
-      setCanSwipe(false);
-    };
-
-    document.addEventListener('mousemove', handleGlobalMouseMove);
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-    
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [swipeStartY, swipeCurrentY, canSwipe, showCreateModal]);
-
-  // Закрытие dropdown при клике вне его
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showCreateDropdown) {
-        const target = e.target as HTMLElement;
-        if (!target.closest('.create-button-container')) {
-          setShowCreateDropdown(false);
-        }
-      }
-    };
-
-    if (showCreateDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showCreateDropdown]);
 
   const loadData = async () => {
     try {
@@ -183,213 +60,6 @@ export default function Deals() {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreateTypeSelect = (type: 'goal' | 'task') => {
-    setCreateType(type);
-    setShowCreateDropdown(false);
-    
-    // Умные значения по умолчанию
-    const today = new Date();
-    today.setHours(23, 59, 0, 0);
-    const defaultDeadline = formatLocalDateTime(today);
-    const defaultAssigneeScope = 'space';
-    const defaultAssignee = '';
-    
-    setFormData({
-      title: '',
-      description: '',
-      deadline: defaultDeadline,
-      importance: 2, // Средняя по умолчанию
-      goalTargetType: 'unlimited',
-      goalTargetYear: new Date().getFullYear(),
-      goalTargetMonth: new Date().getMonth() + 1,
-      isRecurring: false,
-      daysOfWeek: [],
-      assigneeUserId: type === 'task' ? defaultAssignee : '',
-      assigneeScope: type === 'task' ? defaultAssigneeScope : 'space',
-    });
-    setDeadlineEnabled(type === 'task');
-    setDeadlineDate(defaultDeadline.slice(0, 10));
-    setDeadlineTime(defaultDeadline.slice(11, 16));
-    setDeadlineHasTime(true);
-    setShowCreateModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
-    setCreateType(null);
-    setFormData({
-      title: '',
-      description: '',
-      deadline: '',
-      importance: 1,
-      goalTargetType: 'unlimited',
-      goalTargetYear: new Date().getFullYear(),
-      goalTargetMonth: new Date().getMonth() + 1,
-      isRecurring: false,
-      daysOfWeek: [],
-      assigneeUserId: '',
-      assigneeScope: 'space',
-    });
-    setDeadlineEnabled(false);
-    setDeadlineDate(formatLocalDate(new Date()));
-    setDeadlineTime('23:59');
-    setDeadlineHasTime(false);
-    setSheetTransform(0);
-    setSwipeStartY(null);
-    setSwipeCurrentY(null);
-  };
-
-  // Проверка, можно ли свайпать (контент вверху или свайп на хедере)
-  const checkCanSwipe = (target: HTMLElement): boolean => {
-    // Если свайп начат на хедере - всегда можно
-    if (target.closest('.swipe-indicator') || target.closest('.create-modal-header')) {
-      return true;
-    }
-    
-    // Иначе проверяем, не прокручен ли контент
-    if (sheetContentRef.current) {
-      const scrollTop = sheetContentRef.current.scrollTop;
-      return scrollTop === 0;
-    }
-    
-    return false;
-  };
-
-  // Обработка начала свайпа
-  const handleSwipeStart = (clientY: number, target: HTMLElement) => {
-    const canSwipeNow = checkCanSwipe(target);
-    if (canSwipeNow) {
-      setCanSwipe(true);
-      setSwipeStartY(clientY);
-      setSwipeCurrentY(clientY);
-    }
-  };
-
-  // Обработка движения свайпа
-  const handleSwipeMove = (clientY: number, e: React.TouchEvent | React.MouseEvent) => {
-    if (swipeStartY === null || !canSwipe) return;
-
-    const deltaY = clientY - swipeStartY;
-    
-    // Разрешаем движение только вниз (положительный deltaY)
-    if (deltaY > 0) {
-      e.preventDefault(); // Предотвращаем скролл при свайпе шторки
-      setSwipeCurrentY(clientY);
-      setSheetTransform(deltaY);
-    } else {
-      // Движение вверх - не блокируем, позволяем скроллить
-      setSheetTransform(0);
-    }
-  };
-
-  // Обработка окончания свайпа
-  const handleSwipeEnd = () => {
-    if (swipeStartY === null || swipeCurrentY === null || !canSwipe) {
-      setSwipeStartY(null);
-      setSwipeCurrentY(null);
-      setCanSwipe(false);
-      return;
-    }
-
-    const deltaY = swipeCurrentY - swipeStartY;
-    const threshold = 100; // Минимальное расстояние для закрытия (в пикселях)
-
-    if (deltaY >= threshold) {
-      // Закрываем шторку с анимацией
-      setSheetTransform(window.innerHeight);
-      setTimeout(() => {
-        handleCloseModal();
-      }, 200);
-    } else {
-      // Возвращаем в исходное положение с анимацией
-      setSheetTransform(0);
-    }
-
-    setSwipeStartY(null);
-    setSwipeCurrentY(null);
-    setCanSwipe(false);
-  };
-
-  // Mouse события (для десктопа)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    handleSwipeStart(e.clientY, target);
-  };
-
-  // Mouse события остаются локальными для шторки
-
-  // Touch события (для мобильных)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    handleSwipeStart(e.touches[0].clientY, target);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (swipeStartY !== null && canSwipe) {
-      handleSwipeMove(e.touches[0].clientY, e);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (swipeStartY !== null) {
-      handleSwipeEnd();
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!formData.title.trim()) {
-      alert(tr('Название обязательно', 'Title is required'));
-      return;
-    }
-
-    if ((createType === 'task' || createType === 'goal') && formData.assigneeScope === 'user' && !formData.assigneeUserId) {
-      alert(tr('Выберите исполнителя', 'Select an assignee'));
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      if (createType === 'goal') {
-        await api.createGoal({
-          title: formData.title.trim(),
-          difficulty: formData.importance,
-          description: formData.description.trim() || undefined,
-          assigneeScope: formData.assigneeScope,
-          assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
-          targetType: formData.goalTargetType,
-          targetYear: formData.goalTargetType !== 'unlimited' ? formData.goalTargetYear : undefined,
-          targetMonth: formData.goalTargetType === 'month' ? formData.goalTargetMonth : undefined,
-        });
-      } else {
-        // Задача
-        const taskData: any = {
-          title: formData.title.trim(),
-          difficulty: formData.importance,
-          description: formData.description.trim() || undefined,
-          dueAt: formData.deadline || undefined,
-          assigneeScope: formData.assigneeScope,
-          assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
-        };
-
-        if (formData.isRecurring && formData.daysOfWeek.length > 0) {
-          taskData.isRecurring = true;
-          taskData.daysOfWeek = formData.daysOfWeek;
-        }
-
-        await api.createTask(taskData);
-      }
-
-      // Перезагружаем данные
-      await loadData();
-      handleCloseModal();
-    } catch (error) {
-      console.error('Failed to create:', error);
-      alert(tr('Не удалось создать. Попробуйте ещё раз.', 'Failed to create. Please try again.'));
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -428,64 +98,6 @@ export default function Deals() {
       alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
     }
   };
-
-  const memberOptions = members.map((m: any) => ({
-    value: `user:${m.id}`,
-    label: m.firstName || m.username || m.id,
-  }));
-
-  const spaceOption = {
-    value: 'space',
-    label: currentSpace?.name || tr('Пространство', 'Space'),
-  };
-
-  const assigneeOptions = [spaceOption, ...memberOptions];
-
-  const handleRecurringToggle = (checked: boolean) => {
-    setFormData({ ...formData, isRecurring: checked });
-  };
-
-  const handleDeadlineToggle = (checked: boolean) => {
-    setDeadlineEnabled(checked);
-    if (checked && !deadlineDate) {
-      setDeadlineDate(formatLocalDate(new Date()));
-    }
-  };
-
-  const handleDeadlineTimeToggle = (checked: boolean) => {
-    setDeadlineHasTime(checked);
-    if (checked && !deadlineDate) {
-      setDeadlineDate(formatLocalDate(new Date()));
-    }
-    if (!checked) {
-      setDeadlineTime('23:59');
-    }
-  };
-
-  const handleDeadlineChange = (value: string) => {
-    if (deadlineHasTime) {
-      const [datePart, timePart] = value.split('T');
-      setDeadlineDate(datePart || '');
-      setDeadlineTime((timePart || '23:59').slice(0, 5));
-    } else {
-      setDeadlineDate(value);
-    }
-  };
-
-  useEffect(() => {
-    if (!deadlineEnabled) {
-      if (formData.deadline) {
-        setFormData((prev) => ({ ...prev, deadline: '' }));
-      }
-      return;
-    }
-    if (!deadlineDate) return;
-    const timePart = deadlineHasTime ? (deadlineTime || '23:59') : '23:59';
-    const nextValue = `${deadlineDate}T${timePart}`;
-    if (nextValue !== formData.deadline) {
-      setFormData((prev) => ({ ...prev, deadline: nextValue }));
-    }
-  }, [deadlineEnabled, deadlineDate, deadlineTime, deadlineHasTime, formData.deadline]);
 
   const handleTaskComplete = async (taskId: string) => {
     triggerLightHaptic();
@@ -814,18 +426,22 @@ export default function Deals() {
                       )}
                     </div>
 
-                    <div className="form-separator" />
-                    <div className="form-field switch-section">
-                      <label className="form-checkbox-label form-switch">
-                        <span>{tr('Время', 'Time')}</span>
-                        <input
-                          type="checkbox"
-                          className="form-checkbox form-switch-input"
-                          checked={deadlineHasTime}
-                          onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
-                        />
-                      </label>
-                    </div>
+                    {deadlineEnabled && (
+                      <>
+                        <div className="form-separator" />
+                        <div className="form-field switch-section">
+                          <label className="form-checkbox-label form-switch">
+                            <span>{tr('Время', 'Time')}</span>
+                            <input
+                              type="checkbox"
+                              className="form-checkbox form-switch-input"
+                              checked={deadlineHasTime}
+                              onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                            />
+                          </label>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
 
@@ -945,17 +561,30 @@ export default function Deals() {
                     )}
 
                     {formData.isRecurring && (
-                      <div className="form-field switch-section">
-                        <label className="form-checkbox-label form-switch">
-                          <span>{tr('Время', 'Time')}</span>
-                          <input
-                            type="checkbox"
-                            className="form-checkbox form-switch-input"
-                            checked={deadlineHasTime}
-                            onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
-                          />
-                        </label>
-                      </div>
+                      <>
+                        <div className="form-field switch-section">
+                          <label className="form-checkbox-label form-switch">
+                            <span>{tr('Время', 'Time')}</span>
+                            <input
+                              type="checkbox"
+                              className="form-checkbox form-switch-input"
+                              checked={recurringHasTime}
+                              onChange={(e) => handleRecurringTimeToggle(e.target.checked)}
+                            />
+                          </label>
+                        </div>
+                        {recurringHasTime && (
+                          <div className="switch-body">
+                            <label className="form-label">{tr('Время', 'Time')}</label>
+                            <input
+                              type="time"
+                              className="form-input"
+                              value={recurringTime}
+                              onChange={(e) => setRecurringTime(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
