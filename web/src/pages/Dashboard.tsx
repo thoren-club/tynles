@@ -19,7 +19,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
-  const [dailyRecurringTasks, setDailyRecurringTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
@@ -59,10 +58,8 @@ export default function Dashboard() {
       // Фильтруем задачи: показываем все задачи (одноразовые и ежедневные)
       // Для статистики "на сегодня" используем только ежедневные повторяющиеся
       const allTasks = tasksData.tasks;
-      const dailyRecurring = getDailyRecurringTasks(allTasks);
       // Для актуальных задач показываем все невыполненные задачи
       setDailyTasks(allTasks);
-      setDailyRecurringTasks(dailyRecurring);
 
       generateWeeklyXpData(allTasks);
     } catch (error) {
@@ -73,13 +70,13 @@ export default function Dashboard() {
   };
 
   const generateWeeklyXpData = (tasks: any[]) => {
-    const xpByDay = new Map<number, number>();
     const today = new Date();
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - 6);
     startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(today);
-    endDate.setHours(23, 59, 59, 999);
+
+    const xpByDate = new Map<string, number>();
+    const normalizeDate = (date: Date) => date.toISOString().slice(0, 10);
 
     tasks.forEach((task) => {
       if (!task.isCompleted) return;
@@ -87,17 +84,23 @@ export default function Dashboard() {
       if (!completedAt) return;
       const completedDate = new Date(completedAt);
       if (Number.isNaN(completedDate.getTime())) return;
-      if (completedDate < startDate || completedDate > endDate) return;
-      const day = completedDate.getDay();
-      const current = xpByDay.get(day) || 0;
-      xpByDay.set(day, current + (task.xp || 0));
+      if (completedDate < startDate) return;
+      const key = normalizeDate(completedDate);
+      const current = xpByDate.get(key) || 0;
+      xpByDate.set(key, current + (task.xp || 0));
     });
 
-    const weekData = Array.from({ length: 7 }, (_, i) => ({
-      day: i,
-      xp: xpByDay.get(i) || 0,
-      label: '',
-    }));
+    const weekData = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      const key = normalizeDate(day);
+      const label = day.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
+      return {
+        day: i,
+        xp: xpByDate.get(key) || 0,
+        label,
+      };
+    });
 
     setWeeklyXpData(weekData);
   };
@@ -105,25 +108,16 @@ export default function Dashboard() {
   const handleRecurringComplete = async (taskId: string) => {
     triggerLightHaptic();
     const previousTasks = dailyTasks;
-    const previousRecurring = dailyRecurringTasks;
     const { tasks: updatedTasks } = applyRecurringCompletion(previousTasks, taskId);
     setDailyTasks(updatedTasks);
-    setDailyRecurringTasks(getDailyRecurringTasks(updatedTasks));
 
     try {
       await api.completeTask(taskId);
     } catch (error) {
       console.error('Failed to complete task:', error);
       setDailyTasks(previousTasks);
-      setDailyRecurringTasks(previousRecurring);
     }
   };
-
-  const getDailyRecurringTasks = (tasks: any[]) =>
-    tasks.filter((task: any) => 
-      task.recurrenceType === 'daily' || 
-      (task.recurrenceType === 'weekly' && task.recurrencePayload?.daysOfWeek?.length === 7)
-    );
 
   // Выполнение задачи с возможностью отмены
   const handleTaskComplete = async (taskId: string) => {
@@ -201,20 +195,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="today-stats-block">
-          <div className="today-stats-header">
-            <Skeleton width={160} height={14} radius={8} />
-          </div>
-          <div className="progress-bar-container">
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: '45%' }} />
-            </div>
-          </div>
-          <div className="motivational-text">
-            <Skeleton width={220} height={14} radius={8} />
-          </div>
-        </div>
-
         <div className="actual-tasks-block">
           <h2 className="block-title">
             <SkeletonValue loading={true} width={170} height={22} radius={10}>
@@ -237,24 +217,10 @@ export default function Dashboard() {
     );
   }
 
-  // Статистика "на сегодня" - только для ежедневных повторяющихся задач
-  const completedToday = dailyRecurringTasks.filter((task: any) => task.isCompleted === true).length;
-  const totalToday = dailyRecurringTasks.length;
-  const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
-  
   // Актуальные задачи - показываем все невыполненные, даже если они ещё не доступны
   const uncompletedTasks = dailyTasks.filter((task: any) => !task.isCompleted);
   const groupedTasks = groupTasksByDue(uncompletedTasks);
   const taskSections = getTaskSections(tr);
-
-  // Мотивационные фразы
-  const motivationalPhrases = [
-    tr('Поднажмите! Вы всё сможете!', 'Push a bit more — you can do it!'),
-    tr('Продолжайте в том же духе!', 'Keep it up!'),
-    tr('Осталось совсем немного!', 'Almost there!'),
-    tr('Вы на правильном пути!', 'You’re on the right track!'),
-  ];
-  const motivationalText = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
 
   const level = stats?.level || 1;
   const currentXp = stats?.currentLevelXp || 0;
@@ -323,40 +289,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Блок статистики задач на сегодня */}
-      <div className="today-stats-block">
-        <div className="today-stats-header">
-          <span className="stats-text">
-            {totalToday === 0
-              ? tr('Сегодня 0 задач', '0 tasks today')
-              : tr(`${completedToday} / ${totalToday} выполнено`, `${completedToday} / ${totalToday} completed`)}
-          </span>
-        </div>
-        {totalToday > 0 && (
-          <>
-            <div className="progress-bar-container">
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-            <div className="motivational-text">{motivationalText}</div>
-          </>
-        )}
-        {totalToday === 0 && (
-          <div className="progress-bar-container">
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: '0%' }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
       <div className="weekly-xp-panel">
         <WeeklyXpChart data={weeklyXpData} loading={loading} />
         {spaceLeaderboard.length > 0 && (
@@ -416,6 +348,7 @@ export default function Dashboard() {
                       timeLabel={dateParts?.time}
                       isOverdue={dateParts?.isOverdue}
                       isRecurring={isRecurring}
+                      onClick={() => navigate(`/task/${task.id}`)}
                       onToggle={() => {
                         if (!taskAvailable) return;
                         if (isRecurring) {

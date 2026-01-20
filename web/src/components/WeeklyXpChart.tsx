@@ -7,35 +7,20 @@ interface WeeklyXpChartProps {
 }
 
 /**
- * Компонент графика XP за неделю (7 дней).
- * Показывает столбцы для каждого дня недели.
+ * Компонент линейного графика XP за неделю (7 дней).
  */
 export default function WeeklyXpChart({ data, loading = false }: WeeklyXpChartProps) {
   const { tr, locale } = useLanguage();
-
-  // Находим максимальное значение для нормализации высоты столбцов
-  const maxXp = Math.max(...data.map((d) => d.xp), 1);
   const isRussian = locale === 'ru-RU';
-
-  // Дни недели для подписей (начинаем с понедельника)
   const dayLabels = isRussian
     ? ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС']
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  // Переупорядочиваем данные: понедельник = 0, воскресенье = 6
-  // В JavaScript: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  // Нам нужно: 0 = Monday, ..., 6 = Sunday
-  const reorderedData = Array.from({ length: 7 }, (_, index) => {
-    // index 0 = понедельник (Monday = 1 в JS)
-    // index 6 = воскресенье (Sunday = 0 в JS)
-    const jsDayOfWeek = index === 6 ? 0 : index + 1;
-    const dayData = data.find((d) => d.day === jsDayOfWeek) || {
-      day: jsDayOfWeek,
-      xp: 0,
-      label: dayLabels[index],
-    };
-    return { ...dayData, label: dayLabels[index] };
-  });
+  const normalized = data.length === 7 ? data : Array.from({ length: 7 }, (_, i) => ({
+    day: i,
+    xp: data[i]?.xp || 0,
+    label: data[i]?.label || dayLabels[i],
+  }));
+  const maxXp = Math.max(...normalized.map((d) => d.xp), 1);
 
   if (loading) {
     return (
@@ -44,13 +29,7 @@ export default function WeeklyXpChart({ data, loading = false }: WeeklyXpChartPr
           <div className="chart-title-skeleton" />
         </div>
         <div className="chart-container">
-          <div className="chart-bars">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="chart-bar-wrapper">
-                <div className="chart-bar-skeleton" />
-              </div>
-            ))}
-          </div>
+          <div className="chart-line-skeleton" />
           <div className="chart-labels">
             {Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="chart-label-skeleton" />
@@ -69,26 +48,39 @@ export default function WeeklyXpChart({ data, loading = false }: WeeklyXpChartPr
         </h3>
       </div>
       <div className="chart-container">
-        <div className="chart-bars">
-          {reorderedData.map((dayData, index) => {
-            const heightPercent = maxXp > 0 ? (dayData.xp / maxXp) * 100 : 0;
-            return (
-              <div key={index} className="chart-bar-wrapper">
-                <div
-                  className="chart-bar"
-                  style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                  title={`${dayData.label}: ${dayData.xp} XP`}
-                >
-                  {dayData.xp > 0 && (
-                    <span className="chart-bar-value">{dayData.xp}</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="chart-line">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <polyline
+              fill="none"
+              stroke="var(--color-primary-500)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={normalized
+                .map((point, index) => {
+                  const x = (index / 6) * 100;
+                  const y = 40 - (point.xp / maxXp) * 36;
+                  return `${x},${Math.max(4, Math.min(36, y))}`;
+                })
+                .join(' ')}
+            />
+            {normalized.map((point, index) => {
+              const x = (index / 6) * 100;
+              const y = 40 - (point.xp / maxXp) * 36;
+              return (
+                <circle
+                  key={point.day}
+                  cx={x}
+                  cy={Math.max(4, Math.min(36, y))}
+                  r="2.5"
+                  fill="var(--color-primary-500)"
+                />
+              );
+            })}
+          </svg>
         </div>
         <div className="chart-labels">
-          {reorderedData.map((dayData, index) => (
+          {normalized.map((dayData, index) => (
             <div key={index} className="chart-label">
               {dayData.label}
             </div>

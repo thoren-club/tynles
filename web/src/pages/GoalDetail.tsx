@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button, Dropdown } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -186,12 +185,6 @@ export default function GoalDetail() {
     <div className="goal-detail-page">
       <div className="goal-detail">
         <div className="goal-detail-content">
-          <div className="detail-page-header">
-            <button type="button" className="detail-back-button" onClick={() => navigate(-1)}>
-              <IconChevronLeft size={20} />
-            </button>
-            <div className="detail-page-title">{tr('Цель', 'Goal')}</div>
-          </div>
             <div className="detail-title-row">
               {isEditingTitle ? (
                 <input

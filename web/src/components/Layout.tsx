@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { IconDashboard, IconListCheck, IconTrophy, IconFolder } from '@tabler/icons-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { triggerLightHaptic } from '../utils/haptics';
 import CreateTaskGoalSheet from './CreateTaskGoalSheet';
 import './Layout.css';
 
@@ -31,6 +32,7 @@ export default function Layout({ children }: LayoutProps) {
     navItems.findIndex((path) => location.pathname === path),
     0,
   );
+  const shouldShowCreate = !shouldHideNavbar && createType === null;
 
   useEffect(() => {
     setShowCreateMenu(false);
@@ -39,13 +41,15 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="layout">
       <main className={`main-content ${shouldHideNavbar ? 'no-navbar' : ''}`}>{children}</main>
-      <button
-        className="global-create-fab"
-        type="button"
-        onClick={() => setShowCreateMenu((prev) => !prev)}
-      >
-        +
-      </button>
+      {shouldShowCreate && (
+        <button
+          className="global-create-fab"
+          type="button"
+          onClick={() => setShowCreateMenu((prev) => !prev)}
+        >
+          +
+        </button>
+      )}
       {showCreateMenu && (
         <div className="global-create-menu-overlay" onClick={() => setShowCreateMenu(false)}>
           <div className="global-create-menu" onClick={(e) => e.stopPropagation()}>
@@ -87,19 +91,35 @@ export default function Layout({ children }: LayoutProps) {
           }}
         >
           <span className="nav-indicator" aria-hidden="true" />
-          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+          <Link
+            to="/"
+            className={location.pathname === '/' ? 'active' : ''}
+            onClick={() => triggerLightHaptic()}
+          >
             <IconDashboard size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.dashboard')}</span>
           </Link>
-          <Link to="/deals" className={location.pathname === '/deals' ? 'active' : ''}>
+          <Link
+            to="/deals"
+            className={location.pathname === '/deals' ? 'active' : ''}
+            onClick={() => triggerLightHaptic()}
+          >
             <IconListCheck size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.deals')}</span>
           </Link>
-          <Link to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>
+          <Link
+            to="/leaderboard"
+            className={location.pathname === '/leaderboard' ? 'active' : ''}
+            onClick={() => triggerLightHaptic()}
+          >
             <IconTrophy size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.leaderboard')}</span>
           </Link>
-          <Link to="/spaces" className={location.pathname === '/spaces' ? 'active' : ''}>
+          <Link
+            to="/spaces"
+            className={location.pathname === '/spaces' ? 'active' : ''}
+            onClick={() => triggerLightHaptic()}
+          >
             <IconFolder size={24} className="nav-icon" />
             <span className="nav-label">{t('nav.spaces')}</span>
           </Link>

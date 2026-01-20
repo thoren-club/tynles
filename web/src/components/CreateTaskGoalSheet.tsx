@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown } from './ui';
+import { triggerLightHaptic } from '../utils/haptics';
 import './CreateTaskGoalSheet.css';
 
 type CreateType = 'task' | 'goal';
@@ -317,6 +318,7 @@ export default function CreateTaskGoalSheet({
           }
         }
         await api.createTask(taskData);
+        triggerLightHaptic();
       }
       onCreated?.();
       closeSheet();

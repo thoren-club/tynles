@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Button, Dropdown, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { isTaskAvailable, getNextAvailableDate, formatTimeUntilNext as formatTimeUntilNextUtil } from '../utils/taskAvailability';
@@ -136,13 +135,14 @@ export default function TaskDetail() {
 
     setIsSaving(true);
     try {
+      const safeAssigneeScope = formData.assigneeUserId ? formData.assigneeScope : 'space';
       const taskData: any = {
         title: formData.title.trim(),
         difficulty: formData.importance,
         description: formData.description.trim() || undefined,
         dueAt: formData.dueAt || undefined,
-        assigneeUserId: formData.assigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
-        assigneeScope: formData.assigneeScope,
+        assigneeUserId: safeAssigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
+        assigneeScope: safeAssigneeScope,
       };
 
       if (formData.isRecurring && formData.daysOfWeek.length > 0) {
@@ -311,13 +311,7 @@ export default function TaskDetail() {
     <div className="task-detail-page">
       <div className="task-detail">
         <div className="task-detail-content">
-          <div className="detail-page-header">
-            <button type="button" className="detail-back-button" onClick={() => navigate(-1)}>
-              <IconChevronLeft size={20} />
-            </button>
-            <div className="detail-page-title">{tr('Задача', 'Task')}</div>
-          </div>
-            <div className="detail-title-row">
+          <div className="detail-title-row">
               <button
                 type="button"
                 className="task-toggle detail-title-toggle"
@@ -368,18 +362,20 @@ export default function TaskDetail() {
             </div>
 
             {/* Дедлайн */}
-            <div className="form-field switch-section">
-              <label className="form-checkbox-label form-switch">
-                <span>{tr('Дедлайн', 'Deadline')}</span>
-                <input
-                  type="checkbox"
-                  className="form-checkbox form-switch-input"
-                  checked={deadlineEnabled}
-                  onChange={(e) => handleDeadlineToggle(e.target.checked)}
-                />
-              </label>
+            <div className="deadline-section">
+              <div className="deadline-header">
+                <div className="deadline-title">{tr('Дедлайн', 'Deadline')}</div>
+                <label className="form-checkbox-label form-switch deadline-toggle">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox form-switch-input"
+                    checked={deadlineEnabled}
+                    onChange={(e) => handleDeadlineToggle(e.target.checked)}
+                  />
+                </label>
+              </div>
               {deadlineEnabled && (
-                <div className="switch-body">
+                <div className="deadline-body">
                   <DateTimePickerWithPresets
                     label={tr('Дата', 'Date')}
                     value={deadlineHasTime ? `${deadlineDate}T${deadlineTime}` : deadlineDate}
@@ -387,20 +383,19 @@ export default function TaskDetail() {
                     fullWidth
                     showTime={deadlineHasTime}
                   />
+                  <div className="deadline-time-row">
+                    <span className="deadline-time-label">{tr('Время', 'Time')}</span>
+                    <label className="form-checkbox-label form-switch">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox form-switch-input"
+                        checked={deadlineHasTime}
+                        onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
+                      />
+                    </label>
+                  </div>
                 </div>
               )}
-            </div>
-            <div className="form-separator" />
-            <div className="form-field switch-section">
-              <label className="form-checkbox-label form-switch">
-                <span>{tr('Время', 'Time')}</span>
-                <input
-                  type="checkbox"
-                  className="form-checkbox form-switch-input"
-                  checked={deadlineHasTime}
-                  onChange={(e) => handleDeadlineTimeToggle(e.target.checked)}
-                />
-              </label>
             </div>
 
             {/* Важность */}

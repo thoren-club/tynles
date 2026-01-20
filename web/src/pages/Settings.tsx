@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { api } from '../api';
 import './Settings.css';
@@ -18,6 +17,26 @@ export default function Settings() {
   useEffect(() => {
     loadNotificationSettings();
   }, []);
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+    const handleBack = () => navigate(-1);
+    try {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    } catch {
+      // no-op
+    }
+    return () => {
+      try {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      } catch {
+        // no-op
+      }
+    };
+  }, [navigate]);
 
   const loadNotificationSettings = async () => {
     try {
@@ -72,34 +91,30 @@ export default function Settings() {
     <div className="settings">
       {/* Хедер */}
       <div className="settings-header">
-        <IconChevronLeft 
-          size={24} 
-          className="back-icon"
-          onClick={() => navigate('/')}
-        />
         <h1 className="settings-title">{t('settings.title')}</h1>
-        <div style={{ width: 24 }} />
       </div>
 
       {/* Содержимое настроек */}
       <div className="settings-content">
         <div className="settings-section">
           <h2 className="settings-section-title">{t('settings.general')}</h2>
-          <div className="settings-item">
-            <div className="settings-item-label">{t('settings.language')}</div>
-            <div className="language-switcher">
-              <button
-                className={`language-button ${language === 'ru' ? 'active' : ''}`}
-                onClick={() => setLanguage('ru')}
-              >
-                Русский
-              </button>
-              <button
-                className={`language-button ${language === 'en' ? 'active' : ''}`}
-                onClick={() => setLanguage('en')}
-              >
-                English
-              </button>
+          <div className="settings-card">
+            <div className="settings-item">
+              <div className="settings-item-label">{t('settings.language')}</div>
+              <div className="language-switcher">
+                <button
+                  className={`language-button ${language === 'ru' ? 'active' : ''}`}
+                  onClick={() => setLanguage('ru')}
+                >
+                  Русский
+                </button>
+                <button
+                  className={`language-button ${language === 'en' ? 'active' : ''}`}
+                  onClick={() => setLanguage('en')}
+                >
+                  English
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -108,11 +123,13 @@ export default function Settings() {
           <h2 className="settings-section-title">{t('settings.notifications')}</h2>
           
           {loading ? (
-            <div className="settings-placeholder">
-              <div className="placeholder-text">{t('common.loading')}</div>
+            <div className="settings-card">
+              <div className="settings-placeholder">
+                <div className="placeholder-text">{t('common.loading')}</div>
+              </div>
             </div>
           ) : notificationSettings ? (
-            <>
+            <div className="settings-card">
               <div className="settings-item">
                 <div className="settings-item-label">
                   {tr('Напоминания о задачах', 'Task reminders')}
@@ -159,25 +176,31 @@ export default function Settings() {
                     : tr('Выключено', 'Off')}
                 </button>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="settings-placeholder">
-              <div className="placeholder-text">{tr('Не удалось загрузить настройки', 'Failed to load settings')}</div>
+            <div className="settings-card">
+              <div className="settings-placeholder">
+                <div className="placeholder-text">{tr('Не удалось загрузить настройки', 'Failed to load settings')}</div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="settings-section">
           <h2 className="settings-section-title">{t('settings.security')}</h2>
-          <div className="settings-placeholder">
-            <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
+          <div className="settings-card">
+            <div className="settings-placeholder">
+              <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
+            </div>
           </div>
         </div>
 
         <div className="settings-section">
           <h2 className="settings-section-title">{t('settings.about')}</h2>
-          <div className="settings-placeholder">
-            <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
+          <div className="settings-card">
+            <div className="settings-placeholder">
+              <div className="placeholder-text">{tr('Здесь возможно будет…', 'Coming soon…')}</div>
+            </div>
           </div>
         </div>
       </div>

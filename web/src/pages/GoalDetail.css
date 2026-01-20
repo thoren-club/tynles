@@ -9,25 +9,6 @@
   gap: var(--spacing-lg);
 }
 
-.detail-page-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.detail-back-button {
-  background: none;
-  border: none;
-  color: var(--color-text);
-  padding: 4px;
-}
-
-.detail-page-title {
-  font-size: var(--text-md);
-  font-weight: var(--fw-semibold);
-  color: var(--color-text);
-}
-
 .goal-detail-content {
   display: flex;
   flex-direction: column;
@@ -189,6 +170,13 @@
 .delete-button {
   background: var(--color-danger-500);
   color: var(--color-neutral-0);
+  padding: 16px 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--color-danger-500) 70%, #000);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 15px;
+  text-transform: uppercase;
 }
 
 @media (hover: hover) and (pointer: fine) {
