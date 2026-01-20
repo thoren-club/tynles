@@ -30,6 +30,26 @@ export default function SpaceSettings() {
     loadData(id);
   }, [id]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+    const handleBack = () => navigate(-1);
+    try {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    } catch {
+      // no-op
+    }
+    return () => {
+      try {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      } catch {
+        // no-op
+      }
+    };
+  }, [navigate]);
+
   const loadData = async (spaceId: string) => {
     try {
       const [membersData, userData, spaceInfo, inviteData, rewardsData] = await Promise.all([

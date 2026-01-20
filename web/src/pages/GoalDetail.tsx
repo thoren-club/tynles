@@ -39,6 +39,26 @@ export default function GoalDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+    const handleBack = () => navigate(-1);
+    try {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    } catch {
+      // no-op
+    }
+    return () => {
+      try {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      } catch {
+        // no-op
+      }
+    };
+  }, [navigate]);
+
   const loadGoal = async () => {
     try {
       const [goals, membersData, spaceInfo] = await Promise.all([

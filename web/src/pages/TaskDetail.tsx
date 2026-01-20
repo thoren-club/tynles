@@ -63,6 +63,26 @@ export default function TaskDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+    const handleBack = () => navigate(-1);
+    try {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    } catch {
+      // no-op
+    }
+    return () => {
+      try {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      } catch {
+        // no-op
+      }
+    };
+  }, [navigate]);
+
   const loadTask = async () => {
     try {
       const [tasksData, membersData, spaceInfo] = await Promise.all([
