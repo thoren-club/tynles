@@ -8,7 +8,7 @@ import {
   getUserLeaguePosition,
   LEAGUE_PERIOD_DAYS 
 } from '../../../utils/leagues';
-import { getXpForNextLevel, getTotalXpForLevel } from '../../../types';
+import { getXpForNextLevelForSpace, getTotalXpForLevelForSpace } from '../../../utils/leveling';
 import { sendPokeNotification } from '../../../notifications';
 
 const router = Router();
@@ -35,15 +35,15 @@ router.get('/me', async (req: Request, res: Response) => {
         level: 1,
         totalXp: 0,
         currentLevelXp: 0,
-        xpToNextLevel: getXpForNextLevel(1),
+        xpToNextLevel: await getXpForNextLevelForSpace(authReq.currentSpaceId, 1),
       });
     }
 
     const level = stats.level;
     const totalXp = stats.totalXp;
-    const totalXpForCurrentLevel = getTotalXpForLevel(level);
+    const totalXpForCurrentLevel = await getTotalXpForLevelForSpace(authReq.currentSpaceId, level);
     const currentLevelXp = totalXp - totalXpForCurrentLevel;
-    const xpToNextLevel = getXpForNextLevel(level);
+    const xpToNextLevel = await getXpForNextLevelForSpace(authReq.currentSpaceId, level);
 
     res.json({
       level,

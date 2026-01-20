@@ -1,5 +1,5 @@
 import { prisma } from '../db';
-import { calculateLevel, getXpForNextLevel } from '../types';
+import { getXpProgressForSpace, calculateLevelForSpace } from './leveling';
 
 export async function addXp(spaceId: bigint, userId: bigint, xp: number) {
   const existing = await prisma.userSpaceStats.findUnique({
@@ -14,7 +14,7 @@ export async function addXp(spaceId: bigint, userId: bigint, xp: number) {
   const oldLevel = existing?.level || 1;
   const oldTotalXp = existing?.totalXp || 0;
   const newTotalXp = oldTotalXp + xp;
-  const newLevel = calculateLevel(newTotalXp);
+  const newLevel = await calculateLevelForSpace(spaceId, newTotalXp);
 
   await prisma.userSpaceStats.upsert({
     where: {
@@ -43,21 +43,8 @@ export async function addXp(spaceId: bigint, userId: bigint, xp: number) {
   };
 }
 
-export function getXpProgress(totalXp: number): { current: number; next: number; progress: number } {
-  const currentLevel = calculateLevel(totalXp);
-  const xpForCurrentLevel = getXpForNextLevel(currentLevel - 1); // Опыт, нужный для текущего уровня
-  const totalXpForCurrentLevel = currentLevel > 1 
-    ? Array.from({ length: currentLevel - 1 }, (_, i) => getXpForNextLevel(i + 1)).reduce((a, b) => a + b, 0)
-    : 0;
-  const xpInCurrentLevel = totalXp - totalXpForCurrentLevel;
-  const xpForNextLevel = getXpForNextLevel(currentLevel);
-  const progress = (xpInCurrentLevel / xpForNextLevel) * 100;
-
-  return {
-    current: Math.max(0, xpInCurrentLevel),
-    next: xpForNextLevel,
-    progress: Math.max(0, Math.min(100, Math.round(progress))),
-  };
+export async function getXpProgress(spaceId: bigint, totalXp: number): Promise<{ current: number; next: number; progress: number }> {
+  return getXpProgressForSpace(spaceId, totalXp);
 }
 
 export function getProgressBar(progress: number, length: number = 10): string {

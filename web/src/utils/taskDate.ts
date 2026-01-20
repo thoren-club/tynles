@@ -28,8 +28,17 @@ export const getTaskDateParts = (
   let isOverdue = false;
 
   if (diffDays < 0) {
-    label = tr('Просрочено', 'Overdue');
     isOverdue = true;
+    if (diffDays === -1) {
+      label = tr('Вчера', 'Yesterday');
+    } else if (diffDays === -2) {
+      label = tr('Позавчера', 'Day before yesterday');
+    } else {
+      const showYear = date.getFullYear() !== now.getFullYear();
+      label = date.toLocaleDateString(locale, showYear
+        ? { day: '2-digit', month: 'long', year: 'numeric' }
+        : { day: '2-digit', month: 'long' });
+    }
   } else if (diffDays === 0) {
     label = tr('Сегодня', 'Today');
   } else if (diffDays === 1) {

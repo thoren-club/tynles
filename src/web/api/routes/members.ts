@@ -31,6 +31,45 @@ router.get('/', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Not a member of this space' });
     }
 
+    // Enforce single Admin: keep only the owner as Admin.
+    const space = await prisma.space.findUnique({
+      where: { id: targetSpaceId },
+      select: { ownerUserId: true },
+    });
+    if (space) {
+      const admins = await prisma.spaceMember.findMany({
+        where: { spaceId: targetSpaceId, role: 'Admin' },
+        select: { userId: true },
+      });
+      const ownerMembership = await prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId: targetSpaceId, userId: space.ownerUserId } },
+        select: { userId: true, role: true },
+      });
+
+      const updates: Array<ReturnType<typeof prisma.spaceMember.update>> = [];
+      if (ownerMembership && ownerMembership.role !== 'Admin') {
+        updates.push(
+          prisma.spaceMember.update({
+            where: { spaceId_userId: { spaceId: targetSpaceId, userId: space.ownerUserId } },
+            data: { role: 'Admin' },
+          }),
+        );
+      }
+      for (const admin of admins) {
+        if (admin.userId !== space.ownerUserId) {
+          updates.push(
+            prisma.spaceMember.update({
+              where: { spaceId_userId: { spaceId: targetSpaceId, userId: admin.userId } },
+              data: { role: 'Editor' },
+            }),
+          );
+        }
+      }
+      if (updates.length > 0) {
+        await prisma.$transaction(updates);
+      }
+    }
+
     const members = await prisma.spaceMember.findMany({
       where: { spaceId: targetSpaceId },
       include: { user: true },

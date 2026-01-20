@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { getUserLanguage } from '../../../utils/language';
 import { setCurrentSpace } from '../../../utils/session';
 import { notifyUser } from '../../../notifications';
+import { getXpForNextLevel } from '../../../types';
 
 const router = Router();
 
@@ -105,7 +106,12 @@ router.post('/create', async (req: Request, res: Response) => {
 router.post('/:spaceId/switch', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
-    const spaceId = BigInt(req.params.spaceId);
+    let spaceId: bigint;
+    try {
+      spaceId = BigInt(req.params.spaceId);
+    } catch {
+      return res.status(400).json({ error: 'Invalid space id' });
+    }
 
     const member = await prisma.spaceMember.findUnique({
       where: {
@@ -193,15 +199,25 @@ router.get('/current/rewards', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const rewards = await prisma.reward.findMany({
-      where: { spaceId: authReq.currentSpaceId },
-      orderBy: { level: 'asc' },
-    });
+    const [rewards, requirements] = await Promise.all([
+      prisma.reward.findMany({
+        where: { spaceId: authReq.currentSpaceId },
+        orderBy: { level: 'asc' },
+      }),
+      prisma.levelRequirement.findMany({
+        where: { spaceId: authReq.currentSpaceId },
+      }),
+    ]);
+
+    const rewardMap = new Map(rewards.map((r) => [r.level, r.text]));
+    const requirementMap = new Map(requirements.map((r) => [r.level, r.xpRequired]));
+    const levels = Array.from({ length: 80 }, (_, i) => i + 1);
 
     res.json({
-      rewards: rewards.map((r) => ({
-        level: r.level,
-        text: r.text,
+      rewards: levels.map((level) => ({
+        level,
+        text: rewardMap.get(level) || '',
+        xpRequired: requirementMap.get(level) ?? getXpForNextLevel(level),
       })),
     });
   } catch (error) {
@@ -233,15 +249,25 @@ router.get('/:spaceId/rewards', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Not a member of this space' });
     }
 
-    const rewards = await prisma.reward.findMany({
-      where: { spaceId: spaceId },
-      orderBy: { level: 'asc' },
-    });
+    const [rewards, requirements] = await Promise.all([
+      prisma.reward.findMany({
+        where: { spaceId: spaceId },
+        orderBy: { level: 'asc' },
+      }),
+      prisma.levelRequirement.findMany({
+        where: { spaceId: spaceId },
+      }),
+    ]);
+
+    const rewardMap = new Map(rewards.map((r) => [r.level, r.text]));
+    const requirementMap = new Map(requirements.map((r) => [r.level, r.xpRequired]));
+    const levels = Array.from({ length: 80 }, (_, i) => i + 1);
 
     res.json({
-      rewards: rewards.map((r) => ({
-        level: r.level,
-        text: r.text,
+      rewards: levels.map((level) => ({
+        level,
+        text: rewardMap.get(level) || '',
+        xpRequired: requirementMap.get(level) ?? getXpForNextLevel(level),
       })),
     });
   } catch (error) {
@@ -348,8 +374,9 @@ router.post('/:spaceId/leave', async (req: Request, res: Response) => {
     }
 
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to leave space' });
+  } catch (error: any) {
+    console.error('Failed to leave space:', error);
+    res.status(500).json({ error: error?.message || 'Failed to leave space' });
   }
 });
 
@@ -493,36 +520,80 @@ router.put('/:spaceId/rewards/:level', async (req: Request, res: Response) => {
     }
 
     const level = parseInt(req.params.level);
-    const { text } = req.body;
+    const { text, xpRequired } = req.body as { text?: string; xpRequired?: number };
+    const hasText = typeof text === 'string';
+    const hasXp = typeof xpRequired === 'number' && Number.isFinite(xpRequired);
 
-    if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: 'Text is required' });
+    if (!hasText && !hasXp) {
+      return res.status(400).json({ error: 'Text or xpRequired is required' });
     }
 
     if (level < 1 || level > 80) {
       return res.status(400).json({ error: 'Level must be between 1 and 80' });
     }
 
-    const reward = await prisma.reward.upsert({
-      where: {
-        spaceId_level: {
+    if (hasText) {
+      await prisma.reward.upsert({
+        where: {
+          spaceId_level: {
+            spaceId: spaceId,
+            level,
+          },
+        },
+        update: {
+          text: text || '',
+        },
+        create: {
           spaceId: spaceId,
           level,
+          text: text || '',
         },
-      },
-      update: {
-        text,
-      },
-      create: {
-        spaceId: spaceId,
-        level,
-        text,
-      },
-    });
+      });
+    }
+
+    if (hasXp) {
+      const normalizedXp = Math.max(1, Math.min(100000, Math.round(xpRequired as number)));
+      await prisma.levelRequirement.upsert({
+        where: {
+          spaceId_level: {
+            spaceId: spaceId,
+            level,
+          },
+        },
+        update: {
+          xpRequired: normalizedXp,
+        },
+        create: {
+          spaceId: spaceId,
+          level,
+          xpRequired: normalizedXp,
+        },
+      });
+    }
+
+    const [reward, requirement] = await Promise.all([
+      prisma.reward.findUnique({
+        where: {
+          spaceId_level: {
+            spaceId: spaceId,
+            level,
+          },
+        },
+      }),
+      prisma.levelRequirement.findUnique({
+        where: {
+          spaceId_level: {
+            spaceId: spaceId,
+            level,
+          },
+        },
+      }),
+    ]);
 
     res.json({
-      level: reward.level,
-      text: reward.text,
+      level,
+      text: reward?.text || '',
+      xpRequired: requirement?.xpRequired ?? getXpForNextLevel(level),
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update level reward' });
@@ -552,36 +623,80 @@ router.put('/current/rewards/:level', async (req: Request, res: Response) => {
     }
 
     const level = parseInt(req.params.level);
-    const { text } = req.body;
+    const { text, xpRequired } = req.body as { text?: string; xpRequired?: number };
+    const hasText = typeof text === 'string';
+    const hasXp = typeof xpRequired === 'number' && Number.isFinite(xpRequired);
 
-    if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: 'Text is required' });
+    if (!hasText && !hasXp) {
+      return res.status(400).json({ error: 'Text or xpRequired is required' });
     }
 
     if (level < 1 || level > 80) {
       return res.status(400).json({ error: 'Level must be between 1 and 80' });
     }
 
-    const reward = await prisma.reward.upsert({
-      where: {
-        spaceId_level: {
+    if (hasText) {
+      await prisma.reward.upsert({
+        where: {
+          spaceId_level: {
+            spaceId: authReq.currentSpaceId,
+            level,
+          },
+        },
+        update: {
+          text: text || '',
+        },
+        create: {
           spaceId: authReq.currentSpaceId,
           level,
+          text: text || '',
         },
-      },
-      update: {
-        text,
-      },
-      create: {
-        spaceId: authReq.currentSpaceId,
-        level,
-        text,
-      },
-    });
+      });
+    }
+
+    if (hasXp) {
+      const normalizedXp = Math.max(1, Math.min(100000, Math.round(xpRequired as number)));
+      await prisma.levelRequirement.upsert({
+        where: {
+          spaceId_level: {
+            spaceId: authReq.currentSpaceId,
+            level,
+          },
+        },
+        update: {
+          xpRequired: normalizedXp,
+        },
+        create: {
+          spaceId: authReq.currentSpaceId,
+          level,
+          xpRequired: normalizedXp,
+        },
+      });
+    }
+
+    const [reward, requirement] = await Promise.all([
+      prisma.reward.findUnique({
+        where: {
+          spaceId_level: {
+            spaceId: authReq.currentSpaceId,
+            level,
+          },
+        },
+      }),
+      prisma.levelRequirement.findUnique({
+        where: {
+          spaceId_level: {
+            spaceId: authReq.currentSpaceId,
+            level,
+          },
+        },
+      }),
+    ]);
 
     res.json({
-      level: reward.level,
-      text: reward.text,
+      level,
+      text: reward?.text || '',
+      xpRequired: requirement?.xpRequired ?? getXpForNextLevel(level),
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update level reward' });

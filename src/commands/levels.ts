@@ -25,7 +25,7 @@ export function setupLevelCommands(bot: Bot<AuthContext>) {
       return ctx.reply(t(lang, 'stats.notFound'));
     }
 
-    const progress = getXpProgress(stats.totalXp);
+    const progress = await getXpProgress(ctx.currentSpaceId, stats.totalXp);
 
     const message = `${t(lang, 'stats.yourStats')}
 ${t(lang, 'stats.level')} ${stats.level}
@@ -108,7 +108,7 @@ ${t(lang, 'stats.progress')} ${progress.current}/${progress.current + progress.n
       return;
     }
 
-    const progress = getXpProgress(stats.totalXp);
+    const progress = await getXpProgress(ctx.currentSpaceId, stats.totalXp);
     const message = `${t(lang, 'stats.yourStats')}
 ${t(lang, 'stats.level')} ${stats.level}
 ${t(lang, 'stats.totalXp')} ${stats.totalXp}

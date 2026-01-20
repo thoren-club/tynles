@@ -144,9 +144,28 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      console.error('API error:', error);
-      throw new Error(error.error || `HTTP ${response.status}`);
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const text = await response.text();
+        if (text) {
+          try {
+            const parsed = JSON.parse(text);
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            } else if (typeof parsed === 'string') {
+              errorMessage = parsed;
+            } else {
+              errorMessage = text;
+            }
+          } catch {
+            errorMessage = text;
+          }
+        }
+      } catch {
+        // ignore
+      }
+      console.error('API error:', { status: response.status, message: errorMessage });
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -366,7 +385,7 @@ export const api = {
   // Level Rewards
   async getLevelRewards(spaceId?: string) {
     const url = spaceId ? `/spaces/${spaceId}/rewards` : '/spaces/current/rewards';
-    return this.request<{ rewards: Array<{ level: number; text: string }> }>(url);
+    return this.request<{ rewards: Array<{ level: number; text: string; xpRequired?: number }> }>(url);
   },
   
   async getSpaceInfo(spaceId: string) {
@@ -387,11 +406,11 @@ export const api = {
     });
   },
 
-  async updateLevelReward(level: number, text: string, spaceId?: string) {
+  async updateLevelReward(level: number, text: string, xpRequired?: number, spaceId?: string) {
     const url = spaceId ? `/spaces/${spaceId}/rewards/${level}` : `/spaces/current/rewards/${level}`;
     return this.request(url, {
       method: 'PUT',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, xpRequired }),
     });
   },
 
@@ -415,6 +434,7 @@ export const api = {
     return this.request<{
       taskRemindersEnabled: boolean;
       reminderHoursBefore: number;
+      reminderTime: string;
       pokeEnabled: boolean;
     }>('/notifications/settings');
   },
@@ -422,6 +442,7 @@ export const api = {
   async updateNotificationSettings(settings: {
     taskRemindersEnabled?: boolean;
     reminderHoursBefore?: number;
+    reminderTime?: string;
     pokeEnabled?: boolean;
   }) {
     return this.request('/notifications/settings', {

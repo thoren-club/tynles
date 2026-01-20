@@ -11,6 +11,7 @@ export default function Settings() {
   const [notificationSettings, setNotificationSettings] = useState<{
     taskRemindersEnabled: boolean;
     reminderHoursBefore: number;
+    reminderTime: string;
     pokeEnabled: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -136,6 +137,18 @@ export default function Settings() {
     }
   };
 
+  const handleReminderTimeChange = async (time: string) => {
+    if (!notificationSettings) return;
+    
+    try {
+      await api.updateNotificationSettings({ reminderTime: time });
+      setNotificationSettings({ ...notificationSettings, reminderTime: time });
+    } catch (error) {
+      console.error('Failed to update notification settings:', error);
+      alert(tr('Не удалось обновить настройки', 'Failed to update settings'));
+    }
+  };
+
   const handleToggleHaptics = () => {
     const next = !hapticsEnabled;
     setHapticsEnabled(next);
@@ -224,6 +237,20 @@ export default function Settings() {
                     <option value={12}>{tr('12 часов', '12 hours')}</option>
                     <option value={24}>{tr('24 часа', '24 hours')}</option>
                   </select>
+                </div>
+              )}
+
+              {notificationSettings.taskRemindersEnabled && (
+                <div className="settings-item">
+                  <div className="settings-item-label">
+                    {tr('Время напоминаний (без времени)', 'Reminder time (no time set)')}
+                  </div>
+                  <input
+                    type="time"
+                    className="settings-select"
+                    value={notificationSettings.reminderTime || '18:00'}
+                    onChange={(e) => handleReminderTimeChange(e.target.value)}
+                  />
                 </div>
               )}
 

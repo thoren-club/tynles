@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { BottomSheet } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Spaces.css';
 
@@ -14,9 +15,10 @@ export default function SpaceSettings() {
   const [isSpaceOwner, setIsSpaceOwner] = useState(false);
   const [spaceMembers, setSpaceMembers] = useState<any[]>([]);
   const [inviteCode, setInviteCode] = useState<string>('');
-  const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);
+  const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string; xpRequired?: number }>>([]);
   const [editingRewardLevel, setEditingRewardLevel] = useState<number | null>(null);
   const [editingRewardText, setEditingRewardText] = useState<string>('');
+  const [editingRewardXp, setEditingRewardXp] = useState<string>('');
   const [editingMemberRole, setEditingMemberRole] = useState<{ userId: string; role: string } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -139,20 +141,27 @@ export default function SpaceSettings() {
     }
   };
 
-  const handleRewardEdit = (level: number, currentText: string) => {
+  const handleRewardEdit = (level: number, currentText: string, xpRequired?: number) => {
     setEditingRewardLevel(level);
     setEditingRewardText(currentText || '');
+    setEditingRewardXp(xpRequired ? String(xpRequired) : '');
   };
 
   const closeRewardSheet = () => {
     setEditingRewardLevel(null);
     setEditingRewardText('');
+    setEditingRewardXp('');
   };
 
   const handleRewardSave = async () => {
     if (editingRewardLevel === null || !selectedSpace) return;
     try {
-      await api.updateLevelReward(editingRewardLevel, editingRewardText, selectedSpace.id);
+      const normalizedXp = editingRewardXp ? Number(editingRewardXp) : undefined;
+      if (editingRewardXp && (!Number.isFinite(normalizedXp) || normalizedXp <= 0)) {
+        alert(tr('Введите корректное значение XP', 'Enter a valid XP value'));
+        return;
+      }
+      await api.updateLevelReward(editingRewardLevel, editingRewardText, normalizedXp, selectedSpace.id);
       closeRewardSheet();
       await loadData(selectedSpace.id);
     } catch (error) {
@@ -368,15 +377,24 @@ export default function SpaceSettings() {
             <div className="rewards-list">
               {Array.from({ length: 80 }, (_, i) => i + 1).map((level) => {
                 const reward = levelRewards.find((r) => r.level === level);
+                const hasReward = Boolean(reward?.text && reward.text.trim());
 
                 return (
                   <div key={level} className="reward-item">
                     <div className="reward-level">{tr('Уровень', 'Level')} {level}</div>
                     <div className="reward-content">
-                      <div className="reward-text">{reward?.text || tr('Нет награды', 'No reward')}</div>
-                      <button className="edit-reward-button" onClick={() => handleRewardEdit(level, reward?.text || '')}>
-                        {reward ? tr('Изменить', 'Edit') : tr('Добавить', 'Add')}
-                      </button>
+                        <div className="reward-info">
+                          <div className="reward-text">{reward?.text || tr('Нет награды', 'No reward')}</div>
+                          <div className="reward-xp">
+                            {tr('XP', 'XP')}: {reward?.xpRequired ?? '-'}
+                          </div>
+                        </div>
+                        <button
+                          className="edit-reward-button"
+                          onClick={() => handleRewardEdit(level, reward?.text || '', reward?.xpRequired)}
+                        >
+                          {hasReward ? tr('Изменить', 'Edit') : tr('Добавить', 'Add')}
+                        </button>
                     </div>
                   </div>
                 );
@@ -403,31 +421,41 @@ export default function SpaceSettings() {
           </div>
         )}
       </div>
-      {editingRewardLevel !== null && (
-        <div className="reward-sheet-overlay" onClick={closeRewardSheet}>
-          <div className="reward-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="reward-sheet-title">
-              {tr('Награда за уровень', 'Level reward')} {editingRewardLevel}
-            </div>
-            <input
-              type="text"
-              className="reward-sheet-input"
-              value={editingRewardText}
-              onChange={(e) => setEditingRewardText(e.target.value)}
-              placeholder={tr('Введите награду', 'Enter reward text')}
-              autoFocus
-            />
-            <div className="reward-sheet-actions">
-              <button className="btn-secondary" onClick={closeRewardSheet}>
-                {tr('Отмена', 'Cancel')}
-              </button>
-              <button className="btn-primary" onClick={handleRewardSave}>
-                {tr('Сохранить', 'Save')}
-              </button>
-            </div>
+      <BottomSheet
+        isOpen={editingRewardLevel !== null}
+        onClose={closeRewardSheet}
+        title={editingRewardLevel !== null ? `${tr('Награда за уровень', 'Level reward')} ${editingRewardLevel}` : undefined}
+        showHeader={true}
+        showCloseButton={true}
+        size="low"
+      >
+        <div className="reward-sheet-body">
+          <input
+            type="text"
+            className="reward-sheet-input"
+            value={editingRewardText}
+            onChange={(e) => setEditingRewardText(e.target.value)}
+            placeholder={tr('Введите награду', 'Enter reward text')}
+            autoFocus
+          />
+          <input
+            type="number"
+            className="reward-sheet-input"
+            value={editingRewardXp}
+            onChange={(e) => setEditingRewardXp(e.target.value)}
+            placeholder={tr('XP для уровня', 'XP required for level')}
+            min={1}
+          />
+          <div className="reward-sheet-actions">
+            <button className="btn-secondary" onClick={closeRewardSheet}>
+              {tr('Отмена', 'Cancel')}
+            </button>
+            <button className="btn-primary" onClick={handleRewardSave}>
+              {tr('Сохранить', 'Save')}
+            </button>
           </div>
         </div>
-      )}
+      </BottomSheet>
     </div>
   );
 }

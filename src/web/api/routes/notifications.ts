@@ -22,6 +22,7 @@ router.get('/settings', async (req: Request, res: Response) => {
           userId,
           taskRemindersEnabled: true,
           reminderHoursBefore: 2,
+          reminderTime: '18:00',
           pokeEnabled: true,
         },
       });
@@ -30,6 +31,7 @@ router.get('/settings', async (req: Request, res: Response) => {
     res.json({
       taskRemindersEnabled: settings.taskRemindersEnabled,
       reminderHoursBefore: settings.reminderHoursBefore,
+      reminderTime: settings.reminderTime,
       pokeEnabled: settings.pokeEnabled,
     });
   } catch (error) {
@@ -43,7 +45,7 @@ router.put('/settings', async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const userId = authReq.user!.id;
 
-    const { taskRemindersEnabled, reminderHoursBefore, pokeEnabled } = req.body;
+    const { taskRemindersEnabled, reminderHoursBefore, reminderTime, pokeEnabled } = req.body;
 
     const settings = await prisma.userNotificationSettings.upsert({
       where: { userId },
@@ -51,11 +53,13 @@ router.put('/settings', async (req: Request, res: Response) => {
         userId,
         taskRemindersEnabled: taskRemindersEnabled !== undefined ? taskRemindersEnabled : true,
         reminderHoursBefore: reminderHoursBefore !== undefined ? reminderHoursBefore : 2,
+        reminderTime: typeof reminderTime === 'string' ? reminderTime : '18:00',
         pokeEnabled: pokeEnabled !== undefined ? pokeEnabled : true,
       },
       update: {
         ...(taskRemindersEnabled !== undefined && { taskRemindersEnabled }),
         ...(reminderHoursBefore !== undefined && { reminderHoursBefore }),
+        ...(reminderTime !== undefined && { reminderTime }),
         ...(pokeEnabled !== undefined && { pokeEnabled }),
       },
     });
@@ -63,6 +67,7 @@ router.put('/settings', async (req: Request, res: Response) => {
     res.json({
       taskRemindersEnabled: settings.taskRemindersEnabled,
       reminderHoursBefore: settings.reminderHoursBefore,
+      reminderTime: settings.reminderTime,
       pokeEnabled: settings.pokeEnabled,
     });
   } catch (error) {

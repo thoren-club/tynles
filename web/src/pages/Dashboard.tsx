@@ -332,6 +332,7 @@ export default function Dashboard() {
                       key={task.id}
                       title={task.title}
                       assignee={assignee}
+                      xp={task.xp}
                       isChecked={isChecked}
                       isDisabled={!taskAvailable}
                       isDimmed={isChecked}

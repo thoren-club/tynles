@@ -6,27 +6,15 @@ import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import './LevelProgression.css';
 
-// Константы для расчета XP (должны совпадать с backend)
-const BASE_XP_PER_LEVEL = 100;
-
-function getXpForNextLevel(currentLevel: number): number {
+function getDefaultXpForNextLevel(currentLevel: number): number {
   if (currentLevel >= 80) return 0;
-  return Math.floor(BASE_XP_PER_LEVEL * (1 + currentLevel * 0.02));
-}
-
-function getTotalXpForLevel(targetLevel: number): number {
-  if (targetLevel <= 1) return 0;
-  let totalXp = 0;
-  for (let level = 1; level < targetLevel; level++) {
-    totalXp += getXpForNextLevel(level);
-  }
-  return totalXp;
+  return Math.floor(100 * (1 + currentLevel * 0.02));
 }
 
 export default function LevelProgression() {
   const navigate = useNavigate();
   const { tr } = useLanguage();
-  const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string }>>([]);
+  const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string; xpRequired?: number }>>([]);
   const [userStats, setUserStats] = useState<{ level: number; totalXp: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,6 +62,16 @@ export default function LevelProgression() {
   
   const currentLevel = userStats ? userStats.level : 1;
   const currentTotalXp = userStats ? userStats.totalXp : 0;
+  const xpByLevel = new Map(levelRewards.map((r) => [r.level, r.xpRequired]));
+  const getXpForLevel = (level: number) => xpByLevel.get(level) ?? getDefaultXpForNextLevel(level);
+  const getTotalXpForLevel = (targetLevel: number) => {
+    if (targetLevel <= 1) return 0;
+    let totalXp = 0;
+    for (let level = 1; level < targetLevel; level++) {
+      totalXp += getXpForLevel(level);
+    }
+    return totalXp;
+  };
 
   return (
     <div className="level-progression">

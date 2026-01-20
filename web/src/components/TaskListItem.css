@@ -119,6 +119,33 @@
   color: inherit;
 }
 
+.task-xp {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--color-warning-500, #ffc038);
+}
+
+.task-xp-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-warning-500, #ffc038) 22%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  color: inherit;
+}
+
+.task-xp-value {
+  font-size: 12px;
+  line-height: 14px;
+}
+
 .task-undo-bar {
   position: fixed;
   left: 0;

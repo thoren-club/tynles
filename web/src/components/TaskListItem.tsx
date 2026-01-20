@@ -14,6 +14,7 @@ interface TaskListItemProps {
   onToggle: () => void;
   dateLabel?: string | null;
   timeLabel?: string | null;
+  xp?: number | null;
   isOverdue?: boolean;
   isRecurring?: boolean;
   showCalendarIcon?: boolean;
@@ -29,6 +30,7 @@ export default function TaskListItem({
   onToggle,
   dateLabel,
   timeLabel,
+  xp,
   isOverdue = false,
   isRecurring = false,
   showCalendarIcon = true,
@@ -92,6 +94,12 @@ export default function TaskListItem({
             )}
             {timeLabel && <span className="task-meta-time">{timeLabel}</span>}
             {isRecurring && <IconRefresh size={14} className="task-meta-icon" />}
+            {typeof xp === 'number' && (
+              <span className="task-xp">
+                <span className="task-xp-icon">XP</span>
+                <span className="task-xp-value">{xp}</span>
+              </span>
+            )}
           </div>
         )}
       </div>

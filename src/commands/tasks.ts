@@ -416,7 +416,9 @@ export function setupTaskCommands(bot: Bot<AuthContext>) {
         },
       });
 
-      const progress = stats ? getXpProgress(stats.totalXp) : { current: 0, next: 100, progress: 0 };
+      const progress = stats
+        ? await getXpProgress(ctx.currentSpaceId, stats.totalXp)
+        : { current: 0, next: 100, progress: 0 };
 
       // Создаем прогресс-бар
       const progressBar = getProgressBar(progress.progress);

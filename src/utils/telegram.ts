@@ -50,22 +50,22 @@ export async function sendTelegramMessage(
 export function generateTaskReminderMessage(
   taskTitle: string,
   isOverdue: boolean,
-  opts?: { isRecurring?: boolean }
+  opts?: { isRecurring?: boolean; recipientName?: string; isDayBefore?: boolean }
 ): string {
-  const recurringSuffix = opts?.isRecurring
-    ? ' Иначе вы потеряете очки.'
-    : '';
+  const namePrefix = opts?.recipientName ? `${opts.recipientName}! ` : '';
+  const recurringSuffix = opts?.isRecurring ? ' (повторяется)' : '';
+  const dayBeforePrefix = opts?.isDayBefore ? 'Завтра у тебя ' : 'У тебя ';
 
   const messages = isOverdue
     ? [
-        `Вы опять расстроили меня 😢 — у вас есть просроченная задача: <b>${taskTitle}</b>.${recurringSuffix}`,
-        `Ваша задача <b>${taskTitle}</b> уже просрочена! Поторопитесь! ⚡${recurringSuffix}`,
-        `Не забудьте про просроченную задачу: <b>${taskTitle}</b> 😢${recurringSuffix}`,
+        `${namePrefix}ну ты где? Задача <b>${taskTitle}</b> уже просрочена 😬${recurringSuffix}`,
+        `${namePrefix}напоминаю по‑дружески: <b>${taskTitle}</b> уже просрочена. Давай закроем?`,
+        `${namePrefix}эй! <b>${taskTitle}</b> уже просрочена. Не тяни 🙏`,
       ]
     : [
-        `Не забудьте про задачу: <b>${taskTitle}</b> — она уже ждёт вас! ⏰${recurringSuffix}`,
-        `Ваша задача <b>${taskTitle}</b> скоро истечёт! Поторопитесь! ⚡${recurringSuffix}`,
-        `Напоминание: у вас есть задача <b>${taskTitle}</b>, которая скоро истечёт! ⏰${recurringSuffix}`,
+        `${namePrefix}${dayBeforePrefix}<b>${taskTitle}</b>. Не забудь 💛${recurringSuffix}`,
+        `${namePrefix}маленький пинг: <b>${taskTitle}</b> ждёт тебя ⏰${recurringSuffix}`,
+        `${namePrefix}напоминалка: <b>${taskTitle}</b> скоро дедлайн. Давай без стресса ✨`,
       ];
 
   return messages[Math.floor(Math.random() * messages.length)];

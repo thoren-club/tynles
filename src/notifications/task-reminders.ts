@@ -26,6 +26,20 @@ function getAssigneeUserIdFromPayload(payload: any): bigint | null {
   }
 }
 
+function parseReminderTime(value?: string, fallback: string = '18:00') {
+  const raw = value || fallback;
+  const [h, m] = raw.split(':');
+  const hours = Number(h);
+  const minutes = Number(m);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return { hours: 18, minutes: 0 };
+  }
+  return {
+    hours: Math.max(0, Math.min(23, Math.floor(hours))),
+    minutes: Math.max(0, Math.min(59, Math.floor(minutes))),
+  };
+}
+
 /**
  * Sends task reminders using user settings and assignee logic.
  *
@@ -40,6 +54,7 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
 
   const now = new Date();
   const defaultReminderHoursBefore = 2;
+  const defaultReminderTime = '18:00';
 
   // We need tgId + notification settings for the recipient
   const usersWithSettings = await prisma.telegramUser.findMany({
@@ -58,6 +73,7 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
       horizonHours = Math.max(horizonHours, h);
     }
   }
+  horizonHours = Math.max(horizonHours, 48);
 
   // Fetch only tasks that can possibly need a reminder soon.
   // Includes overdue tasks (dueAt <= now) and tasks due within the max configured horizon.
@@ -81,11 +97,11 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
     const diffMs = dueDate.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     const isOverdue = diffMs < 0;
+    const isNoTime = dueDate.getHours() === 23 && dueDate.getMinutes() === 59;
 
     const payload = task.recurrencePayload as any;
     const assigneeScope = getAssigneeScopeFromPayload(payload);
     const isRecurring = !!(task.recurrenceType && task.recurrenceType !== 'none');
-    const message = generateTaskReminderMessage(task.title, isOverdue, { isRecurring });
 
     if (assigneeScope === 'space') {
       const members = await prisma.spaceMember.findMany({
@@ -101,9 +117,28 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
         const settings = recipient.notificationSettings;
         if (settings && !settings.taskRemindersEnabled) continue;
 
-        const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
-        const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+        let shouldRemind = false;
+        let isDayBefore = false;
+        if (!isOverdue && isNoTime) {
+          const reminderTime = parseReminderTime(settings?.reminderTime, defaultReminderTime);
+          const reminderAt = new Date(dueDate);
+          reminderAt.setDate(reminderAt.getDate() - 1);
+          reminderAt.setHours(reminderTime.hours, reminderTime.minutes, 0, 0);
+          shouldRemind = now >= reminderAt && now < dueDate;
+          isDayBefore = true;
+        } else {
+          const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
+          shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+        }
+
         if (!isOverdue && !shouldRemind) continue;
+
+        const recipientName = recipient.firstName || recipient.username || undefined;
+        const message = generateTaskReminderMessage(task.title, isOverdue, {
+          isRecurring,
+          recipientName,
+          isDayBefore,
+        });
 
         const sent = await transport.sendMessage(recipient.tgId, message);
         if (sent) {
@@ -128,9 +163,28 @@ export async function sendTaskReminders(transport: TelegramTransport): Promise<T
       const settings = recipient.notificationSettings;
       if (settings && !settings.taskRemindersEnabled) continue;
 
-      const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
-      const shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+      let shouldRemind = false;
+      let isDayBefore = false;
+      if (!isOverdue && isNoTime) {
+        const reminderTime = parseReminderTime(settings?.reminderTime, defaultReminderTime);
+        const reminderAt = new Date(dueDate);
+        reminderAt.setDate(reminderAt.getDate() - 1);
+        reminderAt.setHours(reminderTime.hours, reminderTime.minutes, 0, 0);
+        shouldRemind = now >= reminderAt && now < dueDate;
+        isDayBefore = true;
+      } else {
+        const hoursBefore = settings?.reminderHoursBefore || defaultReminderHoursBefore;
+        shouldRemind = !isOverdue && diffHours <= hoursBefore && diffHours > 0;
+      }
+
       if (!isOverdue && !shouldRemind) continue;
+
+      const recipientName = recipient.firstName || recipient.username || undefined;
+      const message = generateTaskReminderMessage(task.title, isOverdue, {
+        isRecurring,
+        recipientName,
+        isDayBefore,
+      });
 
       const sent = await transport.sendMessage(recipient.tgId, message);
       if (!sent) continue;

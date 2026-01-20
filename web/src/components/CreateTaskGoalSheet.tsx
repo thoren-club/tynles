@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown } from './ui';
+import { DateTimePickerWithPresets, ImportanceSelector, RecurringPresets, Dropdown, BottomSheet } from './ui';
 import { triggerLightHaptic } from '../utils/haptics';
 import './CreateTaskGoalSheet.css';
 
@@ -30,12 +30,6 @@ export default function CreateTaskGoalSheet({
   const [deadlineHasTime, setDeadlineHasTime] = useState(false);
   const [recurringHasTime, setRecurringHasTime] = useState(false);
   const [recurringTime, setRecurringTime] = useState('23:59');
-  const [swipeStartY, setSwipeStartY] = useState<number | null>(null);
-  const [swipeCurrentY, setSwipeCurrentY] = useState<number | null>(null);
-  const [sheetTransform, setSheetTransform] = useState(0);
-  const [canSwipe, setCanSwipe] = useState(false);
-  const sheetContentRef = useRef<HTMLDivElement>(null);
-
   const formatLocalDate = (date: Date) => {
     const pad = (num: number) => String(num).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -60,14 +54,6 @@ export default function CreateTaskGoalSheet({
     loadOptions();
     resetForm(createType);
   }, [isOpen, createType]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    document.body.classList.add('modal-open');
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [isOpen]);
 
   const loadOptions = async () => {
     try {
@@ -105,9 +91,6 @@ export default function CreateTaskGoalSheet({
   };
 
   const closeSheet = () => {
-    setSheetTransform(0);
-    setSwipeStartY(null);
-    setSwipeCurrentY(null);
     onClose();
   };
 
@@ -195,88 +178,6 @@ export default function CreateTaskGoalSheet({
     }
   }, [deadlineEnabled, deadlineDate, deadlineTime, deadlineHasTime, formData.deadline]);
 
-  const checkCanSwipe = (target: HTMLElement): boolean => {
-    if (target.closest('.swipe-indicator') || target.closest('.create-modal-header')) {
-      return true;
-    }
-    if (sheetContentRef.current) {
-      return sheetContentRef.current.scrollTop === 0;
-    }
-    return false;
-  };
-
-  const handleSwipeStart = (clientY: number, target: HTMLElement) => {
-    const canSwipeNow = checkCanSwipe(target);
-    if (canSwipeNow) {
-      setCanSwipe(true);
-      setSwipeStartY(clientY);
-      setSwipeCurrentY(clientY);
-    }
-  };
-
-  const handleSwipeMove = (clientY: number, e: React.TouchEvent | React.MouseEvent) => {
-    if (swipeStartY === null || !canSwipe) return;
-    const deltaY = clientY - swipeStartY;
-    if (deltaY > 0) {
-      e.preventDefault();
-      setSwipeCurrentY(clientY);
-      setSheetTransform(deltaY);
-    } else {
-      setSheetTransform(0);
-    }
-  };
-
-  const handleSwipeEnd = () => {
-    if (swipeStartY === null || swipeCurrentY === null || !canSwipe) {
-      setSwipeStartY(null);
-      setSwipeCurrentY(null);
-      setCanSwipe(false);
-      return;
-    }
-    const deltaY = swipeCurrentY - swipeStartY;
-    const threshold = 100;
-    if (deltaY > threshold) {
-      closeSheet();
-    } else {
-      setSheetTransform(0);
-    }
-    setSwipeStartY(null);
-    setSwipeCurrentY(null);
-    setCanSwipe(false);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    handleSwipeStart(e.clientY, target);
-    const handleMouseMove = (event: MouseEvent) => {
-      handleSwipeMove(event.clientY, event as any);
-    };
-    const handleMouseUp = () => {
-      handleSwipeEnd();
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    handleSwipeStart(e.touches[0].clientY, target);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (swipeStartY !== null && canSwipe) {
-      handleSwipeMove(e.touches[0].clientY, e);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (swipeStartY !== null) {
-      handleSwipeEnd();
-    }
-  };
-
   const handleCreate = async () => {
     if (!createType) return;
     if (!formData.title.trim()) {
@@ -333,28 +234,19 @@ export default function CreateTaskGoalSheet({
   if (!isOpen || !createType) return null;
 
   return (
-    <div className="create-modal-overlay" onClick={closeSheet}>
-      <div
-        className="create-modal-sheet"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          transform: sheetTransform > 0 ? `translateY(${sheetTransform}px)` : 'none',
-          transition: swipeStartY === null ? 'transform 0.2s ease-out' : 'none',
-        }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="create-modal">
-          <div className="create-modal-header" style={{ cursor: 'grab' }}>
-            <div className="swipe-indicator" />
-          </div>
-          <div className="create-modal-content" ref={sheetContentRef}>
-            <div className="create-modal-title">
-              {tr('Создать', 'Create')} {createType === 'goal' ? tr('цель', 'goal') : tr('задачу', 'task')}
-            </div>
-            <div className="create-form">
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={closeSheet}
+      showHeader={false}
+      className="create-sheet"
+      contentClassName="create-modal-content"
+      size="high"
+    >
+      <div className="create-modal">
+        <div className="create-modal-title">
+          {tr('Создать', 'Create')} {createType === 'goal' ? tr('цель', 'goal') : tr('задачу', 'task')}
+        </div>
+        <div className="create-form">
               <div className="form-field">
                 <label className="form-label">{tr('Название', 'Title')} *</label>
                 <input
@@ -572,10 +464,8 @@ export default function CreateTaskGoalSheet({
                   {isCreating ? tr('Создание...', 'Creating...') : tr('Создать', 'Create')}
                 </button>
               </div>
-            </div>
-          </div>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
