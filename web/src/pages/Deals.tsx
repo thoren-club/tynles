@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconPlus, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
 import { getTaskDateParts } from '../utils/taskDate';
@@ -184,10 +184,6 @@ export default function Deals() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreateClick = () => {
-    setShowCreateDropdown(!showCreateDropdown);
   };
 
   const handleCreateTypeSelect = (type: 'goal' | 'task') => {

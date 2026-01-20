@@ -102,6 +102,13 @@ export default function Spaces() {
     navigate(`/space-settings/${space.id}`);
   };
 
+  const roleLabel = (role: string) => {
+    if (role === 'Admin') return tr('Админ', 'Admin');
+    if (role === 'Editor') return tr('Редактор', 'Editor');
+    if (role === 'Viewer') return tr('Наблюдатель', 'Viewer');
+    return role;
+  };
+
   if (loading) {
     return (
       <div className="spaces">
