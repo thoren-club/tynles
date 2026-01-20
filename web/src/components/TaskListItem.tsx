@@ -39,6 +39,7 @@ export default function TaskListItem({
   const assigneeName = assignee?.firstName || assignee?.username || 'U';
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const showMeta = Boolean(dateLabel) || isRecurring || typeof xp === 'number';
+  const xpIsAlone = typeof xp === 'number' && !dateLabel && !isRecurring;
 
   return (
     <div
@@ -95,7 +96,7 @@ export default function TaskListItem({
             {timeLabel && <span className="task-meta-time">{timeLabel}</span>}
             {isRecurring && <IconRefresh size={14} className="task-meta-icon" />}
             {typeof xp === 'number' && (
-              <span className="task-xp">
+              <span className={`task-xp${xpIsAlone ? ' task-xp-alone' : ''}`}>
                 <span className="task-xp-icon">XP</span>
                 <span className="task-xp-value">{xp}</span>
               </span>

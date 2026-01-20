@@ -119,6 +119,7 @@ router.get('/', async (req: Request, res: Response) => {
         difficulty: task.difficulty,
         xp: task.xp,
         dueAt: task.dueAt?.toISOString() || null,
+        dueHasTime: task.dueHasTime,
         isPaused: task.isPaused,
         recurrenceType: task.recurrenceType || null,
         recurrencePayload: (task.recurrencePayload as any) || null,
@@ -141,7 +142,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No current space' });
     }
 
-    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay } = req.body;
+    const { title, difficulty, xp, dueAt, description, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay, dueHasTime } = req.body;
 
     if (!title || typeof title !== 'string') {
       return res.status(400).json({ error: 'Title is required' });
@@ -214,6 +215,7 @@ router.post('/', async (req: Request, res: Response) => {
     // Для повторяющихся задач устанавливаем dueAt на первый доступный день
     // Для одноразовых - используем переданный dueAt
     let taskDueAt: Date | null = null;
+    const hasDeadlineTime = typeof dueHasTime === 'boolean' ? dueHasTime : true;
     const now = new Date();
     const referenceDate = dueAt ? new Date(dueAt) : now;
     
@@ -225,10 +227,15 @@ router.post('/', async (req: Request, res: Response) => {
         referenceDate
       );
       const baseDate = startOfDay(firstAvailableDate);
-      taskDueAt = derivedTimeOfDay ? applyTimeOfDay(baseDate, derivedTimeOfDay) : endOfDay(baseDate);
+      taskDueAt = derivedTimeOfDay
+        ? applyTimeOfDay(baseDate, derivedTimeOfDay)
+        : endOfDay(baseDate);
     } else if (dueAt) {
       // Для одноразовых задач используем переданный dueAt
       taskDueAt = new Date(dueAt);
+      if (!hasDeadlineTime) {
+        taskDueAt.setHours(0, 0, 0, 0);
+      }
     }
 
     const task = await prisma.task.create({
@@ -238,6 +245,7 @@ router.post('/', async (req: Request, res: Response) => {
         difficulty: taskDifficulty,
         xp: calculatedXp,
         dueAt: taskDueAt,
+        dueHasTime: isRecurring ? true : hasDeadlineTime,
         recurrenceType,
         recurrencePayload: recurrencePayload === Prisma.JsonNull ? Prisma.JsonNull : recurrencePayload,
         createdBy: authReq.user!.id,
@@ -250,6 +258,7 @@ router.post('/', async (req: Request, res: Response) => {
       difficulty: task.difficulty,
       xp: task.xp,
       dueAt: task.dueAt?.toISOString() || null,
+      dueHasTime: task.dueHasTime,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create task' });
@@ -354,7 +363,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const { title, difficulty, description, dueAt, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay } = req.body;
+    const { title, difficulty, description, dueAt, isRecurring, daysOfWeek, assigneeUserId, assigneeScope, timeOfDay, dueHasTime } = req.body;
 
     let recurrenceType: string | null = null;
     let recurrencePayload: Prisma.InputJsonValue | Prisma.JsonNullValueInput | null = Prisma.JsonNull;
@@ -407,6 +416,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
     }
 
     let taskDueAt: Date | null = null;
+    const hasDeadlineTime = typeof dueHasTime === 'boolean' ? dueHasTime : true;
     if (isRecurring && daysOfWeek && daysOfWeek.length > 0) {
       const firstAvailableDate = getFirstAvailableDate(
         recurrenceType,
@@ -414,9 +424,14 @@ router.put('/:taskId', async (req: Request, res: Response) => {
         dueAtDate || new Date(),
       );
       const baseDate = startOfDay(firstAvailableDate);
-      taskDueAt = derivedTimeOfDay ? applyTimeOfDay(baseDate, derivedTimeOfDay) : endOfDay(baseDate);
+      taskDueAt = derivedTimeOfDay
+        ? applyTimeOfDay(baseDate, derivedTimeOfDay)
+        : endOfDay(baseDate);
     } else if (dueAt) {
       taskDueAt = new Date(dueAt);
+      if (!hasDeadlineTime) {
+        taskDueAt.setHours(0, 0, 0, 0);
+      }
     }
 
     const updated = await prisma.task.update({
@@ -426,6 +441,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
         difficulty: typeof difficulty === 'number' ? difficulty : undefined,
         description: typeof description === 'string' ? description : undefined,
         dueAt: taskDueAt,
+        dueHasTime: isRecurring ? true : hasDeadlineTime,
         recurrenceType,
         recurrencePayload,
         reminderSent: false,
@@ -438,6 +454,7 @@ router.put('/:taskId', async (req: Request, res: Response) => {
       difficulty: updated.difficulty,
       xp: updated.xp,
       dueAt: updated.dueAt?.toISOString() || null,
+      dueHasTime: updated.dueHasTime,
       recurrenceType: updated.recurrenceType || null,
       recurrencePayload: (updated.recurrencePayload as any) || null,
       assigneeUserId: getAssigneeUserIdFromPayload(updated.recurrencePayload as any)?.toString() || null,

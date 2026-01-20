@@ -20,14 +20,16 @@ const formatLocalDate = (date: Date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-const parseDueAtToLocal = (value?: string | null) => {
+const parseDueAtToLocal = (value?: string | null, hasTimeOverride?: boolean) => {
   if (!value) return { date: '', time: '23:59', hasTime: false };
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return { date: '', time: '23:59', hasTime: false };
   const pad = (num: number) => String(num).padStart(2, '0');
   const datePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  const hasTime = !(date.getHours() === 23 && date.getMinutes() === 59);
+  const hasTime = typeof hasTimeOverride === 'boolean'
+    ? hasTimeOverride
+    : !(date.getHours() === 0 && date.getMinutes() === 0);
   return { date: datePart, time: timePart, hasTime };
 };
 
@@ -51,7 +53,7 @@ export default function TaskGoalEditorSheet({
   const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [deadlineHasTime, setDeadlineHasTime] = useState(false);
   const [recurringHasTime, setRecurringHasTime] = useState(false);
-  const [recurringTime, setRecurringTime] = useState('23:59');
+  const [recurringTime, setRecurringTime] = useState('11:59');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -68,6 +70,15 @@ export default function TaskGoalEditorSheet({
   });
 
   const [initialSnapshot, setInitialSnapshot] = useState('');
+
+  const buildDeadlineIso = (dateValue: string, timeValue: string, hasTime: boolean) => {
+    if (!dateValue) return '';
+    const timePart = hasTime ? (timeValue || '23:59') : '00:00';
+    const localDateTime = `${dateValue}T${timePart}`;
+    const parsed = new Date(localDateTime);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toISOString();
+  };
 
   const memberOptions = useMemo(() => members.map((m: any) => ({
     value: `user:${m.id}`,
@@ -129,11 +140,14 @@ export default function TaskGoalEditorSheet({
             goalTargetYear: new Date().getFullYear(),
             goalTargetMonth: new Date().getMonth() + 1,
           });
-          const parsed = parseDueAtToLocal(foundTask.dueAt);
+          const parsed = parseDueAtToLocal(foundTask.dueAt, foundTask.dueHasTime);
+          const resolvedDueHasTime = typeof foundTask.dueHasTime === 'boolean'
+            ? foundTask.dueHasTime
+            : parsed.hasTime;
           if (!isRecurringTask && parsed.date) {
             setDeadlineDate(parsed.date);
             setDeadlineTime(parsed.time);
-            setDeadlineHasTime(parsed.hasTime);
+            setDeadlineHasTime(resolvedDueHasTime);
           } else {
             setDeadlineDate('');
             setDeadlineTime('23:59');
@@ -144,7 +158,7 @@ export default function TaskGoalEditorSheet({
             setRecurringTime(String(recurrenceTimeOfDay).slice(0, 5));
           } else {
             setRecurringHasTime(false);
-            setRecurringTime('23:59');
+            setRecurringTime('11:59');
           }
           if (isRecurringTask) {
             setScheduleMode('recurring');
@@ -193,9 +207,8 @@ export default function TaskGoalEditorSheet({
       return;
     }
     if (!deadlineDate) return;
-    const timePart = deadlineHasTime ? (deadlineTime || '23:59') : '23:59';
-    const nextValue = `${deadlineDate}T${timePart}`;
-    if (nextValue !== formData.dueAt) {
+    const nextValue = buildDeadlineIso(deadlineDate, deadlineTime, deadlineHasTime);
+    if (nextValue && nextValue !== formData.dueAt) {
       setFormData((prev) => ({ ...prev, dueAt: nextValue }));
     }
   }, [scheduleMode, deadlineDate, deadlineTime, deadlineHasTime, formData.dueAt]);
@@ -208,7 +221,7 @@ export default function TaskGoalEditorSheet({
     if (mode === 'deadline') {
       setFormData((prev) => ({ ...prev, isRecurring: false, daysOfWeek: [] }));
       setRecurringHasTime(false);
-      setRecurringTime('23:59');
+      setRecurringTime('11:59');
       if (!deadlineDate) {
         setDeadlineDate(formatLocalDate(new Date()));
       }
@@ -222,7 +235,7 @@ export default function TaskGoalEditorSheet({
     setDeadlineHasTime(false);
     setFormData((prev) => ({ ...prev, dueAt: '', isRecurring: false, daysOfWeek: [] }));
     setRecurringHasTime(false);
-    setRecurringTime('23:59');
+    setRecurringTime('11:59');
   };
 
   const handleDeadlineTimeToggle = (checked: boolean) => {
@@ -240,15 +253,14 @@ export default function TaskGoalEditorSheet({
     if (scheduleMode !== 'recurring') return;
     setRecurringHasTime(checked);
     if (!checked) {
-      setRecurringTime('23:59');
+      setRecurringTime('11:59');
     }
   };
 
   const handleDeadlineChange = (value: string) => {
     if (deadlineHasTime) {
-      const [datePart, timePart] = value.split('T');
+      const [datePart] = value.split('T');
       setDeadlineDate(datePart || '');
-      setDeadlineTime((timePart || '23:59').slice(0, 5));
     } else {
       setDeadlineDate(value);
     }
@@ -269,6 +281,7 @@ export default function TaskGoalEditorSheet({
           difficulty: formData.importance,
           description: formData.description.trim() || undefined,
           dueAt: scheduleMode === 'deadline' ? formData.dueAt || undefined : undefined,
+          dueHasTime: scheduleMode === 'deadline' ? deadlineHasTime : undefined,
           assigneeUserId: safeAssigneeScope === 'user' ? formData.assigneeUserId || undefined : undefined,
           assigneeScope: safeAssigneeScope,
         };
@@ -448,10 +461,10 @@ export default function TaskGoalEditorSheet({
                 <div className="schedule-panel">
                   <DateTimePickerWithPresets
                     label={tr('Дата', 'Date')}
-                    value={deadlineHasTime ? `${deadlineDate}T${deadlineTime}` : deadlineDate}
+                    value={deadlineDate}
                     onChange={(e) => handleDeadlineChange(e.target.value)}
                     fullWidth
-                    showTime={deadlineHasTime}
+                    showTime={false}
                   />
                   <div className="deadline-time-row">
                     <span className="deadline-time-label">{tr('Время', 'Time')}</span>
@@ -464,6 +477,14 @@ export default function TaskGoalEditorSheet({
                       />
                     </label>
                   </div>
+                  {deadlineHasTime && (
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={deadlineTime}
+                      onChange={(e) => setDeadlineTime(e.target.value)}
+                    />
+                  )}
                 </div>
               )}
 

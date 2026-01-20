@@ -21,10 +21,12 @@ export function DateTimePickerWithPresets({
   const { tr } = useLanguage();
 
   const formatValue = (date: Date) => {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    const datePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     if (!showTime) {
-      return date.toISOString().slice(0, 10);
+      return datePart;
     }
-    return date.toISOString().slice(0, 16);
+    return `${datePart}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
   const getPresetValue = (preset: 'today' | 'tomorrow' | 'week') => {

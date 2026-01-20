@@ -52,6 +52,7 @@ export interface TasksResponse {
     difficulty: number;
     xp: number;
     dueAt: string | null;
+    dueHasTime?: boolean;
     isPaused: boolean;
     recurrenceType: string | null;
     recurrencePayload: { daysOfWeek?: number[]; timeOfDay?: string } | null;
@@ -302,6 +303,7 @@ export const api = {
     daysOfWeek?: number[];
     assigneeUserId?: string | null;
     assigneeScope?: 'user' | 'space';
+    dueHasTime?: boolean;
   }) {
     return this.request('/tasks', {
       method: 'POST',
@@ -324,6 +326,7 @@ export const api = {
     daysOfWeek?: number[];
     assigneeUserId?: string | null;
     assigneeScope?: 'user' | 'space';
+    dueHasTime?: boolean;
   }) {
     return this.request(`/tasks/${taskId}`, {
       method: 'PUT',

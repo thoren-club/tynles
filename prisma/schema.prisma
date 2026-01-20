@@ -95,6 +95,7 @@ model Task {
   recurrenceType    String?   @map("recurrence_type") @db.VarChar(50)
   recurrencePayload Json?     @map("recurrence_payload")
   dueAt             DateTime? @map("due_at")
+  dueHasTime        Boolean   @default(true) @map("due_has_time")
   reminderSent      Boolean   @default(false) @map("reminder_sent")
   isPaused          Boolean   @default(false) @map("is_paused")
   createdBy         BigInt    @map("created_by")

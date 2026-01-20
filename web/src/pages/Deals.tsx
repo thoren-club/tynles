@@ -264,7 +264,10 @@ export default function Deals() {
                   const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
                   const taskAvailable = isRecurring ? true : isTaskAvailable(task);
                   const isChecked = !isRecurring && completedTaskId === task.id;
-                  const dateParts = getTaskDateParts(task.dueAt, locale, tr);
+                  const hideTime = isRecurring
+                    ? !task.recurrencePayload?.timeOfDay
+                    : task.dueHasTime === false;
+                  const dateParts = getTaskDateParts(task.dueAt, locale, tr, { hideTime });
                   const assigneeId = task.assigneeUserId;
                   const assignee = task.assigneeScope === 'space'
                     ? {

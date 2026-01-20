@@ -14,6 +14,7 @@ export const getTaskDateParts = (
   dueAt: string | null,
   locale: string,
   tr: TranslateFn,
+  options?: { hideTime?: boolean },
 ) => {
   if (!dueAt) return null;
   const date = new Date(dueAt);
@@ -49,8 +50,12 @@ export const getTaskDateParts = (
     label = capitalize(date.toLocaleDateString(locale, { weekday: 'long' }));
   }
 
-  const isNoTime = date.getHours() === 23 && date.getMinutes() === 59;
-  const hasTime = !isNoTime && (date.getHours() !== 0 || date.getMinutes() !== 0);
+  const isNoTime = date.getHours() === 0 && date.getMinutes() === 0;
+  const hasTime = options?.hideTime === true
+    ? false
+    : options?.hideTime === false
+    ? true
+    : !isNoTime;
   const time = hasTime
     ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
     : null;

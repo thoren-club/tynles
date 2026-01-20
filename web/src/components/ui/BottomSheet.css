@@ -164,12 +164,12 @@
 
 .bottom-sheet-content {
   padding: var(--spacing-lg);
-  padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   flex: 1;
   /* Прокрутка с учетом bottom-sheet */
   overscroll-behavior: contain;
-  scroll-padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
+  scroll-padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Стилизация скроллбара для контента */

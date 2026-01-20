@@ -4,6 +4,12 @@ import { AuthContext } from '../middleware/auth';
 import { addXp } from './xp';
 import { calculateNextDueDate } from './recurrence';
 
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 function getAssigneeScopeFromPayload(payload: any): 'user' | 'space' {
   return payload?.assigneeScope === 'space' ? 'space' : 'user';
 }
@@ -161,11 +167,13 @@ export async function markTaskDone(taskId: bigint, userId: bigint, bot: Bot<Auth
       task.recurrencePayload as any,
       new Date(),
     );
+    const payload = task.recurrencePayload as any;
+    const nextDueWithTime = payload?.timeOfDay ? nextDueAt : endOfDay(nextDueAt);
 
     await prisma.task.update({
       where: { id: task.id },
       data: {
-        dueAt: nextDueAt,
+        dueAt: nextDueWithTime,
         reminderSent: false,
       },
     });
