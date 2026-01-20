@@ -39,6 +39,10 @@
   --color-bg: var(--color-neutral-950);         /* fixed background */
   --color-surface: var(--color-neutral-900);
   --color-surface-2: var(--color-neutral-800);
+  --color-wrapper-1: #232131;
+  --color-wrapper-2: color-mix(in srgb, var(--color-wrapper-1) 70%, var(--color-neutral-800));
+  --color-wrapper-3: color-mix(in srgb, var(--color-wrapper-2) 70%, var(--color-neutral-800));
+  --shadow-wrapper: 0 4px 0 #171620;
   --color-text: #f4f2ff;
   --color-text-muted: #a09abf;
   --color-border: color-mix(in srgb, var(--color-neutral-300) 22%, transparent);

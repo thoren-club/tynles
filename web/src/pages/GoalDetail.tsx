@@ -32,6 +32,13 @@ export default function GoalDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
+
   const loadGoal = async () => {
     try {
       const goals = await api.getGoals();

@@ -1,34 +1,33 @@
 .stats {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
 }
 
 .stats h1 {
   font-size: 24px;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .my-stats-section,
 .leaderboard-section {
-  margin-bottom: 32px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .my-stats-section h2,
 .leaderboard-section h2 {
   font-size: 18px;
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-md);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .stat-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  border: var(--border-1);
-  padding: 20px;
+  padding: var(--spacing-lg);
   text-align: center;
 }
 
@@ -47,17 +46,16 @@
 .leaderboard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .leaderboard-item {
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  border: var(--border-1);
-  padding: 16px;
+  padding: var(--spacing-md);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .rank {

@@ -37,6 +37,13 @@ export default function TaskDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
+
   const loadTask = async () => {
     try {
       const [tasksData, membersData] = await Promise.all([

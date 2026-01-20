@@ -29,6 +29,13 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   min-height: 100vh;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 #root {
@@ -48,4 +55,6 @@ button {
 input, textarea {
   font-family: inherit;
   outline: none;
+  -webkit-user-select: text;
+  user-select: text;
 }

@@ -1,5 +1,5 @@
 .leaderboard {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   min-height: 100vh;
   padding-bottom: 80px;
 }
@@ -7,193 +7,30 @@
 .leaderboard-title {
   font-size: 24px;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0 0 var(--spacing-lg) 0;
   color: var(--color-text);
 }
 
-.leaderboard-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--color-border);
-}
-
-.tab-button {
-  padding: 12px 20px;
-  background: none;
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s;
-}
-
-.tab-button.active {
-  color: var(--color-primary-500);
-  border-bottom-color: var(--color-primary-500);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .tab-button:hover {
-    color: var(--color-text);
-  }
-}
-
-/* Контейнер лиг */
-.leagues-container {
-  margin-bottom: 24px;
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.leagues-container::-webkit-scrollbar {
-  height: 6px;
-}
-
-.leagues-container::-webkit-scrollbar-track {
-  background: var(--color-surface-2);
-  border-radius: 3px;
-}
-
-.leagues-container::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
-  border-radius: 3px;
-}
-
-.leagues-list {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  justify-content: flex-start;
-  padding-bottom: 8px;
-  min-width: max-content;
-}
-
-.league-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  min-width: 70px;
-  transition: all 0.2s;
-  position: relative;
-  border: var(--border-1);
-}
-
-.league-badge.unlocked {
-  background: var(--color-surface);
-  opacity: 1;
-}
-
-.league-badge.locked {
-  background: var(--color-surface);
-  opacity: 0.4;
-}
-
-.league-badge.current {
-  background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
-  border-color: var(--color-primary-500);
-}
-
-.league-badge.current .league-number,
-.league-badge.current .league-name {
-  color: var(--tg-theme-button-text-color, #111019);
-}
-
-.league-number {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.league-name {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  text-align: center;
-  line-height: 1.2;
-}
-
-/* Информация о периоде раунда */
-.period-info {
-  margin: 16px 0;
-  padding: 12px 16px;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  border: var(--border-1);
-  text-align: center;
-}
-
-.period-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 4px;
-}
-
-.period-date {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-/* Пагинация */
-.leaderboard-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: var(--border-1);
-}
-
-.pagination-button {
-  padding: 10px 20px;
-  background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.pagination-button:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.pagination-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
+.leaderboard-subtitle {
   font-size: 14px;
   color: var(--color-text-muted);
+  margin-bottom: var(--spacing-lg);
 }
 
 .leaderboard-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .leaderboard-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  border: var(--border-1);
+  padding: var(--spacing-md);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
 }
 
 .rank {
@@ -278,7 +115,7 @@
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: var(--spacing-3xl) var(--spacing-md);
   color: var(--color-text-muted);
   font-size: 16px;
 }

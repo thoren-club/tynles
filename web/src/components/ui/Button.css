@@ -34,7 +34,20 @@
 /* Варианты */
 .ui-button-primary {
   background: var(--color-primary-500);
-  color: var(--tg-theme-button-text-color, #111019);
+  color: var(--color-neutral-0);
+  padding: 16px 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #7b4a1b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 15px;
+  text-transform: uppercase;
+  gap: 10px;
+}
+
+.ui-button-primary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #7b4a1b;
 }
 
 .ui-button-secondary {

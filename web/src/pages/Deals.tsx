@@ -3,15 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { api } from '../api';
 import { isTaskAvailable } from '../utils/taskAvailability';
+import { getTaskDateParts } from '../utils/taskDate';
+import { triggerLightHaptic } from '../utils/haptics';
 import { Skeleton, DateTimePickerWithPresets, ImportanceSelector, RecurringPresets } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
+import TaskListItem from '../components/TaskListItem';
 import './Deals.css';
 
 export default function Deals() {
   const navigate = useNavigate();
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   const [goals, setGoals] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -29,6 +33,8 @@ export default function Deals() {
   });
   
   const [isCreating, setIsCreating] = useState(false);
+  const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
+  const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
   
   // Для свайпа шторки
   const [swipeStartY, setSwipeStartY] = useState<number | null>(null);
@@ -40,6 +46,23 @@ export default function Deals() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimer) {
+        clearTimeout(undoTimer);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showCreateModal) {
+      document.body.classList.add('modal-open');
+      return () => {
+        document.body.classList.remove('modal-open');
+      };
+    }
+  }, [showCreateModal]);
 
   // Глобальные обработчики для свайпа мыши (на document)
   useEffect(() => {
@@ -103,13 +126,15 @@ export default function Deals() {
 
   const loadData = async () => {
     try {
-      const [goalsData, tasksData] = await Promise.all([
+      const [goalsData, tasksData, membersData] = await Promise.all([
         api.getGoals(),
         api.getTasks(),
+        api.getMembers().catch(() => ({ members: [] })),
       ]);
       
       setGoals(goalsData.goals || []);
       setTasks(tasksData.tasks || []);
+      setMembers(membersData.members || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -310,13 +335,11 @@ export default function Deals() {
     navigate(`/task/${taskId}`);
   };
 
-  const handleTaskCompleteClick = async (taskId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Предотвращаем открытие детальной страницы
-    if (!confirm(tr('Выполнить задачу?', 'Complete task?'))) return;
-    
+  const handleRecurringComplete = async (taskId: string) => {
+    triggerLightHaptic();
     try {
       await api.completeTask(taskId);
-      await loadData(); // Перезагружаем данные
+      await loadData();
     } catch (error) {
       console.error('Failed to complete task:', error);
       alert(tr('Не удалось выполнить задачу', 'Failed to complete task'));
@@ -345,83 +368,92 @@ export default function Deals() {
     return classMap[difficulty] || classMap[1];
   };
 
-  // Определяем тип задачи
-  const getTaskType = (task: any): 'one-time' | 'daily' | 'weekly' => {
-    if (!task.recurrenceType) {
-      return 'one-time';
+  const handleTaskComplete = async (taskId: string) => {
+    triggerLightHaptic();
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      setUndoTimer(null);
+      setCompletedTaskId(null);
     }
-    
-    if (task.recurrenceType === 'daily') {
-      const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
-      // Если выбраны все 7 дней - это ежедневная задача
-      if (daysOfWeek.length === 7) {
-        return 'daily';
-      }
-      // Иначе это еженедельная (с конкретными днями)
-      return 'weekly';
-    }
-    
-    // Если recurrenceType === 'weekly' или другой тип
-    return 'weekly';
-  };
 
-  // Получаем текст типа задачи
-  const getTaskTypeText = (task: any): string => {
-    const type = getTaskType(task);
-    
-    switch (type) {
-      case 'one-time':
-        return tr('Одноразовая', 'One-time');
-      case 'daily':
-        return tr('Ежедневная', 'Daily');
-      case 'weekly': {
-        const daysOfWeek = task.recurrencePayload?.daysOfWeek || [];
-        if (daysOfWeek.length === 0) {
-          return tr('Еженедельная', 'Weekly');
+    setCompletedTaskId(taskId);
+
+    const taskToComplete = uncompletedTasks.find((t) => t.id === taskId);
+    if (taskToComplete) {
+      const timer = setTimeout(async () => {
+        try {
+          await api.completeTask(taskId);
+          await loadData();
+          setCompletedTaskId(null);
+          setUndoTimer(null);
+        } catch (error) {
+          console.error('Failed to complete task:', error);
+          setCompletedTaskId(null);
+          setUndoTimer(null);
         }
-        // Показываем количество выбранных дней
-        return tr(`Еженедельная (${daysOfWeek.length} дней)`, `Weekly (${daysOfWeek.length} days)`);
-      }
-      default:
-        return tr('Одноразовая', 'One-time');
+      }, 5000);
+
+      setUndoTimer(timer);
     }
   };
 
-  // Получаем иконку для типа задачи
-  const getTaskTypeIcon = (task: any): string => {
-    const type = getTaskType(task);
-    
-    switch (type) {
-      case 'one-time':
-        return '📌';
-      case 'daily':
-        return '🔄';
-      case 'weekly':
-        return '📅';
-      default:
-        return '📌';
+  const handleTaskUndo = () => {
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      setUndoTimer(null);
+      setCompletedTaskId(null);
     }
+  };
+
+  const getTaskDueGroup = (task: any): 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date' => {
+    if (!task.dueAt) return 'no-date';
+    const dueDate = new Date(task.dueAt);
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const in7Days = new Date(startOfToday);
+    in7Days.setDate(in7Days.getDate() + 7);
+
+    if (dueDate < startOfToday) return 'overdue';
+    if (dueDate <= endOfToday) return 'today';
+    if (dueDate <= in7Days) return 'upcoming';
+    return 'later';
+  };
+
+  const sortTasksByDue = (items: any[]) => {
+    return [...items].sort((a, b) => {
+      if (!a.dueAt && !b.dueAt) return 0;
+      if (!a.dueAt) return 1;
+      if (!b.dueAt) return -1;
+      return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+    });
   };
 
   const displayedGoals = goals.slice(0, 6);
   const hasMoreGoals = goals.length > 6;
   
-  // Фильтруем задачи: показываем только доступные для выполнения
-  // Одноразовые - всегда показываем (если не выполнены)
-  // Повторяющиеся - показываем только если доступны (dueAt наступил и текущий день входит в daysOfWeek)
-  const availableTasks = tasks.filter((task: any) => {
-    // Пропускаем выполненные задачи (они не показываются)
-    if (task.isCompleted) return false;
-    
-    // Для повторяющихся задач проверяем доступность
-    const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-    if (isRecurring) {
-      return isTaskAvailable(task);
-    }
-    
-    // Одноразовые задачи показываем всегда (если не выполнены)
-    return true;
+  // Показываем все невыполненные задачи, даже если они ещё недоступны
+  const uncompletedTasks = tasks.filter((task: any) => !task.isCompleted);
+  const groupedTasks = {
+    overdue: [] as any[],
+    today: [] as any[],
+    upcoming: [] as any[],
+    later: [] as any[],
+    noDate: [] as any[],
+  };
+
+  uncompletedTasks.forEach((task: any) => {
+    const group = getTaskDueGroup(task);
+    groupedTasks[group === 'no-date' ? 'noDate' : group].push(task);
   });
+
+  const taskSections = [
+    { key: 'overdue', label: tr('Просрочено', 'Overdue') },
+    { key: 'today', label: tr('Сегодня', 'Today') },
+    { key: 'upcoming', label: tr('Ближайшие 7 дней', 'Next 7 days') },
+    { key: 'later', label: tr('Позже', 'Later') },
+    { key: 'noDate', label: tr('Без срока', 'No due date') },
+  ] as const;
 
   if (loading) {
     return (
@@ -556,48 +588,61 @@ export default function Deals() {
       {/* Секция задач */}
       <div className="tasks-section">
         <h2 className="section-title">{tr('Задачи', 'Tasks')}</h2>
-        
-        {availableTasks.length === 0 ? (
-          <div className="empty-state">{tr('Задач пока нет', 'No tasks yet')}</div>
-        ) : (
-          <div className="tasks-list">
-            {availableTasks.map((task) => {
-              const taskType = getTaskType(task);
-              const taskTypeText = getTaskTypeText(task);
-              const taskTypeIcon = getTaskTypeIcon(task);
-              
-              return (
-                <div 
-                  key={task.id} 
-                  className={`task-card task-type-${taskType}`}
-                  onClick={() => handleTaskClick(task.id)}
-                >
-                  <div className="task-content">
-                    <div className="task-header">
-                      <div className="task-title">{task.title}</div>
-                      {task.xp > 0 && (
-                        <span className="task-xp">+{task.xp} XP</span>
-                      )}
-                    </div>
-                    <div className="task-meta">
-                      <span className="task-type-badge">
-                        <span className="task-type-icon">{taskTypeIcon}</span>
-                        <span className="task-type-text">{taskTypeText}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    className="task-complete-btn"
-                    onClick={(e) => handleTaskCompleteClick(task.id, e)}
-                  >
-                    {tr('Выполнить', 'Complete')}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {taskSections.map((section) => {
+          const tasksForSection = groupedTasks[section.key as keyof typeof groupedTasks];
+          if (tasksForSection.length === 0) return null;
+          return (
+            <div key={section.key} className="task-group">
+              <div className="task-group-title">{section.label}</div>
+              <div className="tasks-list">
+                {sortTasksByDue(tasksForSection).map((task) => {
+                  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+                  const taskAvailable = !isRecurring || isTaskAvailable(task);
+                  const isChecked = !isRecurring && completedTaskId === task.id;
+                  const dateParts = getTaskDateParts(task.dueAt, locale, tr);
+                  const assigneeId = task.assigneeUserId;
+                  const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
+
+                  return (
+                    <TaskListItem
+                      key={task.id}
+                      title={task.title}
+                      assignee={assignee}
+                      isChecked={isChecked}
+                      isDisabled={!taskAvailable}
+                      isDimmed={isChecked}
+                      dateLabel={dateParts?.label}
+                      timeLabel={dateParts?.time}
+                      isOverdue={dateParts?.isOverdue}
+                      isRecurring={isRecurring}
+                      onClick={() => handleTaskClick(task.id)}
+                      onToggle={() => {
+                        if (!taskAvailable) return;
+                        if (isRecurring) {
+                          handleRecurringComplete(task.id);
+                          return;
+                        }
+                        if (isChecked) {
+                          handleTaskUndo();
+                          return;
+                        }
+                        handleTaskComplete(task.id);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
+      {completedTaskId && (
+        <div className="task-undo-bar">
+          <button className="task-undo-button" onClick={handleTaskUndo}>
+            {tr('Отменить', 'Undo')}
+          </button>
+        </div>
+      )}
 
       {/* Шторка создания цели/задачи */}
       {showCreateModal && createType && (

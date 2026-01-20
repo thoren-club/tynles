@@ -35,11 +35,10 @@ export default function BottomSheet({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      // Блокируем прокрутку body
-      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
       return () => {
         document.removeEventListener('keydown', handleEscape);
-        document.body.style.overflow = '';
+        document.body.classList.remove('modal-open');
       };
     }
   }, [isOpen, onClose]);

@@ -1,12 +1,12 @@
 .tasks {
-  padding: 16px;
+  padding: var(--screen-padding);
 }
 
 .tasks-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .tasks-header h1 {
@@ -14,27 +14,27 @@
 }
 
 .create-task-form {
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .form-row {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .task-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -52,14 +52,14 @@
 
 .task-meta {
   display: flex;
-  gap: 16px;
+  gap: var(--spacing-md);
   font-size: 12px;
   color: var(--color-text-muted);
 }
 
 .task-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   align-items: center;
 }
 
@@ -82,12 +82,6 @@
   font-size: 12px;
   border: none;
   cursor: pointer;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-muted);
 }
 
 .btn-primary {

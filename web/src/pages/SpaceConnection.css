@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: var(--screen-padding);
   background: var(--color-bg);
 }
 
@@ -15,7 +15,7 @@
 
 .connection-icon {
   font-size: 64px;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .connection-title {
@@ -28,16 +28,16 @@
 .connection-description {
   font-size: 16px;
   color: var(--color-text-muted);
-  margin: 0 0 32px 0;
+  margin: 0 0 var(--spacing-xl) 0;
   line-height: 1.5;
 }
 
 .connection-form {
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
   text-align: left;
 }
 
@@ -88,7 +88,7 @@
 .connection-divider {
   display: flex;
   align-items: center;
-  margin: 24px 0;
+  margin: var(--spacing-lg) 0;
   color: var(--color-text-muted);
 }
 
@@ -115,11 +115,10 @@
 .mode-switcher {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
   background: var(--color-surface);
   padding: 4px;
   border-radius: 12px;
-  border: var(--border-1);
 }
 
 .mode-button {

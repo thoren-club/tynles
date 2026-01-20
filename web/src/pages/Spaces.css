@@ -64,9 +64,9 @@
 .join-space-form {
   margin-bottom: 24px;
   padding: 16px;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  border: var(--border-1);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -173,9 +173,9 @@
 }
 
 .space-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  border: var(--border-1);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
   padding: 16px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -186,7 +186,7 @@
 }
 
 .space-card.active {
-  border: 2px solid var(--color-primary-500);
+  box-shadow: var(--shadow-wrapper), 0 0 0 2px var(--color-primary-500);
 }
 
 .space-content {
@@ -337,9 +337,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  border: var(--border-1);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
 }
 
 .member-info {
@@ -402,9 +402,9 @@
 
 .invite-code-container {
   padding: 16px;
-  background: var(--color-surface-2);
-  border-radius: var(--radius-sm);
-  border: var(--border-1);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
   text-align: center;
 }
 
@@ -437,9 +437,9 @@
 
 .reward-item {
   padding: 12px;
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  border: var(--border-1);
+  background: var(--color-wrapper-1);
+  border-radius: 14px;
+  box-shadow: var(--shadow-wrapper);
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -1,25 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronRight, IconSettings, IconBell, IconClock } from '@tabler/icons-react';
+import { IconChevronRight, IconSettings, IconBell } from '@tabler/icons-react';
 import { api } from '../api';
-import { Skeleton, SkeletonValue, BottomSheet } from '../components/ui';
+import { Skeleton, SkeletonValue } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isTaskAvailable } from '../utils/taskAvailability';
+import { getTaskDateParts } from '../utils/taskDate';
+import { triggerLightHaptic } from '../utils/haptics';
 import WeeklyXpChart from '../components/WeeklyXpChart';
+import TaskListItem from '../components/TaskListItem';
 import './Dashboard.css';
 import './SpaceLeaderboardMini.css';
-
-interface Story {
-  id: string;
-  type: 'Weekly' | 'Admin';
-  data: {
-    tasksCompleted?: number;
-    levelsGained?: number;
-    leaderboardChange?: number;
-  };
-  weekStartDate: string;
-  createdAt: string;
-}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -28,37 +19,12 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
   const [dailyRecurringTasks, setDailyRecurringTasks] = useState<any[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const [undoTimer, setUndoTimer] = useState<NodeJS.Timeout | null>(null);
   const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
   const [weeklyXpData, setWeeklyXpData] = useState<Array<{ day: number; xp: number; label: string }>>([]);
   const [members, setMembers] = useState<any[]>([]);
-
-  // Загружаем просмотренные истории из localStorage
-  const getViewedStories = (): Set<string> => {
-    try {
-      const viewed = localStorage.getItem('viewedStories');
-      return viewed ? new Set(JSON.parse(viewed)) : new Set();
-    } catch {
-      return new Set();
-    }
-  };
-
-  const [viewedStories, setViewedStories] = useState<Set<string>>(getViewedStories());
-
-  const markStoryAsViewed = (storyId: string) => {
-    const newViewed = new Set(viewedStories);
-    newViewed.add(storyId);
-    setViewedStories(newViewed);
-    try {
-      localStorage.setItem('viewedStories', JSON.stringify(Array.from(newViewed)));
-    } catch (e) {
-      console.error('Failed to save viewed stories:', e);
-    }
-  };
 
   useEffect(() => {
     loadData();
@@ -73,18 +39,16 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, statsData, tasksData, storiesData, leaderboardData, membersData] = await Promise.all([
+      const [userData, statsData, tasksData, leaderboardData, membersData] = await Promise.all([
         api.getUser(),
         api.getMyStats(),
         api.getTasks(),
-        api.getStories().catch(() => ({ stories: [] })),
         api.getSpaceLeaderboard().catch(() => ({ leaderboard: [] })),
         api.getMembers().catch(() => ({ members: [] })),
       ]);
       
       setUser(userData);
       setStats(statsData);
-      setStories(storiesData.stories || []);
       setSpaceLeaderboard((leaderboardData as any).leaderboard || []);
       setMembers((membersData as any).members || []);
       
@@ -126,54 +90,43 @@ export default function Dashboard() {
     setWeeklyXpData(weekData);
   };
 
-  const handleStoryClick = (story: Story) => {
-    setSelectedStory(story);
-    markStoryAsViewed(story.id);
+  const handleRecurringComplete = async (taskId: string) => {
+    triggerLightHaptic();
+    try {
+      await api.completeTask(taskId);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+    }
   };
 
-  // Получаем текст важности по difficulty
-  const getImportanceText = (difficulty: number): string => {
-    const importanceMap: { [key: number]: string } = {
-      1: tr('Низкая', 'Low'),
-      2: tr('Средняя', 'Medium'),
-      3: tr('Высокая', 'High'),
-      4: tr('Критическая', 'Critical'),
-    };
-    return importanceMap[difficulty] || importanceMap[1];
-  };
-
-  // Получаем класс для важности (для цвета)
-  const getImportanceClass = (difficulty: number): string => {
-    const classMap: { [key: number]: string } = {
-      1: 'importance-low',      // серый
-      2: 'importance-medium',   // зеленый
-      3: 'importance-high',     // оранжевый
-      4: 'importance-urgent',   // красный
-    };
-    return classMap[difficulty] || classMap[1];
-  };
-
-  // Форматируем дедлайн
-  const formatDeadline = (dueAt: string | null): string | null => {
-    if (!dueAt) return null;
-    
-    const deadline = new Date(dueAt);
+  const getTaskDueGroup = (task: any): 'overdue' | 'today' | 'upcoming' | 'later' | 'no-date' => {
+    if (!task.dueAt) return 'no-date';
+    const dueDate = new Date(task.dueAt);
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-    
-    const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return tr('Сегодня', 'Today');
-    if (diffDays === 1) return tr('Завтра', 'Tomorrow');
-    if (diffDays === -1) return tr('Вчера', 'Yesterday');
-    if (diffDays < 0) return tr('Просрочено', 'Overdue');
-    
-    return deadline.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const in7Days = new Date(startOfToday);
+    in7Days.setDate(in7Days.getDate() + 7);
+
+    if (dueDate < startOfToday) return 'overdue';
+    if (dueDate <= endOfToday) return 'today';
+    if (dueDate <= in7Days) return 'upcoming';
+    return 'later';
+  };
+
+  const sortTasksByDue = (items: any[]) => {
+    return [...items].sort((a, b) => {
+      if (!a.dueAt && !b.dueAt) return 0;
+      if (!a.dueAt) return 1;
+      if (!b.dueAt) return -1;
+      return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+    });
   };
 
   // Выполнение задачи с возможностью отмены
   const handleTaskComplete = async (taskId: string) => {
+    triggerLightHaptic();
     // Если уже есть таймер отмены, сначала очищаем его
     if (undoTimer) {
       clearTimeout(undoTimer);
@@ -270,23 +223,10 @@ export default function Dashboard() {
           <div className="tasks-list">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="task-item">
-                <div className="task-checkbox" />
+                <Skeleton width={22} height={22} radius={999} />
                 <div className="task-content">
-                  <div className="task-title">
-                    <Skeleton width="70%" height={16} radius={8} />
-                  </div>
-                  <div className="task-meta">
-                    <Skeleton width={70} height={12} radius={999} />
-                    <Skeleton width={60} height={12} radius={999} />
-                  </div>
-                </div>
-                <div className="task-right">
-                  <div className="task-xp">
-                    <Skeleton width={50} height={14} radius={8} />
-                  </div>
-                  <div className="task-assignee-avatar">
-                    <Skeleton width={28} height={28} radius={999} />
-                  </div>
+                  <Skeleton width="65%" height={14} radius={8} />
+                  <Skeleton width="45%" height={12} radius={8} />
                 </div>
               </div>
             ))}
@@ -301,21 +241,28 @@ export default function Dashboard() {
   const totalToday = dailyRecurringTasks.length;
   const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
   
-  // Актуальные задачи - все невыполненные И доступные задачи (одноразовые + ежедневные)
-  // Для повторяющихся задач показываем только те, которые доступны для выполнения
-  const uncompletedTasks = dailyTasks.filter((task: any) => {
-    // Пропускаем выполненные задачи
-    if (task.isCompleted) return false;
-    
-    // Для повторяющихся задач проверяем доступность
-    const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
-    if (isRecurring) {
-      return isTaskAvailable(task);
-    }
-    
-    // Одноразовые задачи показываем всегда (если не выполнены)
-    return true;
+  // Актуальные задачи - показываем все невыполненные, даже если они ещё не доступны
+  const uncompletedTasks = dailyTasks.filter((task: any) => !task.isCompleted);
+  const groupedTasks = {
+    overdue: [] as any[],
+    today: [] as any[],
+    upcoming: [] as any[],
+    later: [] as any[],
+    noDate: [] as any[],
+  };
+
+  uncompletedTasks.forEach((task: any) => {
+    const group = getTaskDueGroup(task);
+    groupedTasks[group === 'no-date' ? 'noDate' : group].push(task);
   });
+
+  const taskSections = [
+    { key: 'overdue', label: tr('Просрочено', 'Overdue') },
+    { key: 'today', label: tr('Сегодня', 'Today') },
+    { key: 'upcoming', label: tr('Ближайшие 7 дней', 'Next 7 days') },
+    { key: 'later', label: tr('Позже', 'Later') },
+    { key: 'noDate', label: tr('Без срока', 'No due date') },
+  ] as const;
 
   // Мотивационные фразы
   const motivationalPhrases = [
@@ -393,35 +340,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Карусель историй */}
-      {stories.length > 0 && (
-        <div className="stories-carousel">
-          <div className="stories-container">
-            {stories.map((story) => {
-              const isViewed = viewedStories.has(story.id);
-              return (
-                <div 
-                  key={story.id} 
-                  className="story-item"
-                  onClick={() => handleStoryClick(story)}
-                >
-                  <div className="story-avatar">
-                    {story.type === 'Weekly' ? '📊' : '✨'}
-                  </div>
-                  <div className={`story-indicator ${isViewed ? 'viewed' : 'unviewed'}`} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Блок статистики задач на сегодня */}
       <div className="today-stats-block">
         <div className="today-stats-header">
           <span className="stats-text">
             {totalToday === 0
-              ? tr('Задач нет', 'No tasks')
+              ? tr('Сегодня 0 задач', '0 tasks today')
               : tr(`${completedToday} / ${totalToday} выполнено`, `${completedToday} / ${totalToday} completed`)}
           </span>
         </div>
@@ -476,133 +400,60 @@ export default function Dashboard() {
       {/* Блок актуальных задач */}
       <div className="actual-tasks-block">
         <h2 className="block-title">{tr('Актуальные задачи', 'Current tasks')}</h2>
-        {uncompletedTasks.length === 0 ? (
-          <div className="empty-state">
-            {totalToday === 0 ? tr('Вы можете добавить задачу', 'You can add a task') : tr('Все задачи выполнены! 🎉', 'All tasks completed!')}
-          </div>
-        ) : (
-          <div className="tasks-list">
-            {uncompletedTasks.map((task: any) => {
-              const isCompleted = completedTaskId === task.id;
-              const importanceClass = getImportanceClass(task.difficulty || 1);
-              const deadlineText = formatDeadline(task.dueAt);
-              
-              // Находим assignee (прикрепленного пользователя)
-              const assigneeId = task.assigneeUserId;
-              const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
-              
-              return (
-                <div 
-                  key={task.id} 
-                  className={`task-item ${isCompleted ? 'completed' : ''}`}
-                >
-                  <div 
-                    className={`task-checkbox ${isCompleted ? 'checked' : ''}`}
-                    onClick={() => !isCompleted ? handleTaskComplete(task.id) : handleTaskUndo()}
-                  >
-                    {isCompleted && <span className="check-icon">✓</span>}
-                  </div>
-                  <div className="task-content">
-                    <div className="task-title">{task.title}</div>
-                    <div className="task-meta">
-                      <span className={`task-importance ${importanceClass}`}>
-                        {getImportanceText(task.difficulty || 1)}
-                      </span>
-                      {deadlineText && (
-                        <span className={`task-deadline ${deadlineText === tr('Просрочено', 'Overdue') || deadlineText === tr('Вчера', 'Yesterday') ? 'overdue' : ''}`}>
-                          <IconClock size={14} style={{ marginRight: '2px', verticalAlign: 'text-top' }} />
-                          {deadlineText}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="task-right">
-                    {task.xp > 0 && (
-                      <div className="task-xp">+{task.xp} XP</div>
-                    )}
-                    {assignee ? (
-                      <div className="task-assignee-avatar" title={assignee.firstName || assignee.username || tr('Без имени', 'No name')}>
-                        {assignee.photoUrl ? (
-                          <img src={assignee.photoUrl} alt={assignee.firstName || assignee.username || ''} />
-                        ) : (
-                          <span>{(assignee.firstName || assignee.username || '?').charAt(0).toUpperCase()}</span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="task-assignee-avatar task-assignee-empty" title={tr('Не назначено', 'Unassigned')}>
-                        <span>?</span>
-                      </div>
-                    )}
-                  </div>
-                  {isCompleted && (
-                    <button 
-                      className="task-undo-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTaskUndo();
+        {taskSections.map((section) => {
+          const tasksForSection = groupedTasks[section.key as keyof typeof groupedTasks];
+          if (tasksForSection.length === 0) return null;
+          return (
+            <div key={section.key} className="task-group">
+              <div className="task-group-title">{section.label}</div>
+              <div className="tasks-list">
+                {sortTasksByDue(tasksForSection).map((task: any) => {
+                  const isRecurring = task.recurrenceType && task.recurrenceType !== 'none';
+                  const taskAvailable = !isRecurring || isTaskAvailable(task);
+                  const isChecked = !isRecurring && completedTaskId === task.id;
+                  const dateParts = getTaskDateParts(task.dueAt, locale, tr);
+                  const assigneeId = task.assigneeUserId;
+                  const assignee = assigneeId ? members.find((m: any) => m.id === assigneeId) : null;
+
+                  return (
+                    <TaskListItem
+                      key={task.id}
+                      title={task.title}
+                      assignee={assignee}
+                      isChecked={isChecked}
+                      isDisabled={!taskAvailable}
+                      isDimmed={isChecked}
+                      dateLabel={dateParts?.label}
+                      timeLabel={dateParts?.time}
+                      isOverdue={dateParts?.isOverdue}
+                      isRecurring={isRecurring}
+                      onToggle={() => {
+                        if (!taskAvailable) return;
+                        if (isRecurring) {
+                          handleRecurringComplete(task.id);
+                          return;
+                        }
+                        if (isChecked) {
+                          handleTaskUndo();
+                          return;
+                        }
+                        handleTaskComplete(task.id);
                       }}
-                    >
-                      {tr('Отменить', 'Undo')}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
-
-      {/* Просмотр истории через BottomSheet */}
-      <BottomSheet
-        isOpen={!!selectedStory}
-        onClose={() => setSelectedStory(null)}
-        title={selectedStory?.type === 'Weekly'
-          ? tr('Недельная статистика', 'Weekly summary')
-          : tr('Новость', 'News')}
-      >
-        {selectedStory && (
-          <div className="story-content">
-            <div className="story-stats">
-              {selectedStory.data.tasksCompleted !== undefined && (
-                <div className="stat-item">
-                  <div className="stat-label">{tr('Выполнено задач', 'Tasks completed')}</div>
-                  <div className="stat-value">{selectedStory.data.tasksCompleted}</div>
-                </div>
-              )}
-
-              {selectedStory.data.levelsGained !== undefined && selectedStory.data.levelsGained > 0 && (
-                <div className="stat-item">
-                  <div className="stat-label">{tr('Получено уровней', 'Levels gained')}</div>
-                  <div className="stat-value">+{selectedStory.data.levelsGained}</div>
-                </div>
-              )}
-
-              {selectedStory.data.leaderboardChange !== undefined && (
-                <div className="stat-item">
-                  <div className="stat-label">{tr('Изменение в лидерборде', 'Leaderboard change')}</div>
-                  <div className={`stat-value ${selectedStory.data.leaderboardChange >= 0 ? 'positive' : 'negative'}`}>
-                    {selectedStory.data.leaderboardChange > 0 ? '↑' : selectedStory.data.leaderboardChange < 0 ? '↓' : '→'} 
-                    {tr(
-                      `${Math.abs(selectedStory.data.leaderboardChange)} мест${Math.abs(selectedStory.data.leaderboardChange) === 1 ? 'о' : ''}`,
-                      `${Math.abs(selectedStory.data.leaderboardChange)} places`,
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="story-date">
-              {new Date(selectedStory.weekStartDate).toLocaleDateString(locale, { 
-                day: 'numeric', 
-                month: 'long' 
-              })} — {new Date(new Date(selectedStory.weekStartDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(locale, { 
-                day: 'numeric', 
-                month: 'long' 
-              })}
-            </div>
-          </div>
-        )}
-      </BottomSheet>
+      {completedTaskId && (
+        <div className="task-undo-bar">
+          <button className="task-undo-button" onClick={handleTaskUndo}>
+            {tr('Отменить', 'Undo')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

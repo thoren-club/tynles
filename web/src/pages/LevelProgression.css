@@ -1,5 +1,5 @@
 .level-progression {
-  padding: var(--spacing-lg);
+  padding: var(--screen-padding);
   min-height: 100vh;
 }
 
@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .back-icon {
@@ -32,24 +32,22 @@
 .levels-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .level-item {
-  padding: 16px;
+  padding: var(--spacing-md);
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  border: var(--border-1);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
   transition: all 0.2s;
 }
 
 .level-item.current {
   background: var(--color-primary-500);
   color: var(--tg-theme-button-text-color, #111019);
-  border-color: var(--color-primary-500);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
@@ -199,7 +197,7 @@
 
 .loading-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: var(--spacing-3xl) var(--spacing-md);
   color: var(--color-text-muted);
   font-size: 16px;
 }

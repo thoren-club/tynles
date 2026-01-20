@@ -141,36 +141,32 @@ export default function Tasks() {
       )}
 
       <div className="tasks-list">
-        {tasks.length === 0 ? (
-          <div className="empty-state">{tr('Пока нет задач', 'No tasks yet')}</div>
-        ) : (
-          tasks.map((task) => (
-            <div key={task.id} className="task-card">
-              <div className="task-content">
-                <div className="task-title">{task.title}</div>
-                <div className="task-meta">
-                  <span>{tr('Сложность', 'Difficulty')}: {task.difficulty}</span>
-                  <span>XP: {task.xp}</span>
-                </div>
-              </div>
-              <div className="task-actions">
-                <button
-                  className="btn-complete"
-                  onClick={() => handleCompleteTask(task.id)}
-                  title={tr('Выполнить', 'Complete')}
-                >
-                  ✓
-                </button>
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDeleteTask(task.id)}
-                >
-                  {tr('Удалить', 'Delete')}
-                </button>
+        {tasks.map((task) => (
+          <div key={task.id} className="task-card">
+            <div className="task-content">
+              <div className="task-title">{task.title}</div>
+              <div className="task-meta">
+                <span>{tr('Сложность', 'Difficulty')}: {task.difficulty}</span>
+                <span>XP: {task.xp}</span>
               </div>
             </div>
-          ))
-        )}
+            <div className="task-actions">
+              <button
+                className="btn-complete"
+                onClick={() => handleCompleteTask(task.id)}
+                title={tr('Выполнить', 'Complete')}
+              >
+                ✓
+              </button>
+              <button
+                className="btn-delete"
+                onClick={() => handleDeleteTask(task.id)}
+              >
+                {tr('Удалить', 'Delete')}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
