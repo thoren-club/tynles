@@ -126,7 +126,9 @@ export default function Members() {
           {inviteCode && (
             <div className="invite-code">
               <div className="invite-code-label">{tr('Код приглашения:', 'Invite Code:')}</div>
-              <div className="invite-code-value">{inviteCode}</div>
+              <div className="invite-code-value" onClick={() => copyToClipboard(inviteCode)}>
+                {inviteCode}
+              </div>
               <div className="invite-code-actions">
                 <button
                   className="btn-secondary"

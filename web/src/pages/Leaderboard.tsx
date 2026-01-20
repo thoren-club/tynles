@@ -90,7 +90,6 @@ function LeaderboardItem({ entry, position, onPoke, isSpaceLeaderboard }: {
 export default function Leaderboard() {
   const { tr } = useLanguage();
   const [spaceLeaderboard, setSpaceLeaderboard] = useState<any[]>([]);
-  const [currentSpace, setCurrentSpace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,13 +98,11 @@ export default function Leaderboard() {
   
   const loadData = async () => {
     try {
-      const [spaceLeaderboardData, spaceData] = await Promise.all([
+      const [spaceLeaderboardData] = await Promise.all([
         api.getSpaceLeaderboard().catch(() => ({ leaderboard: [], periodDays: 30 })),
-        api.getCurrentSpace().catch(() => null),
       ]);
       
       setSpaceLeaderboard(spaceLeaderboardData.leaderboard || []);
-      setCurrentSpace(spaceData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -134,14 +131,9 @@ export default function Leaderboard() {
     );
   }
 
-  const spaceName = currentSpace?.name || tr('Пространство', 'Space');
-
   return (
     <div className="leaderboard">
-      <h1 className="leaderboard-title">
-        {tr('Лидерборд пространства', 'Space leaderboard')}
-      </h1>
-      <div className="leaderboard-subtitle">{spaceName}</div>
+      <h1 className="leaderboard-title">{tr('Лидерборд', 'Leaderboard')}</h1>
 
       {/* Список лидерборда */}
       <div className="leaderboard-list">

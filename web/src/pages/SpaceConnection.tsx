@@ -29,7 +29,7 @@ export default function SpaceConnection() {
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to join space:', error);
-      setError(error.message || tr('Не удалось подключиться к пространству', 'Failed to join the space'));
+      setError(error.message || tr('Не удалось подключиться к дому', 'Failed to join the home'));
     } finally {
       setIsJoining(false);
     }
@@ -37,7 +37,7 @@ export default function SpaceConnection() {
 
   const handleCreate = async () => {
     if (!newSpaceName.trim()) {
-      setError(tr('Введите название пространства', 'Enter space name'));
+      setError(tr('Введите название дома', 'Enter home name'));
       return;
     }
 
@@ -50,7 +50,7 @@ export default function SpaceConnection() {
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to create space:', error);
-      setError(error.message || tr('Не удалось создать пространство', 'Failed to create space'));
+      setError(error.message || tr('Не удалось создать дом', 'Failed to create home'));
     } finally {
       setIsCreating(false);
     }
@@ -62,18 +62,18 @@ export default function SpaceConnection() {
         <div className="connection-icon">🚀</div>
         <h1 className="connection-title">
           {mode === 'join'
-            ? tr('Подключитесь к пространству', 'Join a space')
-            : tr('Создайте пространство', 'Create a space')}
+            ? tr('Подключитесь к дому', 'Join a home')
+            : tr('Создайте дом', 'Create a home')}
         </h1>
         <p className="connection-description">
           {mode === 'join'
             ? tr(
-                'Чтобы начать работу, вам нужно подключиться к пространству или создать новое.',
-                'To get started, join a space or create a new one.',
+                'Чтобы начать работу, вам нужно подключиться к дому или создать новый.',
+                'To get started, join a home or create a new one.',
               )
             : tr(
-                'Создайте новое пространство для управления задачами и целями вместе с командой.',
-                'Create a new space to manage tasks and goals with your team.',
+                'Создайте новый дом для управления задачами и целями вместе с командой.',
+                'Create a new home to manage tasks and goals with your team.',
               )}
         </p>
 
@@ -137,7 +137,7 @@ export default function SpaceConnection() {
           ) : (
             <>
               <div className="form-group">
-                <label className="form-label">{tr('Название пространства', 'Space name')}</label>
+                <label className="form-label">{tr('Название дома', 'Home name')}</label>
                 <div className="input-wrapper">
                   <IconPlus size={20} className="input-icon" />
                   <input
@@ -148,7 +148,7 @@ export default function SpaceConnection() {
                       setNewSpaceName(e.target.value);
                       setError(null);
                     }}
-                    placeholder={tr('Введите название пространства', 'Enter space name')}
+                    placeholder={tr('Введите название дома', 'Enter home name')}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleCreate();
@@ -165,7 +165,7 @@ export default function SpaceConnection() {
                 disabled={!newSpaceName.trim() || isCreating}
                 fullWidth
               >
-                {tr('Создать пространство', 'Create space')}
+                {tr('Создать дом', 'Create home')}
               </Button>
             </>
           )}

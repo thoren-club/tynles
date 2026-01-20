@@ -280,6 +280,17 @@
   gap: 8px;
 }
 
+.space-action-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.space-action-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .input {
   flex: 1;
   padding: 12px;
@@ -643,6 +654,15 @@
   letter-spacing: 2px;
   user-select: text;
   -webkit-user-select: text;
+  cursor: pointer;
+}
+
+.invite-code-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .invite-code-placeholder {

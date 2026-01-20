@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.dashboard': 'Главная',
     'nav.deals': 'Дела',
     'nav.leaderboard': 'Лидерборд',
-    'nav.spaces': 'Пространства',
+    'nav.spaces': 'Дома',
     // Common
     'common.loading': 'Загрузка...',
     'common.error': 'Ошибка',
@@ -48,7 +48,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Pages
     'deals.title': 'Дела',
     'leaderboard.title': 'Лидерборд',
-    'spaces.title': 'Пространства',
+    'spaces.title': 'Дома',
     'profile.title': 'Профиль',
     'tasks.title': 'Задачи',
     'goals.title': 'Цели',
@@ -65,7 +65,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.dashboard': 'Dashboard',
     'nav.deals': 'Deals',
     'nav.leaderboard': 'Leaderboard',
-    'nav.spaces': 'Spaces',
+    'nav.spaces': 'Homes',
     // Common
     'common.loading': 'Loading...',
     'common.error': 'Error',
@@ -88,7 +88,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Pages
     'deals.title': 'Deals',
     'leaderboard.title': 'Leaderboard',
-    'spaces.title': 'Spaces',
+    'spaces.title': 'Homes',
     'profile.title': 'Profile',
     'tasks.title': 'Tasks',
     'goals.title': 'Goals',

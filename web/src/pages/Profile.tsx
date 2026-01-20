@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronLeft } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton, SkeletonValue } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -18,6 +17,26 @@ export default function Profile() {
   useEffect(() => {
     loadUser();
   }, []);
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg?.BackButton) return;
+    const handleBack = () => navigate(-1);
+    try {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    } catch {
+      // no-op
+    }
+    return () => {
+      try {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      } catch {
+        // no-op
+      }
+    };
+  }, [navigate]);
 
   const loadUser = async () => {
     try {
@@ -50,12 +69,6 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="profile">
-        <div className="profile-header">
-          <IconChevronLeft size={24} className="back-icon" onClick={() => navigate('/')} />
-          <Skeleton width={120} height={26} />
-          <div style={{ width: 24 }} />
-        </div>
-
         <div className="profile-avatar-section">
           <Skeleton width={92} height={92} radius={999} />
           <Skeleton width={160} height={18} radius={10} />
@@ -92,17 +105,6 @@ export default function Profile() {
 
   return (
     <div className="profile">
-      {/* Хедер */}
-      <div className="profile-header">
-        <IconChevronLeft 
-          size={24} 
-          className="back-icon"
-          onClick={() => navigate('/')}
-        />
-        <h1 className="profile-title">{tr('Профиль', 'Profile')}</h1>
-        <div style={{ width: 24 }} />
-      </div>
-
       {/* Аватарка и имя */}
       <div className="profile-avatar-section">
         <div className="profile-avatar">

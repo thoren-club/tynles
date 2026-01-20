@@ -329,7 +329,7 @@ export default function TaskDetail() {
 
   const spaceOption = {
     value: 'space',
-    label: currentSpace?.name || tr('Пространство', 'Space'),
+    label: currentSpace?.name || tr('Дом', 'Home'),
   };
 
   const handleScheduleModeChange = (mode: 'none' | 'deadline' | 'recurring') => {

@@ -193,7 +193,7 @@ export default function GoalDetail() {
   }));
 
   const assigneeOptions = [
-    { value: 'space', label: currentSpace?.name || tr('Пространство', 'Space') },
+    { value: 'space', label: currentSpace?.name || tr('Дом', 'Home') },
     ...memberOptions,
   ];
 

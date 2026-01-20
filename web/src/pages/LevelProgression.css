@@ -36,7 +36,7 @@
 }
 
 .level-item {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background: var(--color-surface);
   border-radius: var(--radius-md);
   display: flex;
@@ -164,7 +164,9 @@
 }
 
 .level-item.current .level-reward {
-  color: color-mix(in srgb, var(--tg-theme-button-text-color, var(--color-neutral-950)) 92%, transparent);
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
+  font-style: normal;
+  font-weight: 600;
 }
 
 .reward-text {
@@ -184,6 +186,11 @@
 
 .level-item.current .reward-earned {
   color: var(--tg-theme-button-text-color, var(--color-neutral-950));
+}
+
+.level-item.current .reward-empty {
+  color: var(--tg-theme-button-text-color, var(--color-neutral-950));
+  opacity: 0.85;
 }
 
 .reward-check {

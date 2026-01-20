@@ -94,7 +94,7 @@ export default function TaskGoalEditorSheet({
 
   const spaceOption = useMemo(() => ({
     value: 'space',
-    label: currentSpace?.name || tr('Пространство', 'Space'),
+    label: currentSpace?.name || tr('Дом', 'Home'),
   }), [currentSpace?.name, tr]);
 
   const assigneeOptions = useMemo(() => [spaceOption, ...memberOptions], [spaceOption, memberOptions]);

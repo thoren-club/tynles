@@ -140,7 +140,7 @@ export default function AllGoals() {
               const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
               const goalAssignee = goal.assigneeScope === 'space'
                 ? {
-                    firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    firstName: currentSpace?.name || tr('Дом', 'Home'),
                     photoUrl: currentSpace?.avatarUrl,
                   }
                 : goal.assigneeUserId
@@ -176,7 +176,7 @@ export default function AllGoals() {
               const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
               const goalAssignee = goal.assigneeScope === 'space'
                 ? {
-                    firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    firstName: currentSpace?.name || tr('Дом', 'Home'),
                     photoUrl: currentSpace?.avatarUrl,
                   }
                 : goal.assigneeUserId

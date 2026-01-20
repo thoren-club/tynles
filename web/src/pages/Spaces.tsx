@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { IconSettings, IconPlus, IconLink } from '@tabler/icons-react';
 import { api } from '../api';
-import { Skeleton } from '../components/ui';
+import { BottomSheet, Skeleton, Button } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { triggerLightHaptic } from '../utils/haptics';
@@ -39,7 +39,7 @@ export default function Spaces() {
       setSpaces(data.spaces || []);
     } catch (error) {
       console.error('Failed to load spaces:', error);
-      alert(tr('Не удалось загрузить пространства', 'Failed to load spaces'));
+      alert(tr('Не удалось загрузить дома', 'Failed to load homes'));
     } finally {
       setLoading(false);
     }
@@ -48,9 +48,9 @@ export default function Spaces() {
   const handleCreateSpace = async () => {
     if (!newSpaceName.trim()) return;
 
-    // Проверка ограничения 3 пространства
+    // Проверка ограничения 3 дома
     if (spaces.length >= 3) {
-      alert(tr('Максимум можно создать 3 пространства', 'You can create up to 3 spaces'));
+      alert(tr('Максимум можно создать 3 дома', 'You can create up to 3 homes'));
       return;
     }
 
@@ -61,7 +61,7 @@ export default function Spaces() {
       loadSpaces();
     } catch (error: any) {
       console.error('Failed to create space:', error);
-      alert(error.message || tr('Не удалось создать пространство', 'Failed to create space'));
+      alert(error.message || tr('Не удалось создать дом', 'Failed to create home'));
     }
   };
 
@@ -74,7 +74,7 @@ export default function Spaces() {
       window.location.reload();
     } catch (error) {
       console.error('Failed to switch space:', error);
-      alert(tr('Не удалось переключить пространство', 'Failed to switch space'));
+      alert(tr('Не удалось переключить дом', 'Failed to switch home'));
     }
   };
   
@@ -90,12 +90,22 @@ export default function Spaces() {
       setShowJoinForm(false);
       setShowSpacesDropdown(false);
       await loadSpaces();
-      alert(tr('Вы успешно подключились к пространству!', 'You joined the space successfully!'));
+      alert(tr('Вы успешно подключились к дому!', 'You joined the home successfully!'));
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to join space:', error);
-      alert(error.message || tr('Не удалось подключиться к пространству', 'Failed to join the space'));
+      alert(error.message || tr('Не удалось подключиться к дому', 'Failed to join the home'));
     }
+  };
+
+  const closeJoinSheet = () => {
+    setShowJoinForm(false);
+    setInviteCodeInput('');
+  };
+
+  const closeCreateSheet = () => {
+    setShowCreate(false);
+    setNewSpaceName('');
   };
 
   const handleSettingsClick = (space: any, e: React.MouseEvent) => {
@@ -145,7 +155,7 @@ export default function Spaces() {
     <>
       <div className="spaces">
         <div className="spaces-header">
-          <h1>{tr('Пространства', 'Spaces')}</h1>
+          <h1>{tr('Дома', 'Homes')}</h1>
           <div className="spaces-actions" ref={spacesDropdownRef}>
             {(canCreateSpace || true) && (
               <button 
@@ -180,7 +190,7 @@ export default function Spaces() {
                   }}
                 >
                   <IconPlus size={18} />
-                  <span>{tr('Создать пространство', 'Create space')}</span>
+                  <span>{tr('Создать дом', 'Create home')}</span>
                 </button>
               )}
               <button 
@@ -198,9 +208,15 @@ export default function Spaces() {
           </div>
         )}
         
-        {/* Форма подключения */}
-        {showJoinForm && (
-          <div className="join-space-form">
+        <BottomSheet
+          isOpen={showJoinForm}
+          onClose={closeJoinSheet}
+          title={tr('Подключиться к дому', 'Join a home')}
+          showHeader={true}
+          showCloseButton={true}
+          size="medium"
+        >
+          <div className="space-action-sheet">
             <input
               type="text"
               placeholder={tr('Код приглашения', 'Invite code')}
@@ -208,38 +224,57 @@ export default function Spaces() {
               onChange={(e) => setInviteCodeInput(e.target.value)}
               className="input"
             />
-            <div className="form-actions">
-              <button className="btn-secondary" onClick={() => {
-                setShowJoinForm(false);
-                setInviteCodeInput('');
-              }}>
+            <div className="space-action-actions">
+              <Button variant="secondary" onClick={closeJoinSheet} fullWidth>
                 {tr('Отмена', 'Cancel')}
-              </button>
-              <button className="btn-primary" onClick={handleJoinSpace}>
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleJoinSpace}
+                disabled={!inviteCodeInput.trim()}
+                fullWidth
+              >
                 {tr('Подключиться', 'Join')}
-              </button>
+              </Button>
             </div>
           </div>
-        )}
+        </BottomSheet>
 
-        {showCreate && (
-          <div className="create-space-form">
+        <BottomSheet
+          isOpen={showCreate}
+          onClose={closeCreateSheet}
+          title={tr('Создать дом', 'Create home')}
+          showHeader={true}
+          showCloseButton={true}
+          size="medium"
+        >
+          <div className="space-action-sheet">
             <input
               type="text"
-              placeholder={tr('Название пространства', 'Space name')}
+              placeholder={tr('Название дома', 'Home name')}
               value={newSpaceName}
               onChange={(e) => setNewSpaceName(e.target.value)}
               className="input"
             />
-            <button className="btn-primary" onClick={handleCreateSpace}>
-              {tr('Создать', 'Create')}
-            </button>
+            <div className="space-action-actions">
+              <Button variant="secondary" onClick={closeCreateSheet} fullWidth>
+                {tr('Отмена', 'Cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCreateSpace}
+                disabled={!newSpaceName.trim()}
+                fullWidth
+              >
+                {tr('Создать', 'Create')}
+              </Button>
+            </div>
           </div>
-        )}
+        </BottomSheet>
 
         <div className="spaces-list">
           {spaces.length === 0 ? (
-            <div className="empty-state">{tr('Создайте первое пространство', 'Create your first space')}</div>
+            <div className="empty-state">{tr('Создайте первый дом', 'Create your first home')}</div>
           ) : (
             spaces.map((space) => (
               <div

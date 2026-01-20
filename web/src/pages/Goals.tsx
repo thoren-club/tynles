@@ -136,7 +136,7 @@ export default function Goals() {
   }
 
   const assigneeOptions = [
-    { value: 'space', label: currentSpace?.name || tr('Пространство', 'Space') },
+    { value: 'space', label: currentSpace?.name || tr('Дом', 'Home') },
     ...members.map((m: any) => ({
       value: `user:${m.id}`,
       label: m.firstName || m.username || m.id,
@@ -244,7 +244,7 @@ export default function Goals() {
             const timeframeLabel = getGoalTimeframeLabel(goal, locale, tr);
             const goalAssignee = goal.assigneeScope === 'space'
               ? {
-                  firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                    firstName: currentSpace?.name || tr('Дом', 'Home'),
                   photoUrl: currentSpace?.avatarUrl,
                 }
               : goal.assigneeUserId

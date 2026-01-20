@@ -100,7 +100,7 @@ export default function CreateTaskGoalSheet({
   }));
   const spaceOption = {
     value: 'space',
-    label: currentSpace?.name || tr('Пространство', 'Space'),
+    label: currentSpace?.name || tr('Дом', 'Home'),
   };
   const assigneeOptions = [spaceOption, ...memberOptions];
 

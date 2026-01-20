@@ -15,6 +15,7 @@ export default function SpaceSettings() {
   const [isSpaceOwner, setIsSpaceOwner] = useState(false);
   const [spaceMembers, setSpaceMembers] = useState<any[]>([]);
   const [inviteCode, setInviteCode] = useState<string>('');
+  const [isRefreshingInvite, setIsRefreshingInvite] = useState(false);
   const [levelRewards, setLevelRewards] = useState<Array<{ level: number; text: string; xpRequired?: number }>>([]);
   const [editingRewardLevel, setEditingRewardLevel] = useState<number | null>(null);
   const [editingRewardText, setEditingRewardText] = useState<string>('');
@@ -126,6 +127,51 @@ export default function SpaceSettings() {
     }
   };
 
+  const copyToClipboard = async (text: string) => {
+    if (!text) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        alert(tr('Скопировано в буфер обмена!', 'Copied to clipboard!'));
+        return;
+      }
+    } catch {
+      // fallback below
+    }
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', 'true');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (success) {
+        alert(tr('Скопировано в буфер обмена!', 'Copied to clipboard!'));
+      } else {
+        alert(tr('Не удалось скопировать', 'Failed to copy to clipboard'));
+      }
+    } catch {
+      alert(tr('Не удалось скопировать', 'Failed to copy to clipboard'));
+    }
+  };
+
+  const handleInviteRefresh = async (refresh: boolean) => {
+    if (!selectedSpace) return;
+    setIsRefreshingInvite(true);
+    try {
+      const data = await api.createInvite('Viewer', selectedSpace.id, refresh);
+      setInviteCode(data?.code || '');
+    } catch (error: any) {
+      console.error('Failed to refresh invite:', error);
+      alert(error.message || tr('Не удалось обновить приглашение', 'Failed to refresh invite'));
+    } finally {
+      setIsRefreshingInvite(false);
+    }
+  };
+
   const handleMemberRoleEdit = (userId: string, role: string) => {
     setEditingMemberRole({ userId, role });
   };
@@ -220,10 +266,10 @@ export default function SpaceSettings() {
 
   const handleDeleteSpace = async () => {
     if (!selectedSpace) return;
-    if (!confirm(tr('Вы уверены, что хотите удалить это пространство? Это действие нельзя отменить.', 'Are you sure you want to delete this space? This cannot be undone.'))) {
+    if (!confirm(tr('Вы уверены, что хотите удалить этот дом? Это действие нельзя отменить.', 'Are you sure you want to delete this home? This cannot be undone.'))) {
       return;
     }
-    if (!confirm(tr('Все данные пространства (задачи, цели, участники) будут безвозвратно удалены. Продолжить?', 'All space data (tasks, goals, members) will be deleted permanently. Continue?'))) {
+    if (!confirm(tr('Все данные дома (задачи, цели, участники) будут безвозвратно удалены. Продолжить?', 'All home data (tasks, goals, members) will be deleted permanently. Continue?'))) {
       return;
     }
     setIsDeleting(true);
@@ -233,7 +279,7 @@ export default function SpaceSettings() {
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to delete space:', error);
-      alert(error.message || tr('Не удалось удалить пространство', 'Failed to delete space'));
+      alert(error.message || tr('Не удалось удалить дом', 'Failed to delete home'));
     } finally {
       setIsDeleting(false);
     }
@@ -241,7 +287,7 @@ export default function SpaceSettings() {
 
   const handleLeaveSpace = async () => {
     if (!selectedSpace) return;
-    if (!confirm(tr('Покинуть это пространство?', 'Leave this space?'))) {
+    if (!confirm(tr('Покинуть этот дом?', 'Leave this home?'))) {
       return;
     }
     setIsLeaving(true);
@@ -251,7 +297,7 @@ export default function SpaceSettings() {
       window.location.reload();
     } catch (error: any) {
       console.error('Failed to leave space:', error);
-      alert(error.message || tr('Не удалось покинуть пространство', 'Failed to leave space'));
+      alert(error.message || tr('Не удалось покинуть дом', 'Failed to leave home'));
     } finally {
       setIsLeaving(false);
     }
@@ -274,7 +320,7 @@ export default function SpaceSettings() {
       <div className="space-settings">
         {isAdmin && (
           <div className="settings-section">
-            <h3 className="section-title">{tr('Название пространства', 'Space name')}</h3>
+            <h3 className="section-title">{tr('Название дома', 'Home name')}</h3>
             <div className="space-name-editor">
               <input
                 type="text"
@@ -282,7 +328,7 @@ export default function SpaceSettings() {
                 value={spaceName}
                 onChange={(e) => setSpaceName(e.target.value)}
                 disabled={isSavingName}
-                placeholder={tr('Название пространства', 'Space name')}
+                placeholder={tr('Название дома', 'Home name')}
               />
               <button
                 className="btn-primary space-name-save"
@@ -295,7 +341,7 @@ export default function SpaceSettings() {
           </div>
         )}
         <div className="settings-section">
-          <h3 className="section-title">{tr('Аватар пространства', 'Space avatar')}</h3>
+          <h3 className="section-title">{tr('Аватар дома', 'Home avatar')}</h3>
           <div className="space-avatar-editor">
             <div className="space-avatar-preview">
               {avatarPreview ? (
@@ -374,8 +420,32 @@ export default function SpaceSettings() {
         <div className="settings-section">
           <h3 className="section-title">{tr('Код приглашения', 'Invite code')}</h3>
           <div className="invite-code-container">
-            {inviteCode ? <div className="invite-code">{inviteCode}</div> : (
-              <div className="invite-code-placeholder">{tr('Нажмите, чтобы создать код', 'Click to generate a code')}</div>
+            {inviteCode ? (
+              <div className="invite-code" onClick={() => copyToClipboard(inviteCode)}>
+                {inviteCode}
+              </div>
+            ) : (
+              <div className="invite-code-placeholder">
+                {isAdmin
+                  ? tr('Нажмите, чтобы создать код', 'Click to generate a code')
+                  : tr('Код недоступен', 'Code is not available')}
+              </div>
+            )}
+          </div>
+          <div className="invite-code-actions">
+            {isAdmin && (
+              <button
+                className="btn-secondary"
+                onClick={() => handleInviteRefresh(!inviteCode)}
+                disabled={isRefreshingInvite}
+              >
+                {inviteCode ? tr('Обновить', 'Refresh') : tr('Создать', 'Create')}
+              </button>
+            )}
+            {inviteCode && (
+              <button className="btn-primary" onClick={() => copyToClipboard(inviteCode)}>
+                {tr('Копировать', 'Copy')}
+              </button>
             )}
           </div>
         </div>
@@ -414,9 +484,9 @@ export default function SpaceSettings() {
 
         {!isSpaceOwner && (
           <div className="settings-section">
-            <h3 className="section-title">{tr('Покинуть пространство', 'Leave space')}</h3>
+            <h3 className="section-title">{tr('Покинуть дом', 'Leave home')}</h3>
             <button className="btn-leave-space" onClick={handleLeaveSpace} disabled={isLeaving}>
-              {isLeaving ? tr('Выходим...', 'Leaving...') : tr('Покинуть', 'Leave')}
+              {isLeaving ? tr('Выходим...', 'Leaving...') : tr('Покинуть дом', 'Leave home')}
             </button>
           </div>
         )}
@@ -425,7 +495,7 @@ export default function SpaceSettings() {
           <div className="settings-section">
             <h3 className="section-title">{tr('Опасная зона', 'Danger zone')}</h3>
             <button className="btn-delete-space" onClick={handleDeleteSpace} disabled={isDeleting}>
-              {isDeleting ? tr('Удаление...', 'Deleting...') : tr('Удалить пространство', 'Delete space')}
+              {isDeleting ? tr('Удаление...', 'Deleting...') : tr('Удалить дом', 'Delete home')}
             </button>
           </div>
         )}

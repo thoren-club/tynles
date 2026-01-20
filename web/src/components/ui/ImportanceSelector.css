@@ -11,9 +11,11 @@
 }
 
 .importance-label {
-  font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
-  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .importance-buttons {
@@ -41,7 +43,7 @@
   color: var(--color-neutral-0);
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
-  box-shadow: 0 4px 0 color-mix(in srgb, currentColor 25%, var(--color-neutral-950));
+  box-shadow: 0 4px 0 var(--importance-shadow, color-mix(in srgb, var(--color-surface-2) 70%, var(--color-neutral-950)));
   opacity: 0.55;
   flex: 0 0 auto;
   white-space: nowrap;
@@ -70,13 +72,13 @@
 @media (hover: hover) and (pointer: fine) {
   .importance-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--shadow-color-15);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--importance-shadow, var(--shadow-color-15)) 80%, transparent);
   }
 }
 
 .importance-button:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 color-mix(in srgb, currentColor 25%, var(--color-neutral-950));
+  box-shadow: 0 2px 0 var(--importance-shadow-active, var(--importance-shadow, color-mix(in srgb, var(--color-surface-2) 70%, var(--color-neutral-950))));
 }
 
 .importance-button.active {
@@ -87,24 +89,32 @@
 .importance-button.importance-low {
   background: var(--color-text-muted);
   color: var(--color-neutral-950);
+  --importance-shadow: color-mix(in srgb, var(--color-text-muted) 70%, var(--color-neutral-950));
+  --importance-shadow-active: color-mix(in srgb, var(--color-text-muted) 60%, var(--color-neutral-950));
 }
 
 /* Medium */
 .importance-button.importance-medium {
-  background: var(--color-success-500);
+  background: var(--color-warning-500);
   color: var(--color-neutral-950);
+  --importance-shadow: color-mix(in srgb, var(--color-warning-500) 70%, var(--color-neutral-950));
+  --importance-shadow-active: color-mix(in srgb, var(--color-warning-500) 60%, var(--color-neutral-950));
 }
 
 /* High */
 .importance-button.importance-high {
   background: var(--color-primary-500);
   color: var(--color-neutral-0);
+  --importance-shadow: var(--color-primary-shadow);
+  --importance-shadow-active: var(--color-primary-shadow);
 }
 
 /* Urgent */
 .importance-button.importance-urgent {
   background: var(--color-danger-500);
   color: var(--color-neutral-0);
+  --importance-shadow: color-mix(in srgb, var(--color-danger-500) 70%, var(--color-neutral-950));
+  --importance-shadow-active: color-mix(in srgb, var(--color-danger-500) 60%, var(--color-neutral-950));
 }
 
 .importance-text {

@@ -377,7 +377,7 @@ export default function Dashboard() {
                   const assigneeId = task.assigneeUserId;
                   const assignee = task.assigneeScope === 'space'
                     ? {
-                        firstName: currentSpace?.name || tr('Пространство', 'Space'),
+                        firstName: currentSpace?.name || tr('Дом', 'Home'),
                         photoUrl: currentSpace?.avatarUrl,
                       }
                     : assigneeId

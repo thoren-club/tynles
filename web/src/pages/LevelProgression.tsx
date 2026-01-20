@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronLeft, IconCheck } from '@tabler/icons-react';
+import { IconCheck } from '@tabler/icons-react';
 import { api } from '../api';
 import { Skeleton } from '../components/ui';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -75,17 +75,6 @@ export default function LevelProgression() {
 
   return (
     <div className="level-progression">
-      {/* Хедер */}
-      <div className="progression-header">
-        <IconChevronLeft 
-          size={24} 
-          className="back-icon"
-          onClick={() => navigate('/')}
-        />
-        <h1 className="progression-title">{tr('Прогрессия уровней', 'Level progression')}</h1>
-        <div style={{ width: 24 }} />
-      </div>
-
       {/* Список уровней */}
       {loading ? (
         <div className="levels-list" aria-busy="true">
