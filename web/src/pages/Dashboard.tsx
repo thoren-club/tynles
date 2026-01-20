@@ -82,9 +82,15 @@ export default function Dashboard() {
     }
   };
 
-  const generateWeeklyXpData = (payload: { days?: string[]; users?: Array<{ userId: string; firstName?: string | null; username?: string | null; xpByDate?: Record<string, number> }> }) => {
-    const dayKeys = payload?.days && payload.days.length === 7
-      ? payload.days
+  const generateWeeklyXpData = (payload: {
+    days?: Array<string | { date: string; xp?: number }>;
+    users?: Array<{ userId: string; firstName?: string | null; username?: string | null; xpByDate?: Record<string, number> }>;
+  }) => {
+    const normalizedDays = Array.isArray(payload?.days)
+      ? payload.days.map((day) => (typeof day === 'string' ? day : day?.date)).filter(Boolean)
+      : [];
+    const dayKeys = normalizedDays.length === 7
+      ? normalizedDays
       : Array.from({ length: 7 }, (_, i) => {
           const day = new Date();
           day.setDate(day.getDate() - (6 - i));
@@ -107,11 +113,20 @@ export default function Dashboard() {
     });
 
     const users = payload?.users || [];
-    const series = users.map((user) => {
+    let series = users.map((user) => {
       const name = user.firstName || user.username || tr('Пользователь', 'User');
       const data = dayKeys.map((dateKey) => user.xpByDate?.[dateKey] || 0);
       return { userId: user.userId, name, data };
     });
+
+    if (series.length === 0 && Array.isArray(payload?.days)) {
+      const fallbackData = payload.days
+        .map((day) => (typeof day === 'string' ? 0 : day?.xp || 0))
+        .slice(0, 7);
+      if (fallbackData.length === 7) {
+        series = [{ userId: 'me', name: tr('Вы', 'You'), data: fallbackData }];
+      }
+    }
 
     setWeeklyXpData({ labels, series });
   };

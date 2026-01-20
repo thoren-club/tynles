@@ -51,7 +51,6 @@ export default function WeeklyXpChart({ labels, series, loading = false }: Weekl
       color: item.color || getStableColor(item.userId),
       data: item.data.length === 7 ? item.data : Array.from({ length: 7 }, (_, i) => item.data[i] || 0),
     }))
-    .filter((item) => item.data.some((value) => value > 0))
     .sort((a, b) => {
       const sumA = a.data.reduce((total, value) => total + value, 0);
       const sumB = b.data.reduce((total, value) => total + value, 0);

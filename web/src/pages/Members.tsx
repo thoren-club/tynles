@@ -44,9 +44,31 @@ export default function Members() {
   };
 
   const copyToClipboard = async (text: string) => {
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
-      alert(tr('Скопировано в буфер обмена!', 'Copied to clipboard!'));
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        alert(tr('Скопировано в буфер обмена!', 'Copied to clipboard!'));
+        return;
+      }
+    } catch {
+      // fallback below
+    }
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', 'true');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (success) {
+        alert(tr('Скопировано в буфер обмена!', 'Copied to clipboard!'));
+      } else {
+        alert(tr('Не удалось скопировать', 'Failed to copy to clipboard'));
+      }
     } catch (error) {
       alert(tr('Не удалось скопировать', 'Failed to copy to clipboard'));
     }
